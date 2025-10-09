@@ -28,14 +28,8 @@ export interface DesaFeature {
 // ✅ GEE Raster Loader
 export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<string, string> = {}) {
   try {
-  const query = new URLSearchParams(filters).toString();
-  const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
 
-  console.log("🌍 Fetching GEE layer:", url);
-  const response = await fetch(url);
-  const tileUrl = await response.text();
-
-  const oldLayerId = "gee-lulc-layer";
+    const oldLayerId = "gee-lulc-layer";
   const oldSourceId = "gee-lulc";
 
   // 🕊️ Fade out old layer smoothly
@@ -45,6 +39,14 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
     map.removeLayer(oldLayerId);
   }
   if (map.getSource(oldSourceId)) map.removeSource(oldSourceId);
+  const query = new URLSearchParams(filters).toString();
+  const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
+
+  console.log("🌍 Fetching GEE layer:", url);
+  const response = await fetch(url);
+  const tileUrl = await response.text();
+
+  
 
   // 🆕 Add the new raster source + layer
   map.addSource("gee-lulc", {
@@ -61,6 +63,8 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
       "raster-opacity": 0, // start invisible
     },
   });
+
+  
 
   // Wait for tiles to load before fading in
   await new Promise<void>((resolve) => {
