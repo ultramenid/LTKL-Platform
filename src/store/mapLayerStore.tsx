@@ -31,15 +31,24 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
     const query = new URLSearchParams(filters).toString();
     const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
 
-   
-
     console.log("🌍 Fetching GEE layer:", url);
     const response = await fetch(url);
     const tileUrl = await response.text();
 
-    if (map.getLayer("gee-lulc-layer")) map.removeLayer("gee-lulc-layer");
-    if (map.getSource("gee-lulc")) map.removeSource("gee-lulc");
-    
+    const oldLayerId = "gee-lulc-layer";
+    const oldSourceId = "gee-lulc";
+
+    // 🕊️ Fade out the old layer smoothly (if it exists)
+    if (map.getLayer(oldLayerId)) {
+      map.setPaintProperty(oldLayerId, "raster-opacity", 0);
+      await new Promise((resolve) => setTimeout(resolve, 400)); // wait fade-out
+      map.removeLayer(oldLayerId);
+    }
+    if (map.getSource(oldSourceId)) {
+      map.removeSource(oldSourceId);
+    }
+
+    // 🆕 Add the new raster source + layer
     map.addSource("gee-lulc", {
       type: "raster",
       tiles: [tileUrl],
@@ -50,13 +59,23 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
       id: "gee-lulc-layer",
       type: "raster",
       source: "gee-lulc",
+      paint: {
+        "raster-opacity": 0, // start invisible
+        "raster-fade-duration": 500, // smooth fade transition
+      },
     });
 
-    console.log("✅ GEE LULC layer loaded");
+    // 🌅 Fade it in
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    map.setPaintProperty("gee-lulc-layer", "raster-opacity", 1);
+
+    console.log("✅ GEE LULC layer loaded (smooth transition)");
   } catch (err) {
     console.error("❌ Failed to load GEE LULC raster:", err);
   }
 }
+
+
 
  // Generic layer loader
   export const loadLayer = async <FeatureType extends KabupatenFeature | KecamatanFeature | DesaFeature>(
