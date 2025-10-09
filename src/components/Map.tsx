@@ -126,9 +126,10 @@ const Map = () => {
   } 
 
   else if (level === "desa" && breadcrumbs.kab && breadcrumbs.kec && breadcrumbs.des) {
+   
+    await loadGEEPolygonRaster(map, { des: breadcrumbs.des });
     await loadLayer<DesaFeature>( map,"LTKL:desa", "desa-src", "desa-fill", `kab='${breadcrumbs.kab}' AND kec='${breadcrumbs.kec}'`);
     zoomToMatchingFeature(map, "desa-src", "des", breadcrumbs.des);
-    await loadGEEPolygonRaster(map, { des: breadcrumbs.des });
   }
 };
 
@@ -146,6 +147,7 @@ const Map = () => {
 
     mapRef.current = map;
 
+    
     map.on("load", async () => {
       await loadGEEPolygonRaster(map);
       await loadLayer<KabupatenFeature>(map, "LTKL:kabupaten", "kabupaten-src", "kabupaten-fill");
@@ -155,7 +157,7 @@ const Map = () => {
       map.remove();
       mapRef.current = null;
     };
-  }, [loadGEEPolygonRaster, loadLayer]);
+  }, []);
 
   return (
     <>
