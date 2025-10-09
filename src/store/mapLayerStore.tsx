@@ -62,7 +62,6 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
     layerName: string,
     sourceId: string,
     layerId: string,
-    fillColor: string,
     cqlFilter?: string,
     removeLayerIds: string[] = []
   ): Promise<FeatureCollection<FeatureType["geometry"], FeatureType["properties"]>> => {
@@ -133,7 +132,6 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
             "LTKL:desa",
             "desa-src",
             "desa-fill",
-            "#facc15",
             `kab='${feature.properties.kab}' AND kec='${feature.properties.kec}' AND des='${feature.properties.des}'`,
             ["kabupaten-fill", "kecamatan-fill", "desa-fill"]
           );
@@ -148,7 +146,6 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
             "LTKL:desa",
             "desa-src",
             "desa-fill",
-            "#facc15",
             `kab='${feature.properties.kab}' AND kec='${feature.properties.kec}'`,
             ["kabupaten-fill", "kecamatan-fill"]
           );
@@ -161,7 +158,6 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
             "LTKL:kecamatan",
             "kecamatan-src",
             "kecamatan-fill",
-            "#60a5fa",
             `kab='${feature.properties.kab}'`,
             ["kabupaten-fill"]
           );

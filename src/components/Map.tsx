@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { useMapStore } from "../store/mapStore";
 import BreadcrumbsComponent from "./BreadCrumbs";
 import type { KabupatenFeature, KecamatanFeature, DesaFeature } from "../store/mapLayerStore";
@@ -93,7 +92,7 @@ const Map = () => {
     ["desa-src", "kecamatan-src"].forEach(id => map.getSource(id) && map.removeSource(id));
 
     // load kabupaten layer with filter
-    await loadLayer<KabupatenFeature>( map, "LTKL:kabupaten","zoomkabupaten-src", "zoomkabupaten-fill", "#4ade80",`kab='${breadcrumbs.kab}'`);
+    await loadLayer<KabupatenFeature>( map, "LTKL:kabupaten","zoomkabupaten-src", "zoomkabupaten-fill",`kab='${breadcrumbs.kab}'`);
 
     //Zoom to this kabupaten polygon
     zoomToMatchingFeature(map, "zoomkabupaten-src", "kab", breadcrumbs.kab);
@@ -102,7 +101,7 @@ const Map = () => {
     await loadGEEPolygonRaster(map, { kab: breadcrumbs.kab });
 
     // Show children of kabupaten polygons
-    await loadLayer<KabupatenFeature>(map,"LTKL:kecamatan","kabupaten-src","kabupaten-fill","#4ade80",`kab='${breadcrumbs.kab}'`);
+    await loadLayer<KabupatenFeature>(map,"LTKL:kecamatan","kabupaten-src","kabupaten-fill",`kab='${breadcrumbs.kab}'`);
 
     
     if (map.getLayer("zoomkabupaten-fill")) map.removeLayer("zoomkabupaten-fill");
@@ -114,20 +113,20 @@ const Map = () => {
     if (map.getLayer("desa-fill")) map.removeLayer("desa-fill");
     if (map.getSource("desa-src")) map.removeSource("desa-src");
     
-    await loadLayer<KecamatanFeature>( map, "LTKL:kecamatan", "zoomkecamatan-src", "zoomkecamatan-fill", "#60a5fa", `kec='${breadcrumbs.kec}'`);
+    await loadLayer<KecamatanFeature>( map, "LTKL:kecamatan", "zoomkecamatan-src", "zoomkecamatan-fill", `kec='${breadcrumbs.kec}'`);
 
     zoomToMatchingFeature(map, "zoomkecamatan-src", "kec", breadcrumbs.kec);
 
     await loadGEEPolygonRaster(map, { kec: breadcrumbs.kec });
 
-    await loadLayer<KecamatanFeature>( map, "LTKL:desa", "kecamatan-src", "kecamatan-fill", "#60a5fa", `kec='${breadcrumbs.kec}'`);
+    await loadLayer<KecamatanFeature>( map, "LTKL:desa", "kecamatan-src", "kecamatan-fill", `kec='${breadcrumbs.kec}'`);
     if (map.getLayer("zoomkecamatan-fill")) map.removeLayer("zoomkecamatan-fill");
 
 
   } 
 
   else if (level === "desa" && breadcrumbs.kab && breadcrumbs.kec && breadcrumbs.des) {
-    await loadLayer<DesaFeature>( map,"LTKL:desa", "desa-src", "desa-fill", "#facc15", `kab='${breadcrumbs.kab}' AND kec='${breadcrumbs.kec}'`);
+    await loadLayer<DesaFeature>( map,"LTKL:desa", "desa-src", "desa-fill", `kab='${breadcrumbs.kab}' AND kec='${breadcrumbs.kec}'`);
     zoomToMatchingFeature(map, "desa-src", "des", breadcrumbs.des);
     await loadGEEPolygonRaster(map, { des: breadcrumbs.des });
   }
