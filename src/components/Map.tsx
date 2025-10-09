@@ -148,7 +148,7 @@ const Map = () => {
 
     map.on("load", async () => {
       await loadGEEPolygonRaster(map);
-      await loadLayer<KabupatenFeature>(map, "LTKL:kabupaten", "kabupaten-src", "kabupaten-fill", "#4ade80");
+      await loadLayer<KabupatenFeature>(map, "LTKL:kabupaten", "kabupaten-src", "kabupaten-fill");
     });
 
     return () => {
