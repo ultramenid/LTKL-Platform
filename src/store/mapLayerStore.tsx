@@ -31,13 +31,15 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
     const query = new URLSearchParams(filters).toString();
     const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
 
-    if (map.getLayer("gee-lulc-layer")) map.removeLayer("gee-lulc-layer");
-    if (map.getSource("gee-lulc")) map.removeSource("gee-lulc");
+   
 
     console.log("🌍 Fetching GEE layer:", url);
     const response = await fetch(url);
     const tileUrl = await response.text();
 
+    if (map.getLayer("gee-lulc-layer")) map.removeLayer("gee-lulc-layer");
+    if (map.getSource("gee-lulc")) map.removeSource("gee-lulc");
+    
     map.addSource("gee-lulc", {
       type: "raster",
       tiles: [tileUrl],
