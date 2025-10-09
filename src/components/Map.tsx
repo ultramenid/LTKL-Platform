@@ -32,7 +32,7 @@ const Map = () => {
     });
     resetBreadcrumbs();
     map.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM });
-    await loadLayer<KabupatenFeature>(map, "LTKL:kabupaten", "kabupaten-src", "kabupaten-fill", "#4ade80");
+    await loadLayer<KabupatenFeature>(map, "LTKL:kabupaten", "kabupaten-src", "kabupaten-fill");
     await loadGEEPolygonRaster(map);
   };
 
