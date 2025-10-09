@@ -28,7 +28,7 @@ const BreadcrumbsComponent: React.FC<BreadcrumbsComponentProps> = ({onHome, hand
       {/* Kabupaten */}
       {breadcrumbs.kab && (
         <>
-          <span className="text-blue-400">/</span>
+          <span className="text-[#0f766e]">/</span>
           <button
             onClick={() => handeBreadcrumbs("kabupaten", breadcrumbs.kab)}
             className="text-[#0f766e] hover:underline cursor-pointer"
