@@ -41,7 +41,7 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
     // 🕊️ Fade out the old layer smoothly (if it exists)
     if (map.getLayer(oldLayerId)) {
       map.setPaintProperty(oldLayerId, "raster-opacity", 0);
-      await new Promise((resolve) => setTimeout(resolve, 400)); // wait fade-out
+      await new Promise((resolve) => setTimeout(resolve, 100)); // wait fade-out
       map.removeLayer(oldLayerId);
     }
     if (map.getSource(oldSourceId)) {
