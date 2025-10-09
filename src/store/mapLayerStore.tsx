@@ -28,51 +28,66 @@ export interface DesaFeature {
 // ✅ GEE Raster Loader
 export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<string, string> = {}) {
   try {
-    const query = new URLSearchParams(filters).toString();
-    const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
+  const query = new URLSearchParams(filters).toString();
+  const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
 
-    console.log("🌍 Fetching GEE layer:", url);
-    const response = await fetch(url);
-    const tileUrl = await response.text();
+  console.log("🌍 Fetching GEE layer:", url);
+  const response = await fetch(url);
+  const tileUrl = await response.text();
 
-    const oldLayerId = "gee-lulc-layer";
-    const oldSourceId = "gee-lulc";
+  const oldLayerId = "gee-lulc-layer";
+  const oldSourceId = "gee-lulc";
 
-    // 🕊️ Fade out the old layer smoothly (if it exists)
-    if (map.getLayer(oldLayerId)) {
-      map.setPaintProperty(oldLayerId, "raster-opacity", 0);
-      await new Promise((resolve) => setTimeout(resolve, 100)); // wait fade-out
-      map.removeLayer(oldLayerId);
-    }
-    if (map.getSource(oldSourceId)) {
-      map.removeSource(oldSourceId);
-    }
-
-    // 🆕 Add the new raster source + layer
-    map.addSource("gee-lulc", {
-      type: "raster",
-      tiles: [tileUrl],
-      tileSize: 256,
-    });
-
-    map.addLayer({
-      id: "gee-lulc-layer",
-      type: "raster",
-      source: "gee-lulc",
-      paint: {
-        "raster-opacity": 0, // start invisible
-        "raster-fade-duration": 500, // smooth fade transition
-      },
-    });
-
-    // 🌅 Fade it in
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    map.setPaintProperty("gee-lulc-layer", "raster-opacity", 1);
-
-    console.log("✅ GEE LULC layer loaded (smooth transition)");
-  } catch (err) {
-    console.error("❌ Failed to load GEE LULC raster:", err);
+  // 🕊️ Fade out old layer smoothly
+  if (map.getLayer(oldLayerId)) {
+    map.setPaintProperty(oldLayerId, "raster-opacity", 0);
+    await new Promise((resolve) => setTimeout(resolve, 100)); // small delay for fade-out
+    map.removeLayer(oldLayerId);
   }
+  if (map.getSource(oldSourceId)) map.removeSource(oldSourceId);
+
+  // 🆕 Add the new raster source + layer
+  map.addSource("gee-lulc", {
+    type: "raster",
+    tiles: [tileUrl],
+    tileSize: 256,
+  });
+
+  map.addLayer({
+    id: "gee-lulc-layer",
+    type: "raster",
+    source: "gee-lulc",
+    paint: {
+      "raster-opacity": 0, // start invisible
+    },
+  });
+
+  // Wait for tiles to load before fading in
+  await new Promise<void>((resolve) => {
+    const onData = (e: any) => {
+      if (e.sourceId === "gee-lulc" && e.isSourceLoaded) {
+        map.off("data", onData); // remove listener
+        resolve();
+      }
+    };
+    map.on("data", onData);
+  });
+
+  // 🌅 Fade in smoothly
+  let opacity = 0;
+  const fadeIn = () => {
+    opacity += 0.05;
+    if (opacity <= 1 && map.getLayer("gee-lulc-layer")) {
+      map.setPaintProperty("gee-lulc-layer", "raster-opacity", opacity);
+      requestAnimationFrame(fadeIn);
+    }
+  };
+  fadeIn();
+
+  console.log("✅ GEE LULC layer loaded smoothly");
+} catch (err) {
+  console.error("❌ Failed to load GEE LULC raster:", err);
+}
 }
 
 

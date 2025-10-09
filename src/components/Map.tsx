@@ -155,7 +155,7 @@ const Map = () => {
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [loadGEEPolygonRaster, loadLayer]);
 
   return (
     <>
