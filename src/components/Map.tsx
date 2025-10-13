@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useMapStore } from "../store/mapStore";
@@ -19,6 +19,8 @@ const Map = () => {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const {  resetBreadcrumbs } = useMapStore();
+    const [isMapReady, setIsMapReady] = useState(false); // ✅ new state to track readiness
+
   
   const handleHome = async () => {
     const map = mapRef.current;
@@ -145,18 +147,21 @@ const Map = () => {
       zoom: DEFAULT_ZOOM,
       minZoom: 4,
     });
-
+    
     mapRef.current = map;
 
     
     map.on("load", async () => {
       await loadGEEPolygonRaster(map);
       await loadLayer<KabupatenFeature>(map, "LTKL:kabupaten", "kabupaten-src", "kabupaten-fill");
+      setIsMapReady(true);
     });
 
     return () => {
       map.remove();
       mapRef.current = null;
+      setIsMapReady(false);
+
     };
   }, []);
 
@@ -164,7 +169,7 @@ const Map = () => {
     <>
       <div ref={mapContainer} className="h-full w-full" />
       {/* 🕒 Time Series Selector */}
-      <TimeSeriesSelector map={mapRef.current}/>
+      {isMapReady && <TimeSeriesSelector map={mapRef.current} />} 
       <BreadcrumbsComponent onHome={handleHome}  handeBreadcrumbs={handleBreadcrumbClick}/>
     </>
   );

@@ -41,7 +41,7 @@ export async function loadGEEPolygonRaster(
       year: String(year),
     }).toString();
 
-    const url = `http://localhost:8000/gee/lulc${query ? `?${query}` : ""}`;
+    const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
 
     console.log(`🌍 Fetching GEE layer for year ${year}:`, url);
 
