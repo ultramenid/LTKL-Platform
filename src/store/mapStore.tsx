@@ -21,7 +21,7 @@ export const useMapStore = create<MapStore>((set) => ({
   breadcrumbs: {},
 
   // 🕒 Global year selector
-  year: 1992,
+  year: 2024,
   setYear: (year) => set({ year }),
 
   // 🧭 Breadcrumbs
