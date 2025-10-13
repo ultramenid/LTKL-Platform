@@ -8,6 +8,7 @@ const DEFAULT_CENTER: [number, number] = [120.216667, -1.5];
 const DEFAULT_ZOOM = 4;
 
 
+
 // Feature interfaces
 export interface KabupatenFeature {
   type: "Feature";
@@ -25,24 +26,39 @@ export interface DesaFeature {
   properties: { kab: string; kec: string; des: string };
 }
 
-// ✅ GEE Raster Loader
-export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<string, string> = {}) {
+
+export async function loadGEEPolygonRaster(
+  map: maplibregl.Map,
+  filters: Record<string, string> = {}
+) {
   try {
-    const query = new URLSearchParams(filters).toString();
-    const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
+     // 🧠 Get current year from global store
+    const { year } = useMapStore.getState();
 
-   
+    // 🧩 Merge filters (kab/kec/des + year)
+    const query = new URLSearchParams({
+      ...filters,
+      year: String(year),
+    }).toString();
 
-    console.log("🌍 Fetching GEE layer:", url);
+    const url = `http://localhost:8000/gee/lulc${query ? `?${query}` : ""}`;
+
+    console.log(`🌍 Fetching GEE layer for year ${year}:`, url);
+
+    // 🛰️ Fetch tile URL
     const response = await fetch(url);
     const tileUrl = await response.text();
 
-    // Only remove old layer/source if new tiles exist
-    if (tileUrl) {
-    if (map.getLayer("gee-lulc-layer")) map.removeLayer("gee-lulc-layer");
-    if (map.getSource("gee-lulc")) map.removeSource("gee-lulc");
+    if (!tileUrl) {
+      console.warn("⚠️ No tile URL received from GEE");
+      return;
     }
 
+    // 🧹 Remove old layer/source before adding the new one
+    if (map.getLayer("gee-lulc-layer")) map.removeLayer("gee-lulc-layer");
+    if (map.getSource("gee-lulc")) map.removeSource("gee-lulc");
+
+    // 🗺️ Add the new raster source
     map.addSource("gee-lulc", {
       type: "raster",
       tiles: [tileUrl],
@@ -53,13 +69,17 @@ export async function loadGEEPolygonRaster(map: maplibregl.Map, filters: Record<
       id: "gee-lulc-layer",
       type: "raster",
       source: "gee-lulc",
+      paint: {
+        "raster-opacity": 1,
+      },
     });
 
-    console.log("✅ GEE LULC layer loaded");
+    console.log(`✅ GEE LULC layer loaded successfully for year ${year}`);
   } catch (err) {
     console.error("❌ Failed to load GEE LULC raster:", err);
   }
 }
+
 
  // Generic layer loader
  export const loadLayer = async <

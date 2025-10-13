@@ -164,14 +164,7 @@ const Map = () => {
     <>
       <div ref={mapContainer} className="h-full w-full" />
       {/* 🕒 Time Series Selector */}
-      <TimeSeriesSelector
-        startYear={2000}
-        endYear={2024}
-        onChange={(year) => {
-          console.log("🗓️ Selected year:", year);
-          // Example: await loadGEEPolygonRaster(map, { year });
-        }}
-      />
+      <TimeSeriesSelector map={mapRef.current}/>
       <BreadcrumbsComponent onHome={handleHome}  handeBreadcrumbs={handleBreadcrumbClick}/>
     </>
   );
