@@ -11,7 +11,7 @@ interface TimeSeriesSelectorProps {
 
 export default function TimeSeriesSelector({
   map,
-  startYear = 1992,
+  startYear = 1990,
   endYear = 2024,
 }: TimeSeriesSelectorProps) {
   const { year, setYear, breadcrumbs } = useMapStore();
