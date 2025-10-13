@@ -157,6 +157,12 @@ const Map = () => {
       setIsMapReady(true);
     });
 
+    const scale = new maplibregl.ScaleControl({
+      maxWidth: 150,
+      unit: "imperial", // or "metric"
+    });
+    map.addControl(scale, "bottom-right");
+
     return () => {
       map.remove();
       mapRef.current = null;
