@@ -5,6 +5,7 @@ import { useMapStore } from "../store/mapStore";
 import BreadcrumbsComponent from "./BreadCrumbs";
 import type { KabupatenFeature, KecamatanFeature, DesaFeature } from "../store/mapLayerStore";
 import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore";
+import TimeSeriesSelector from "./TimeSelector";
 
 const DEFAULT_CENTER: [number, number] = [120.216667, -1.5];
 const DEFAULT_ZOOM = 4;
@@ -79,7 +80,7 @@ const Map = () => {
   );
 
   // Add padding for nicer zoom
-  map.fitBounds(bounds, { padding: 100, duration: 1000 });
+  map.fitBounds(bounds, { padding: 100, duration: 400 });
 };
 
 
@@ -162,6 +163,15 @@ const Map = () => {
   return (
     <>
       <div ref={mapContainer} className="h-full w-full" />
+      {/* 🕒 Time Series Selector */}
+      <TimeSeriesSelector
+        startYear={2000}
+        endYear={2024}
+        onChange={(year) => {
+          console.log("🗓️ Selected year:", year);
+          // Example: await loadGEEPolygonRaster(map, { year });
+        }}
+      />
       <BreadcrumbsComponent onHome={handleHome}  handeBreadcrumbs={handleBreadcrumbClick}/>
     </>
   );
