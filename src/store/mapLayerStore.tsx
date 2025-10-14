@@ -65,14 +65,25 @@ export async function loadGEEPolygonRaster(
       tileSize: 256,
     });
 
-    map.addLayer({
-      id: "gee-lulc-layer",
-      type: "raster",
-      source: "gee-lulc",
-      paint: {
-        "raster-opacity": 1,
+    // 🧩 Determine where to insert this raster (it should be below everything else)
+    const allLayers = map.getStyle()?.layers ?? [];
+    const beforeId =
+      allLayers.find((layer) =>
+        ["kabupaten-fill", "kecamatan-fill", "desa-fill"].includes(layer.id)
+      )?.id || undefined;
+
+    // ✅ Add raster layer at the correct position
+    map.addLayer(
+      {
+        id: "gee-lulc-layer",
+        type: "raster",
+        source: "gee-lulc",
+        paint: {
+          "raster-opacity": 1,
+        },
       },
-    });
+      beforeId // ⬅️ ensures raster is drawn below polygons
+    );
 
     console.log(`✅ GEE LULC layer loaded successfully for year ${year}`);
   } catch (err) {
