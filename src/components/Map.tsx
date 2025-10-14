@@ -159,7 +159,7 @@ const Map = () => {
 
     const scale = new maplibregl.ScaleControl({
       maxWidth: 150,
-      unit: "imperial", // or "metric"
+      unit: "metric", // or "metric"
     });
     map.addControl(scale, "bottom-right");
 
