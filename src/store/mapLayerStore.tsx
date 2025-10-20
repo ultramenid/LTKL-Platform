@@ -4,8 +4,6 @@ import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { useMapStore } from "./mapStore";
 
 const GEOSERVER_URL = "https://aws.simontini.id/geoserver/ows";
-const DEFAULT_CENTER: [number, number] = [120.216667, -1.5];
-const DEFAULT_ZOOM = 4;
 
 
 
@@ -32,47 +30,47 @@ export async function loadGEEPolygonRaster(
   filters: Record<string, string> = {}
 ) {
   try {
-     // 🧠 Get current year from global store
+     //Get current year from global store
     const { year } = useMapStore.getState();
 
-    // 🧩 Merge filters (kab/kec/des + year)
+    //Merge filters (kab/kec/des + year)
     const query = new URLSearchParams({
       ...filters,
       year: String(year),
     }).toString();
 
     const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
-
     console.log(`🌍 Fetching GEE layer for year ${year}:`, url);
 
     // 🛰️ Fetch tile URL
     const response = await fetch(url);
     const tileUrl = await response.text();
 
+    // Handle empty response
     if (!tileUrl) {
       console.warn("⚠️ No tile URL received from GEE");
       return;
     }
 
-    // 🧹 Remove old layer/source before adding the new one
+    // Remove old layer/source before adding the new one
     if (map.getLayer("gee-lulc-layer")) map.removeLayer("gee-lulc-layer");
     if (map.getSource("gee-lulc")) map.removeSource("gee-lulc");
 
-    // 🗺️ Add the new raster source
+    // Add the new raster source
     map.addSource("gee-lulc", {
       type: "raster",
       tiles: [tileUrl],
       tileSize: 256,
     });
 
-    // 🧩 Determine where to insert this raster (it should be below everything else)
+    // Determine where to insert this raster (it should be below everything else)
     const allLayers = map.getStyle()?.layers ?? [];
     const beforeId =
       allLayers.find((layer) =>
         ["kabupaten-fill", "kecamatan-fill", "desa-fill"].includes(layer.id)
       )?.id || undefined;
 
-    // ✅ Add raster layer at the correct position
+    // Add raster layer at the correct position
     map.addLayer(
       {
         id: "gee-lulc-layer",
@@ -82,20 +80,18 @@ export async function loadGEEPolygonRaster(
           "raster-opacity": 1,
         },
       },
-      beforeId // ⬅️ ensures raster is drawn below polygons
+      beforeId // ensures raster is drawn below polygons
     );
 
-    console.log(`✅ GEE LULC layer loaded successfully for year ${year}`);
+    console.log(`GEE LULC layer loaded successfully for year ${year}`);
   } catch (err) {
-    console.error("❌ Failed to load GEE LULC raster:", err);
+    console.error("Failed to load GEE LULC raster:", err);
   }
 }
 
 
  // Generic layer loader
- export const loadLayer = async <
-  FeatureType extends KabupatenFeature | KecamatanFeature | DesaFeature
->(
+ export const loadLayer = async < FeatureType extends KabupatenFeature | KecamatanFeature | DesaFeature >(
   map: MapLibreMap,
   layerName: string,
   sourceId: string,
@@ -104,14 +100,14 @@ export async function loadGEEPolygonRaster(
   removeLayerIds: string[] = []
 ): Promise<FeatureCollection<FeatureType["geometry"], FeatureType["properties"]>> => {
 
-  // 🧹 Clean up old layers
+  // Clean up old layers
   removeLayerIds.forEach((id) => {
     if (map.getLayer(id)) map.removeLayer(id);
     const srcId = id.replace("-fill", "-src");
     if (map.getSource(srcId)) map.removeSource(srcId);
   });
 
-  // 🛰️ Fetch GeoServer data
+  // Fetch GeoServer data
   const params = new URLSearchParams({
     service: "WFS",
     version: "2.0.0",
@@ -125,7 +121,7 @@ export async function loadGEEPolygonRaster(
   const res = await fetch(url);
   const geojson: FeatureCollection<FeatureType["geometry"], FeatureType["properties"]> = await res.json();
 
-  // 🧠 Add or update GeoJSON source
+  // Add or update GeoJSON source
   if (map.getSource(sourceId)) {
     (map.getSource(sourceId) as maplibregl.GeoJSONSource).setData(geojson);
   } else {
@@ -142,15 +138,13 @@ export async function loadGEEPolygonRaster(
     });
   }
 
-  // ✅ Attach interaction logic ONCE
+  // Attach interaction logic ONCE
   attachLayerInteraction<FeatureType>(map, layerId);
 
   return geojson;
 };
 
-function attachLayerInteraction<
-  FeatureType extends KabupatenFeature | KecamatanFeature | DesaFeature
->(map: MapLibreMap, layerId: string) {
+function attachLayerInteraction<FeatureType extends KabupatenFeature | KecamatanFeature | DesaFeature >(map: MapLibreMap, layerId: string) {
   const { updateBreadcrumb } = useMapStore.getState();
   const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
 
@@ -160,13 +154,14 @@ function attachLayerInteraction<
   if (internalMap._attachedLayers.has(layerId)) return;
   internalMap._attachedLayers.add(layerId);
 
-  // 🖱️ Hover popup
+  //  Hover popup
   map.on("mouseenter", layerId, () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", layerId, () => {
     map.getCanvas().style.cursor = "";
     popup.remove();
   });
 
+  //  Hover popup
   map.on("mousemove", layerId, (e) => {
     const feature = e.features?.[0] as FeatureType | undefined;
     if (!feature) return;
@@ -179,31 +174,34 @@ function attachLayerInteraction<
     popup.setLngLat(e.lngLat).setHTML(`<strong>${html}</strong>`).addTo(map);
   });
 
- // 🖱️ Click handler (drilldown logic)
+ // Click handler (drilldown logic)
 map.on("click", layerId, async (e) => {
   const feature = e.features?.[0] as FeatureType | undefined;
   if (!feature) return;
 
-  // 🏘️ DESA LEVEL (lowest)
+  //  DESA LEVEL (lowest)
   if ("des" in feature.properties) {
     updateBreadcrumb("kabupaten", feature.properties.kab);
     updateBreadcrumb("kecamatan", feature.properties.kec);
     updateBreadcrumb("desa", feature.properties.des);
 
+    // Zoom to desa and load its raster
     zoomToFeature(map, feature);
+    // Load GEE raster for the selected desa
     await loadGEEPolygonRaster(map, { des: feature.properties.des });
 
-    // 🧹 Remove parent boundaries (kecamatan & kabupaten)
+    // Remove parent boundaries (kecamatan & kabupaten)
     ["kecamatan-fill", "kabupaten-fill"].forEach((id) => {
       if (map.getLayer(id)) map.removeLayer(id);
       const srcId = id.replace("-fill", "-src");
       if (map.getSource(srcId)) map.removeSource(srcId);
     });
 
-    // ✅ Load and show only the selected desa
+    // Load and show only the selected desa
     if (map.getLayer("desa-fill")) map.removeLayer("desa-fill");
     if (map.getSource("desa-src")) map.removeSource("desa-src");
 
+    // Load only the selected desa
     await loadLayer<DesaFeature>(
       map,
       "LTKL:desa",
@@ -215,7 +213,7 @@ map.on("click", layerId, async (e) => {
     return;
   }
 
-  // 🧭 KECAMATAN LEVEL → Drill into desa
+  //  KECAMATAN LEVEL → Drill into desa
   if ("kec" in feature.properties) {
     updateBreadcrumb("kabupaten", feature.properties.kab);
     updateBreadcrumb("kecamatan", feature.properties.kec);
@@ -224,14 +222,14 @@ map.on("click", layerId, async (e) => {
     zoomToFeature(map, feature);
     await loadGEEPolygonRaster(map, { kec: feature.properties.kec });
 
-    // ✅ Remove only kabupaten layer
+    //  Remove only kabupaten layer
     ["kabupaten-fill"].forEach((id) => {
       if (map.getLayer(id)) map.removeLayer(id);
       const srcId = id.replace("-fill", "-src");
       if (map.getSource(srcId)) map.removeSource(srcId);
     });
 
-    // ✅ Load desa boundaries under this kecamatan
+    //  Load desa boundaries under this kecamatan
     await loadLayer<DesaFeature>(
       map,
       "LTKL:desa",
@@ -244,16 +242,18 @@ map.on("click", layerId, async (e) => {
     return;
   }
 
-  // 🧭 KABUPATEN LEVEL → Drill into kecamatan
+  // KABUPATEN LEVEL → Drill into kecamatan
   if ("kab" in feature.properties) {
     updateBreadcrumb("kabupaten", feature.properties.kab);
     updateBreadcrumb("kecamatan", undefined);
     updateBreadcrumb("desa", undefined);
 
+    // Zoom to kabupaten and load its raster
     zoomToFeature(map, feature);
+    // Load GEE raster for the selected kabupaten
     await loadGEEPolygonRaster(map, { kab: feature.properties.kab });
 
-    // ✅ Load kecamatan layer
+    //  Load kecamatan layer
     await loadLayer<KecamatanFeature>(
       map,
       "LTKL:kecamatan",
@@ -269,13 +269,11 @@ map.on("click", layerId, async (e) => {
 
 
 
-// ✅ Zoom utility
-export const zoomToFeature = (
-  map: MapLibreMap,
-  feature: KabupatenFeature | KecamatanFeature | DesaFeature
-) => {
+//  Zoom utility
+export const zoomToFeature = ( map: MapLibreMap, feature: KabupatenFeature | KecamatanFeature | DesaFeature) => {
   const coords: [number, number][] = [];
 
+  // Extract all coordinates from the feature
   if (feature.geometry.type === "Polygon") {
     feature.geometry.coordinates.forEach((ring) =>
       ring.forEach(([lon, lat]) => coords.push([lon, lat]))
@@ -288,6 +286,7 @@ export const zoomToFeature = (
     );
   }
 
+  // Fit map to the feature bounds
   if (coords.length > 0) {
     const lons = coords.map(([lon]) => lon);
     const lats = coords.map(([_, lat]) => lat);
@@ -301,26 +300,3 @@ export const zoomToFeature = (
   }
 };
 
-// ✅ Handle home
-export const handleHome = async (map: MapLibreMap) => {
-  const { resetBreadcrumbs } = useMapStore.getState();
-
-  ["desa-fill", "kecamatan-fill", "kabupaten-fill"].forEach((id) => {
-    const highlightLayerId = id + "-highlight";
-    if (map.getLayer(highlightLayerId)) map.removeLayer(highlightLayerId);
-    if (map.getLayer(id)) map.removeLayer(id);
-    const sourceId = id.replace("-fill", "-src");
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
-  });
-
-  resetBreadcrumbs();
-  map.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM });
-  await loadLayer<KabupatenFeature>(
-    map,
-    "LTKL:kabupaten",
-    "kabupaten-src",
-    "kabupaten-fill",
-    "#4ade80"
-  );
-  await loadGEEPolygonRaster(map);
-};

@@ -39,9 +39,6 @@ function Header() {
   );
 }
 
-// ----------------------
-// Expandable Panels
-// ----------------------
 function LeftPanel() {
   const { leftOpen, toggleLeft } = useLayoutStore();
   return (

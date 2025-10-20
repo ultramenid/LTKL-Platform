@@ -4,41 +4,39 @@ import { useMapStore } from "../store/mapStore";
 import { loadGEEPolygonRaster } from "../store/mapLayerStore";
 
 interface TimeSeriesSelectorProps {
-  map: maplibregl.Map | null; // 👈 receive map from parent
+  map: maplibregl.Map | null; //  receive map from parent
   startYear?: number;
   endYear?: number;
 }
 
-export default function TimeSeriesSelector({
-  map,
-  startYear = 1990,
-  endYear = 2024,
-}: TimeSeriesSelectorProps) {
+export default function TimeSeriesSelector({ map, startYear = 1990, endYear = 2024,}: TimeSeriesSelectorProps) {
   const { year, setYear, breadcrumbs } = useMapStore();
   const [hovered, setHovered] = useState<number | null>(null);
 
   const handleChange = async (newYear: number) => {
+    // check map instance
     if (!map) {
-      console.warn("⚠️ No map instance available");
+      console.warn(" No map instance available");
       return;
     }
 
-    // 1️⃣ Update global year
+    //  Update global year
     setYear(newYear);
     console.log("🕒 Selected year:", newYear);
 
-    // 2️⃣ Build filters based on current drill level
+    // Build filters based on current drill level
     const filters: Record<string, string> = {};
     if (breadcrumbs.kab) filters.kab = breadcrumbs.kab;
     if (breadcrumbs.kec) filters.kec = breadcrumbs.kec;
     if (breadcrumbs.des) filters.des = breadcrumbs.des;
     filters.year = String(newYear);
 
-    // 3️⃣ Reload GEE raster for this filter
+    //  Reload GEE raster for this filter
     console.log("♻️ Reloading GEE raster with filters:", filters);
     await loadGEEPolygonRaster(map, filters);
   };
 
+  // Generate year array
   const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
 
   return (

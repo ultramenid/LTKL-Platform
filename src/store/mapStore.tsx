@@ -10,8 +10,8 @@ export interface Breadcrumbs {
 
 interface MapStore {
   breadcrumbs: Breadcrumbs;
-  year: number;                    // ✅ Added global year
-  setYear: (year: number) => void; // ✅ Setter for year
+  year: number;                    // Added global year
+  setYear: (year: number) => void; // Setter for year
   setBreadcrumbs: (breadcrumbs: Breadcrumbs) => void;
   updateBreadcrumb: (level: Level, value?: string) => void;
   resetBreadcrumbs: () => void;
@@ -20,13 +20,14 @@ interface MapStore {
 export const useMapStore = create<MapStore>((set) => ({
   breadcrumbs: {},
 
-  // 🕒 Global year selector
+  //  Global year selector
   year: 2024,
   setYear: (year) => set({ year }),
 
-  // 🧭 Breadcrumbs
+  //  Breadcrumbs
   setBreadcrumbs: (breadcrumbs) => set({ breadcrumbs }),
 
+  // Update specific level in breadcrumbs
   updateBreadcrumb: (level, value) =>
     set((state) => ({
       breadcrumbs:
@@ -45,5 +46,6 @@ export const useMapStore = create<MapStore>((set) => ({
           : state.breadcrumbs,
     })),
 
+  // Reset all breadcrumbs
   resetBreadcrumbs: () => set({ breadcrumbs: {} }),
 }));

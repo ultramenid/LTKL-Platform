@@ -14,9 +14,10 @@ export function RightPanel() {
 
       {/* Bottom Right */}
       <div
-        className='relative bg-white h-[35%] transition-all duration-300 ease-in-out overflow-hidden'>
-          <div className="flex items-center justify-center h-full">
-            <span className="text-[#0f766e]">Chart Panel</span>
+        className='relative bg-[#ecfccb] h-[35%] transition-all duration-300 ease-in-out overflow-hidden'>
+          <div className="flex flex-col items-center justify-center h-full">
+            <span className="text-[#0f766e] uppercase font-bold">Chart Panel</span>
+            <p className="text-[#0f766e]">Menampilkan inforgrapis yang mendetailkan informasi peta di atas </p>
           </div>
        
       </div>

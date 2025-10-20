@@ -19,8 +19,9 @@ const Map = () => {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const {  resetBreadcrumbs } = useMapStore();
-    const [isMapReady, setIsMapReady] = useState(false); // ✅ new state to track readiness
+  const [isMapReady, setIsMapReady] = useState(false); 
 
+  
   
   const handleHome = async () => {
     const map = mapRef.current;
@@ -39,6 +40,7 @@ const Map = () => {
     await loadGEEPolygonRaster(map);
   };
 
+  //  Drill up logic (clicking breadcrumb)
  const handleBreadcrumbClick = async (level: "kabupaten" | "kecamatan" | "desa") => {
   const map = mapRef.current;
   if (!map) return;
@@ -86,7 +88,7 @@ const Map = () => {
 };
 
 
-  // 🧭 Drill up logic (clicking breadcrumb)
+  //  Drill up logic (clicking breadcrumb)
   if (level === "kabupaten" && breadcrumbs.kab) {
     updateBreadcrumb("kecamatan", undefined);
     updateBreadcrumb("desa", undefined);
@@ -116,12 +118,16 @@ const Map = () => {
     if (map.getLayer("desa-fill")) map.removeLayer("desa-fill");
     if (map.getSource("desa-src")) map.removeSource("desa-src");
     
+    //
     await loadLayer<KecamatanFeature>( map, "LTKL:kecamatan", "zoomkecamatan-src", "zoomkecamatan-fill", `kec='${breadcrumbs.kec}'`);
 
+    // Zoom to this kecamatan polygon
     zoomToMatchingFeature(map, "zoomkecamatan-src", "kec", breadcrumbs.kec);
 
+    // Load kecamatan layer with filter from gee api
     await loadGEEPolygonRaster(map, { kec: breadcrumbs.kec });
 
+    // Show children of kecamatan polygons
     await loadLayer<KecamatanFeature>( map, "LTKL:desa", "kecamatan-src", "kecamatan-fill", `kec='${breadcrumbs.kec}'`);
     if (map.getLayer("zoomkecamatan-fill")) map.removeLayer("zoomkecamatan-fill");
 
@@ -130,8 +136,11 @@ const Map = () => {
 
   else if (level === "desa" && breadcrumbs.kab && breadcrumbs.kec && breadcrumbs.des) {
    
+    // Load desa layer with filter from gee api
     await loadGEEPolygonRaster(map, { des: breadcrumbs.des });
+    // Show children of desa polygons
     await loadLayer<DesaFeature>( map,"LTKL:desa", "desa-src", "desa-fill", `kab='${breadcrumbs.kab}' AND kec='${breadcrumbs.kec}'`);
+    // Zoom to this desa polygon
     zoomToMatchingFeature(map, "desa-src", "des", breadcrumbs.des);
   }
 };
@@ -159,7 +168,7 @@ const Map = () => {
 
     const scale = new maplibregl.ScaleControl({
       maxWidth: 150,
-      unit: "metric", // or "metric"
+      unit: "metric",
     });
     map.addControl(scale, "bottom-right");
 
@@ -174,7 +183,7 @@ const Map = () => {
   return (
     <>
       <div ref={mapContainer} className="h-full w-full" />
-      {/* 🕒 Time Series Selector */}
+      {/*  Time Series Selector */}
       {isMapReady && <TimeSeriesSelector map={mapRef.current} />} 
       <BreadcrumbsComponent onHome={handleHome}  handeBreadcrumbs={handleBreadcrumbClick}/>
     </>
