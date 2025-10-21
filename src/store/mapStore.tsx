@@ -15,6 +15,8 @@ interface MapStore {
   setBreadcrumbs: (breadcrumbs: Breadcrumbs) => void;
   updateBreadcrumb: (level: Level, value?: string) => void;
   resetBreadcrumbs: () => void;
+  map: maplibregl.Map | null;
+  setMap: (map: maplibregl.Map | null) => void;
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -24,6 +26,9 @@ export const useMapStore = create<MapStore>((set) => ({
   year: 2024,
   setYear: (year) => set({ year }),
 
+  map: null,
+  setMap: (map) => set({ map }),
+  
   //  Breadcrumbs
   setBreadcrumbs: (breadcrumbs) => set({ breadcrumbs }),
 

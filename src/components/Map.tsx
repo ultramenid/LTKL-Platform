@@ -13,12 +13,10 @@ const DEFAULT_ZOOM = 4;
 
 
 
-
-
 const Map = () => {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const {  resetBreadcrumbs } = useMapStore();
+  const {  resetBreadcrumbs, setMap } = useMapStore();
   const [isMapReady, setIsMapReady] = useState(false); 
 
   
@@ -158,6 +156,7 @@ const Map = () => {
     });
     
     mapRef.current = map;
+    setMap(map); // 🧠 Save globally
 
     
     map.on("load", async () => {
@@ -176,9 +175,9 @@ const Map = () => {
       map.remove();
       mapRef.current = null;
       setIsMapReady(false);
-
+      setMap(null);
     };
-  }, []);
+  }, [setMap]);
 
   return (
     <>

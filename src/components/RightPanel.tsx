@@ -19,7 +19,6 @@ export function RightPanel() {
             <span className="text-[#0f766e] uppercase font-bold">Chart Panel</span>
             <p className="text-[#0f766e]">Menampilkan inforgrapis yang mendetailkan informasi peta di atas </p>
           </div>
-       
       </div>
     </div>
   );

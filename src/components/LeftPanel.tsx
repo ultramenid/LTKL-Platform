@@ -1,12 +1,14 @@
+import { KabupatenCard } from "./KabupatesList";
 
 export function LeftPanel() {
+ 
+  
   return (
-    <div className="w-[23%] h-screen  relative  flex items-center justify-center text-[#0f766e] shadow-md bg-[#ccfbf1] ">
-        <div className="flex flex-col items-center justify-center  ">
-          <a className="uppercase font-bold">Profile Panel</a>
-          <p className="text-center">Menampilkan daftar Kabupaten dan informasi per Kabupaten</p>
+    <div className="w-[23%] h-screen  relative overflow-y-auto ">
+        <div className="flex w-full items-center justify-center">
+          <img src="https://kabupatenlestari.org/wp-content/themes/ltkl/assets/img/logo-ltkl-small.webp" alt="LTKL Platform" className="px-4 py-4" />
         </div>
-        
+        <KabupatenCard />
     </div>
   );
 }
