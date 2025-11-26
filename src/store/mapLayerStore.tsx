@@ -3,8 +3,8 @@ import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { useMapStore } from "./mapStore";
 
-const GEOSERVER_URL = "https://aws.simontini.id/geoserver/ows";
-
+export const GEOSERVER_URL = "https://aws.simontini.id/geoserver/ows";
+export const TILE_SERVER_URL = "https://gee.simontini.id/gee"; // Example tile server URL
 
 
 // Feature interfaces
@@ -39,7 +39,7 @@ export async function loadGEEPolygonRaster(
       year: String(year),
     }).toString();
 
-    const url = `https://gee.simontini.id/gee/lulc${query ? `?${query}` : ""}`;
+    const url = TILE_SERVER_URL+`/lulc${query ? `?${query}` : ""}`;
     console.log(`🌍 Fetching GEE layer for year ${year}:`, url);
 
     // 🛰️ Fetch tile URL

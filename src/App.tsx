@@ -6,9 +6,12 @@ function App() {
   return (
     <>
       <div className='h-screen flex'>
-        {/* <PlataformaLayout /> */}
-        <LeftPanel />
-        <RightPanel />
+        <div className='w-[22%]'>
+          <LeftPanel />
+        </div>
+        <div className='w-[78%]'> 
+          <RightPanel />
+        </div>
       </div>
     </>
   )

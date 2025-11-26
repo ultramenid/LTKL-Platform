@@ -1,3 +1,4 @@
+import CoverageChart from "./CoverageChart";
 import Map from "./Map";
 
 export function RightPanel() {
@@ -14,10 +15,18 @@ export function RightPanel() {
 
       {/* Bottom Right */}
       <div
-        className='relative bg-[#ecfccb] h-[35%] transition-all duration-300 ease-in-out overflow-hidden'>
-          <div className="flex flex-col items-center justify-center h-full">
-            <span className="text-[#0f766e] uppercase font-bold">Chart Panel</span>
-            <p className="text-[#0f766e]">Menampilkan inforgrapis yang mendetailkan informasi peta di atas </p>
+        className='  h-[35%] transition-all duration-300 ease-in-out overflow-y-hidden'>
+          <div className="flex pl-8">
+            <div className="w-[650px] h-[340px] ">
+              <CoverageChart />
+            </div>
+
+            <div className="w-[600px] h-[340px] ">
+              <CoverageChart />
+            </div>
+            <div className="w-[600px] h-[340px] ">
+              <CoverageChart />
+            </div>
           </div>
       </div>
     </div>
