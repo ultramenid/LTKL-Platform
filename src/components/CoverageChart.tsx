@@ -1,4 +1,3 @@
-import { color } from 'echarts';
 import ReactECharts from 'echarts-for-react';
 import { useEffect, useMemo, useState } from 'react';
 import {TILE_SERVER_URL} from '../store/mapLayerStore';
