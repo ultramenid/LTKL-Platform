@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useMapStore } from "../store/mapStore";
-import { loadLayer, loadGEEPolygonRaster, zoomToFeature } from "../store/mapLayerStore";
+import { loadLayer, loadGEEPolygonRaster } from "../store/mapLayerStore";
+import { zoomToFeature } from "../utils/mapUtils";
 import type { KecamatanFeature, KabupatenFeature } from "../store/mapLayerStore";
 
 export function KabupatenCard() {
   const { map, updateBreadcrumb } = useMapStore();
   const [isMapReady, setIsMapReady] = useState(false);
+  const [selectedKab, setSelectedKab] = useState<string | null>(null);
 
   useEffect(() => {
     if (map?.isStyleLoaded()) setIsMapReady(true);
@@ -27,6 +29,7 @@ export function KabupatenCard() {
 
   const handleKabupatenClick = async (kabName: string) => {
     if (!map) return console.warn("⚠️ Map not ready");
+        setSelectedKab(kabName);
         updateBreadcrumb("kabupaten", kabName);
         updateBreadcrumb("kecamatan", undefined);
         updateBreadcrumb("desa", undefined);
@@ -77,23 +80,39 @@ export function KabupatenCard() {
   return (
     <>
       {kabupatens.map((kab) => (
-        <div
-          key={kab.name}
-          onClick={() => handleKabupatenClick(kab.name)}
-          className="flex flex-col items-center justify-center shadow-[#5eead4] border-[#134e4a]/50 border-b cursor-pointer w-full hover:bg-[#f0fdfa] transition-all duration-300 ease-in-out px-4 py-2"
-        >
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-1 items-center">
-              <div className="w-3/12 flex items-center justify-center">
-                <img src={kab.logoUrl} alt={kab.name} className="h-20" />
+        <div key={kab.name} className={`border-[#134e4a]/50 border-b ${selectedKab === kab.name ? 'bg-[#f0fdfa]' : ''}`}>
+          <div
+            onClick={() => {
+              setSelectedKab(selectedKab === kab.name ? null : kab.name);
+              handleKabupatenClick(kab.name);
+            }}
+            className="flex flex-col items-center justify-center shadow-[#5eead4] cursor-pointer w-full hover:bg-[#e0f7f4] transition-all duration-300 ease-in-out px-4 py-2"
+          >
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex gap-1 items-center">
+                <div className="w-3/12 flex items-center justify-center">
+                  <img src={kab.logoUrl} alt={kab.name} className="h-12" />
+                </div>
+                <div className="flex flex-col flex-1">
+                  <h1 className="font-bold">Kab. {kab.name}</h1>
+                  <h5 className="text-xs">{kab.role}</h5>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <h1 className="font-bold">Kab. {kab.name}</h1>
-                <h5 className="text-xs">{kab.role}</h5>
+              {selectedKab !== kab.name && (
+                <p className="text-xs">{kab.description}</p>
+              )}
+            </div>
+          </div>
+          {selectedKab === kab.name && (
+            <div className="bg-gradient-to-b from-teal-50 to-white px-4 py-4">
+              <div className="space-y-3">
+                <p className="text-xs text-gray-700">{kab.description}</p>
+                <button className="w-full px-4 py-2 bg-teal-700 text-white rounded hover:bg-teal-700 transition text-sm font-semibold cursor-pointer">
+                  Lihat detail kabupaten
+                </button>
               </div>
             </div>
-            <p className="text-xs">{kab.description}</p>
-          </div>
+          )}
         </div>
       ))}
     </>

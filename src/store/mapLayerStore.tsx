@@ -2,6 +2,7 @@
 import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { useMapStore } from "./mapStore";
+import { zoomToFeature } from "../utils/mapUtils";
 
 export const GEOSERVER_URL = "https://aws.simontini.id/geoserver/ows";
 export const TILE_SERVER_URL = "https://gee.simontini.id/gee"; // Example tile server URL
@@ -268,35 +269,4 @@ map.on("click", layerId, async (e) => {
 }
 
 
-
-//  Zoom utility
-export const zoomToFeature = ( map: MapLibreMap, feature: KabupatenFeature | KecamatanFeature | DesaFeature) => {
-  const coords: [number, number][] = [];
-
-  // Extract all coordinates from the feature
-  if (feature.geometry.type === "Polygon") {
-    feature.geometry.coordinates.forEach((ring) =>
-      ring.forEach(([lon, lat]) => coords.push([lon, lat]))
-    );
-  } else if (feature.geometry.type === "MultiPolygon") {
-    feature.geometry.coordinates.forEach((polygon) =>
-      polygon.forEach((ring) =>
-        ring.forEach(([lon, lat]) => coords.push([lon, lat]))
-      )
-    );
-  }
-
-  // Fit map to the feature bounds
-  if (coords.length > 0) {
-    const lons = coords.map(([lon]) => lon);
-    const lats = coords.map(([_, lat]) => lat);
-    map.fitBounds(
-      [
-        [Math.min(...lons), Math.min(...lats)],
-        [Math.max(...lons), Math.max(...lats)],
-      ],
-      { padding: 40, duration: 1000 }
-    );
-  }
-};
 
