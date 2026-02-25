@@ -2,6 +2,8 @@ import { create } from "zustand";
 
 export const useMapStore = create((set) => ({
   breadcrumbs: {},
+  selectedKab: null,
+  setSelectedKab: (kab) => set({ selectedKab: kab }),
 
   // Global year selector
   year: 2024,

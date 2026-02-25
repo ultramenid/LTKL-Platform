@@ -4,9 +4,8 @@ import { loadLayer, loadGEEPolygonRaster } from "../store/mapLayerStore.js";
 import { zoomToFeature } from "../utils/mapUtils.js";
 
 export function KabupatenCard() {
-  const { map, updateBreadcrumb } = useMapStore();
+  const { map, updateBreadcrumb, selectedKab, setSelectedKab } = useMapStore();
   const [isMapReady, setIsMapReady] = useState(false);
-  const [selectedKab, setSelectedKab] = useState(null);
 
   useEffect(() => {
     if (map?.isStyleLoaded()) setIsMapReady(true);
@@ -84,7 +83,7 @@ export function KabupatenCard() {
               setSelectedKab(selectedKab === kab.name ? null : kab.name);
               handleKabupatenClick(kab.name);
             }}
-            className="flex flex-col items-center justify-center shadow-[#5eead4] cursor-pointer w-full hover:bg-[#e0f7f4] transition-all duration-300 ease-in-out px-4 py-2"
+            className="flex flex-col items-center justify-center shadow-[#5eead4] cursor-pointer w-full hover:bg-cyan-50 transition-all duration-300 ease-in-out px-4 py-2"
           >
             <div className="flex flex-col gap-2 w-full">
               <div className="flex gap-1 items-center">
@@ -102,11 +101,11 @@ export function KabupatenCard() {
             </div>
           </div>
           {selectedKab === kab.name && (
-            <div className="bg-gradient-to-b from-teal-50 to-white px-4 py-4">
+            <div className="bg-gradient-to-b from-cyan-50 to-white px-4 py-4">
               <div className="space-y-3">
                 <p className="text-xs text-gray-700">{kab.description}</p>
-                <button className="w-full px-4 py-2 bg-teal-700 text-white rounded hover:bg-teal-700 transition text-sm font-semibold cursor-pointer">
-                  Lihat detail kabupaten
+                <button className="w-full px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-500  transition text-sm  cursor-pointer">
+                  Lihat profile kabupaten
                 </button>
               </div>
             </div>

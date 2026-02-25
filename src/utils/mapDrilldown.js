@@ -1,5 +1,6 @@
 import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore.js";
 import { zoomToMatchingFeature } from "./mapUtils.js";
+import { useMapStore } from "../store/mapStore.js";
 
 export async function handleHomeReset(
   map,
@@ -18,6 +19,7 @@ export async function handleHomeReset(
   });
 
   resetBreadcrumbs();
+  useMapStore.getState().setSelectedKab(null);
   map.flyTo({ center: defaultCenter, zoom: defaultZoom });
 
   await loadLayer(

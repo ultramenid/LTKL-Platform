@@ -64,9 +64,27 @@ export async function loadGEEPolygonRaster(
     );
 
     console.log(`GEE LULC layer loaded successfully for year ${year}`);
+    
+    // Bring all hover line layers to the top
+    bringHoverLayersToTop(map);
   } catch (err) {
     console.error("Failed to load GEE LULC raster:", err);
   }
+}
+
+// Helper function to bring all hover line layers to the top
+function bringHoverLayersToTop(map) {
+  const layers = map.getStyle()?.layers ?? [];
+  const hoverLineIds = layers.map(layer => layer.id).filter(id => id.includes('-hover-line'));
+  
+  // Move each hover line layer to the top (last added = rendered on top)
+  hoverLineIds.forEach(id => {
+    try {
+      map.moveLayer(id, undefined); // undefined = move to top
+    } catch (e) {
+      // Layer might not exist anymore, skip
+    }
+  });
 }
 
 // Generic layer loader
@@ -158,7 +176,7 @@ export const loadLayer = async (
       // if hover line already exists, update its paint to be visible
       const existingHover = map.getLayer(hoverLineId);
       if (existingHover) {
-        map.setPaintProperty(hoverLineId, "line-width", 8);
+        map.setPaintProperty(hoverLineId, "line-width", 2);
         map.setPaintProperty(hoverLineId, "line-opacity", 0.98);
         map.setPaintProperty(hoverLineId, "line-color", [
           "case",
@@ -215,6 +233,9 @@ export const loadLayer = async (
 
   // Attach interaction logic ONCE
   attachLayerInteraction(map, layerId);
+
+  // Bring hover line layers to the top
+  bringHoverLayersToTop(map);
 
   return geojson;
 };
