@@ -1,20 +1,7 @@
-import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
-import type {
-  KabupatenFeature,
-  KecamatanFeature,
-  DesaFeature,
-} from "../store/mapLayerStore";
+import maplibregl from "maplibre-gl";
 
-export type AnyRegionFeature =
-  | KabupatenFeature
-  | KecamatanFeature
-  | DesaFeature;
-
-export const zoomToFeature = (
-  map: MapLibreMap,
-  feature: AnyRegionFeature
-) => {
-  const coords: [number, number][] = [];
+export const zoomToFeature = (map, feature) => {
+  const coords = [];
 
   if (feature.geometry.type === "Polygon") {
     feature.geometry.coordinates.forEach((ring) =>
@@ -42,27 +29,22 @@ export const zoomToFeature = (
   );
 };
 
-export const zoomToMatchingFeature = (
-  map: maplibregl.Map,
-  sourceId: string,
-  matchField: string,
-  matchValue: string
-) => {
-  const src = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
+export const zoomToMatchingFeature = (map, sourceId, matchField, matchValue) => {
+  const src = map.getSource(sourceId);
   if (!src || !("_data" in src)) return;
 
-  const data = (src as any)._data;
+  const data = src._data;
   if (!data?.features) return;
 
   const feature = data.features.find(
-    (f: any) => f.properties[matchField] === matchValue
+    (f) => f.properties[matchField] === matchValue
   );
   if (!feature || !feature.geometry) return;
 
-  const coords: [number, number][] = [];
+  const coords = [];
 
   if (feature.geometry.type === "Polygon") {
-    feature.geometry.coordinates.forEach((ring: number[][]) => {
+    feature.geometry.coordinates.forEach((ring) => {
       ring.forEach(([lng, lat]) => {
         if (typeof lng === "number" && typeof lat === "number") {
           coords.push([lng, lat]);
@@ -70,8 +52,8 @@ export const zoomToMatchingFeature = (
       });
     });
   } else if (feature.geometry.type === "MultiPolygon") {
-    feature.geometry.coordinates.forEach((polygon: number[][][]) => {
-      polygon.forEach((ring: number[][]) => {
+    feature.geometry.coordinates.forEach((polygon) => {
+      polygon.forEach((ring) => {
         ring.forEach(([lng, lat]) => {
           if (typeof lng === "number" && typeof lat === "number") {
             coords.push([lng, lat]);
@@ -93,4 +75,3 @@ export const zoomToMatchingFeature = (
 
   map.fitBounds(bounds, { padding: 100, duration: 400 });
 };
-

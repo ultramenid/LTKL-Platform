@@ -1,25 +1,12 @@
-import {create} from "zustand";
+import { create } from "zustand";
 
-// ----------------------
-// Zustand store for layout state
-// ----------------------
-interface LayoutState {
-  leftOpen: boolean;
-  rightOpen: boolean;
-  toggleLeft: () => void;
-  toggleRight: () => void;
-}
-
-const useLayoutStore = create<LayoutState>((set) => ({
+const useLayoutStore = create((set) => ({
   leftOpen: true,
   rightOpen: true,
   toggleLeft: () => set((s) => ({ leftOpen: !s.leftOpen })),
   toggleRight: () => set((s) => ({ rightOpen: !s.rightOpen })),
 }));
 
-// ----------------------
-// Header
-// ----------------------
 function Header() {
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-white border-b">
@@ -67,7 +54,7 @@ function LeftPanel() {
   );
 }
 
-function RightPanel() {
+function RightPanelLayout() {
   const { rightOpen, toggleRight } = useLayoutStore();
   return (
     <aside
@@ -94,9 +81,6 @@ function RightPanel() {
   );
 }
 
-// ----------------------
-// Main Placeholder
-// ----------------------
 function MainContent() {
   return (
     <main className="flex-1 bg-gray-50 p-6">
@@ -107,9 +91,6 @@ function MainContent() {
   );
 }
 
-// ----------------------
-// Root Component
-// ----------------------
 export default function PlataformaLayout() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -117,7 +98,7 @@ export default function PlataformaLayout() {
       <div className="flex flex-1">
         <LeftPanel />
         <MainContent />
-        <RightPanel />
+        <RightPanelLayout />
       </div>
     </div>
   );

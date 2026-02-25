@@ -1,18 +1,11 @@
-import type maplibregl from "maplibre-gl";
-import type {
-  KabupatenFeature,
-  KecamatanFeature,
-  DesaFeature,
-} from "../store/mapLayerStore";
-import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore";
-import { zoomToMatchingFeature } from "./mapUtils";
-import type { Breadcrumbs, Level } from "../store/mapStore";
+import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore.js";
+import { zoomToMatchingFeature } from "./mapUtils.js";
 
 export async function handleHomeReset(
-  map: maplibregl.Map | null,
-  resetBreadcrumbs: () => void,
-  defaultCenter: [number, number],
-  defaultZoom: number
+  map,
+  resetBreadcrumbs,
+  defaultCenter,
+  defaultZoom
 ) {
   if (!map) return;
 
@@ -27,7 +20,7 @@ export async function handleHomeReset(
   resetBreadcrumbs();
   map.flyTo({ center: defaultCenter, zoom: defaultZoom });
 
-  await loadLayer<KabupatenFeature>(
+  await loadLayer(
     map,
     "LTKL:kabupaten",
     "kabupaten-src",
@@ -37,10 +30,10 @@ export async function handleHomeReset(
 }
 
 export async function handleBreadcrumbDrill(
-  map: maplibregl.Map | null,
-  level: Exclude<Level, "home">,
-  breadcrumbs: Breadcrumbs,
-  updateBreadcrumb: (level: Level, value?: string) => void
+  map,
+  level,
+  breadcrumbs,
+  updateBreadcrumb
 ) {
   if (!map) return;
 
@@ -55,7 +48,7 @@ export async function handleBreadcrumbDrill(
       if (map.getSource(id)) map.removeSource(id);
     });
 
-    await loadLayer<KabupatenFeature>(
+    await loadLayer(
       map,
       "LTKL:kabupaten",
       "zoomkabupaten-src",
@@ -67,7 +60,7 @@ export async function handleBreadcrumbDrill(
 
     await loadGEEPolygonRaster(map, { kab: breadcrumbs.kab });
 
-    await loadLayer<KabupatenFeature>(
+    await loadLayer(
       map,
       "LTKL:kecamatan",
       "kabupaten-src",
@@ -88,7 +81,7 @@ export async function handleBreadcrumbDrill(
     if (map.getLayer("desa-fill")) map.removeLayer("desa-fill");
     if (map.getSource("desa-src")) map.removeSource("desa-src");
 
-    await loadLayer<KecamatanFeature>(
+    await loadLayer(
       map,
       "LTKL:kecamatan",
       "zoomkecamatan-src",
@@ -100,7 +93,7 @@ export async function handleBreadcrumbDrill(
 
     await loadGEEPolygonRaster(map, { kec: breadcrumbs.kec });
 
-    await loadLayer<KecamatanFeature>(
+    await loadLayer(
       map,
       "LTKL:desa",
       "kecamatan-src",
@@ -118,7 +111,7 @@ export async function handleBreadcrumbDrill(
   if (level === "desa" && breadcrumbs.kab && breadcrumbs.kec && breadcrumbs.des) {
     await loadGEEPolygonRaster(map, { des: breadcrumbs.des });
 
-    await loadLayer<DesaFeature>(
+    await loadLayer(
       map,
       "LTKL:desa",
       "desa-src",
@@ -129,4 +122,3 @@ export async function handleBreadcrumbDrill(
     zoomToMatchingFeature(map, "desa-src", "des", breadcrumbs.des);
   }
 }
-

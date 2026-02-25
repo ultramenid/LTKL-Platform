@@ -1,19 +1,16 @@
-// src/components/CoverageChartDebug.tsx
 import { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { TILE_SERVER_URL } from '../store/mapLayerStore';
-import { useMapStore } from '../store/mapStore';
-
-type BackendResponseGeneric = any;
+import { TILE_SERVER_URL } from '../store/mapLayerStore.js';
+import { useMapStore } from '../store/mapStore.js';
 
 export default function CoverageChartDebug() {
   // read year from zustand; fallback to 2024 if missing
   const yearFromStore = useMapStore ? useMapStore((s) => s.year) : undefined;
   const year = Number(yearFromStore) || 2024;
 
-  const [raw, setRaw] = useState<BackendResponseGeneric | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [raw, setRaw] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -103,14 +100,14 @@ export default function CoverageChartDebug() {
   const { labels, values } = useMemo(() => {
     if (!normalized) return { labels: [], values: [] };
     const mapped = normalized.data
-      .map((entry: any) => {
+      .map((entry) => {
         const kab = String((entry && entry[0]) || '');
         const area = Number((entry && entry[1]) || 0) || 0;
         return { kab, area };
       })
-      .filter((m: any) => m.kab) // drop empty names
-      .sort((b:any, a:any) => b.area - a.area);
-    return { labels: mapped.map((m: any) => m.kab), values: mapped.map((m: any) => m.area) };
+      .filter((m) => m.kab) // drop empty names
+      .sort((b, a) => b.area - a.area);
+    return { labels: mapped.map((m) => m.kab), values: mapped.map((m) => m.area) };
   }, [normalized]);
 
   if (loading) return <div>Loading chart…</div>;
@@ -138,12 +135,12 @@ export default function CoverageChartDebug() {
       textStyle: { 
         fontSize: 17,
         color: "#0e7490",
-    }
+      }
     },
     tooltip: {
       trigger: "axis",
       axisPointer: { type: "shadow" },
-      formatter: (params: any) => {
+      formatter: (params) => {
         const p = params[0];
         return `${p.name}<br/>Area: ${Number(p.value).toLocaleString()} ha`;
       }
@@ -152,7 +149,7 @@ export default function CoverageChartDebug() {
     xAxis: {
       type: "category",
       data: labels,
-      axisLabel: { rotate: 30, interval: 0, formatter: (v: string) => v.length > 18 ? v.slice(0,16) + "…" : v }
+      axisLabel: { rotate: 30, interval: 0, formatter: (v) => v.length > 18 ? v.slice(0,16) + "…" : v }
     },
     yAxis: {
       type: "value",
@@ -164,11 +161,10 @@ export default function CoverageChartDebug() {
         data: values,
         barWidth: "50%",
         itemStyle:{
-            color: '#06b6d4'
+          color: '#06b6d4'
         }
       }
     ],
-    
   };
 
   return (

@@ -1,35 +1,16 @@
 import { create } from "zustand";
 
-export type Level = "home" | "kabupaten" | "kecamatan" | "desa";
-
-export interface Breadcrumbs {
-  kab?: string;
-  kec?: string;
-  des?: string;
-}
-
-interface MapStore {
-  breadcrumbs: Breadcrumbs;
-  year: number;                    // Added global year
-  setYear: (year: number) => void; // Setter for year
-  setBreadcrumbs: (breadcrumbs: Breadcrumbs) => void;
-  updateBreadcrumb: (level: Level, value?: string) => void;
-  resetBreadcrumbs: () => void;
-  map: maplibregl.Map | null;
-  setMap: (map: maplibregl.Map | null) => void;
-}
-
-export const useMapStore = create<MapStore>((set) => ({
+export const useMapStore = create((set) => ({
   breadcrumbs: {},
 
-  //  Global year selector
+  // Global year selector
   year: 2024,
   setYear: (year) => set({ year }),
 
   map: null,
   setMap: (map) => set({ map }),
   
-  //  Breadcrumbs
+  // Breadcrumbs
   setBreadcrumbs: (breadcrumbs) => set({ breadcrumbs }),
 
   // Update specific level in breadcrumbs

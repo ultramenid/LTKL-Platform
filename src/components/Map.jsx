@@ -1,33 +1,28 @@
 import { useEffect, useRef, useState } from "react";
-import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useMapStore } from "../store/mapStore";
-import BreadcrumbsComponent from "./BreadCrumbs";
-import type { KabupatenFeature } from "../store/mapLayerStore";
-import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore";
-import TimeSeriesSelector from "./TimeSelector";
-import { handleBreadcrumbDrill, handleHomeReset } from "../utils/mapDrilldown";
+import { useMapStore } from "../store/mapStore.js";
+import BreadcrumbsComponent from "./BreadCrumbs.jsx";
+import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore.js";
+import TimeSeriesSelector from "./TimeSelector.jsx";
+import { handleBreadcrumbDrill, handleHomeReset } from "../utils/mapDrilldown.js";
 
-const DEFAULT_CENTER: [number, number] = [120.216667, -1.5];
+const DEFAULT_CENTER = [120.216667, -1.5];
 const DEFAULT_ZOOM = 4;
 
-
-
-
 const Map = () => {
-  const mapContainer = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
+  const mapContainer = useRef(null);
+  const mapRef = useRef(null);
   const { resetBreadcrumbs, setMap } = useMapStore();
   const [isMapReady, setIsMapReady] = useState(false); 
 
   const handleHome = () =>
     handleHomeReset(mapRef.current, resetBreadcrumbs, DEFAULT_CENTER, DEFAULT_ZOOM);
 
-  const handleBreadcrumbClick = (level: "kabupaten" | "kecamatan" | "desa") => {
+  const handleBreadcrumbClick = (level) => {
     const { breadcrumbs, updateBreadcrumb } = useMapStore.getState();
     return handleBreadcrumbDrill(mapRef.current, level, breadcrumbs, updateBreadcrumb);
   };
-
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -41,12 +36,11 @@ const Map = () => {
     });
     
     mapRef.current = map;
-    setMap(map); //  Save globally
+    setMap(map);
 
-    
     map.on("load", async () => {
       await loadGEEPolygonRaster(map);
-      await loadLayer<KabupatenFeature>(map, "LTKL:kabupaten", "kabupaten-src", "kabupaten-fill");
+      await loadLayer(map, "LTKL:kabupaten", "kabupaten-src", "kabupaten-fill");
       setIsMapReady(true);
     });
 
@@ -67,9 +61,8 @@ const Map = () => {
   return (
     <>
       <div ref={mapContainer} className="h-full w-full" />
-      {/*  Time Series Selector */}
       {isMapReady && <TimeSeriesSelector map={mapRef.current} />} 
-      <BreadcrumbsComponent onHome={handleHome}  handeBreadcrumbs={handleBreadcrumbClick}/>
+      <BreadcrumbsComponent onHome={handleHome} handeBreadcrumbs={handleBreadcrumbClick}/>
     </>
   );
 };

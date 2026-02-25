@@ -1,14 +1,6 @@
-import React from "react";
-import { useMapStore } from "../store/mapStore";
+import { useMapStore } from "../store/mapStore.js";
 
-interface BreadcrumbsComponentProps {
-  onHome: () => void;
-  handeBreadcrumbs: (level: "kabupaten" | "kecamatan" | "desa", value?: string) => void;
-}
-
-
-
-const BreadcrumbsComponent: React.FC<BreadcrumbsComponentProps> = ({onHome, handeBreadcrumbs }) => {
+const BreadcrumbsComponent = ({onHome, handeBreadcrumbs}) => {
   const { breadcrumbs, updateBreadcrumb } = useMapStore();
 
   // Only show breadcrumbs if any value exists

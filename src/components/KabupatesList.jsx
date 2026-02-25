@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import { useMapStore } from "../store/mapStore";
-import { loadLayer, loadGEEPolygonRaster } from "../store/mapLayerStore";
-import { zoomToFeature } from "../utils/mapUtils";
-import type { KecamatanFeature, KabupatenFeature } from "../store/mapLayerStore";
+import { useMapStore } from "../store/mapStore.js";
+import { loadLayer, loadGEEPolygonRaster } from "../store/mapLayerStore.js";
+import { zoomToFeature } from "../utils/mapUtils.js";
 
 export function KabupatenCard() {
   const { map, updateBreadcrumb } = useMapStore();
   const [isMapReady, setIsMapReady] = useState(false);
-  const [selectedKab, setSelectedKab] = useState<string | null>(null);
+  const [selectedKab, setSelectedKab] = useState(null);
 
   useEffect(() => {
     if (map?.isStyleLoaded()) setIsMapReady(true);
@@ -24,41 +23,40 @@ export function KabupatenCard() {
     { name: "Aceh Tamiang", role: "Ketua Program Unit Kerjasama Multipihak", logoUrl: "/logo/acehtamiang.png", description: "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium." },
     { name: "Sigi", role: "Ketua Program Unit Data, Informasi & Komunikasi ", logoUrl: "/logo/sigi.png", description: "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium." },
     { name: "Kapuas Hulu", role: "Ketua Program Unit Inovasi & Investasi", logoUrl: "/logo/kapuashulu.png", description: "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium." },
-    // etc...
   ];
 
-  const handleKabupatenClick = async (kabName: string) => {
+  const handleKabupatenClick = async (kabName) => {
     if (!map) return console.warn("⚠️ Map not ready");
-        setSelectedKab(kabName);
-        updateBreadcrumb("kabupaten", kabName);
-        updateBreadcrumb("kecamatan", undefined);
-        updateBreadcrumb("desa", undefined);
-    
-        // 1️⃣ Fetch the feature geometry for the selected kabupaten
-        const url = `https://aws.simontini.id/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=LTKL:kabupaten&outputFormat=application/json&CQL_FILTER=kab='${kabName}'`;
-        const res = await fetch(url);
-        const geojson = await res.json();
+    setSelectedKab(kabName);
+    updateBreadcrumb("kabupaten", kabName);
+    updateBreadcrumb("kecamatan", undefined);
+    updateBreadcrumb("desa", undefined);
 
-        if (!geojson.features || geojson.features.length === 0) {
-          console.warn(`⚠️ No geometry found for ${kabName}`);
-          return;
-        }
+    // 1️⃣ Fetch the feature geometry for the selected kabupaten
+    const url = `https://aws.simontini.id/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=LTKL:kabupaten&outputFormat=application/json&CQL_FILTER=kab='${kabName}'`;
+    const res = await fetch(url);
+    const geojson = await res.json();
 
-        const feature = geojson.features[0] as KabupatenFeature;
-        // Zoom to kabupaten and load its raster
-        zoomToFeature(map, feature);
-        // Load GEE raster for the selected kabupaten
-        await loadGEEPolygonRaster(map, { kab: kabName });
-    
-        //  Load kecamatan layer
-        await loadLayer<KecamatanFeature>(
-          map,
-          "LTKL:kecamatan",
-          "kecamatan-src",
-          "kecamatan-fill",
-          `kab='${kabName}'`,
-          ["kabupaten-fill"]
-        );
+    if (!geojson.features || geojson.features.length === 0) {
+      console.warn(`⚠️ No geometry found for ${kabName}`);
+      return;
+    }
+
+    const feature = geojson.features[0];
+    // Zoom to kabupaten and load its raster
+    zoomToFeature(map, feature);
+    // Load GEE raster for the selected kabupaten
+    await loadGEEPolygonRaster(map, { kab: kabName });
+
+    // Load kecamatan layer
+    await loadLayer(
+      map,
+      "LTKL:kecamatan",
+      "kecamatan-src",
+      "kecamatan-fill",
+      `kab='${kabName}'`,
+      ["kabupaten-fill"]
+    );
   };
 
   if (!isMapReady)

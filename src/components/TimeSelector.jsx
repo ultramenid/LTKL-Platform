@@ -1,37 +1,30 @@
 import { useState } from "react";
-import maplibregl from "maplibre-gl";
-import { useMapStore } from "../store/mapStore";
-import { loadGEEPolygonRaster } from "../store/mapLayerStore";
+import { useMapStore } from "../store/mapStore.js";
+import { loadGEEPolygonRaster } from "../store/mapLayerStore.js";
 
-interface TimeSeriesSelectorProps {
-  map: maplibregl.Map | null; //  receive map from parent
-  startYear?: number;
-  endYear?: number;
-}
-
-export default function TimeSeriesSelector({ map, startYear = 1990, endYear = 2024,}: TimeSeriesSelectorProps) {
+export default function TimeSeriesSelector({ map, startYear = 1990, endYear = 2024 }) {
   const { year, setYear, breadcrumbs } = useMapStore();
-  const [hovered, setHovered] = useState<number | null>(null);
+  const [hovered, setHovered] = useState(null);
 
-  const handleChange = async (newYear: number) => {
+  const handleChange = async (newYear) => {
     // check map instance
     if (!map) {
       console.warn(" No map instance available");
       return;
     }
 
-    //  Update global year
+    // Update global year
     setYear(newYear);
     console.log("🕒 Selected year:", newYear);
 
     // Build filters based on current drill level
-    const filters: Record<string, string> = {};
+    const filters = {};
     if (breadcrumbs.kab) filters.kab = breadcrumbs.kab;
     if (breadcrumbs.kec) filters.kec = breadcrumbs.kec;
     if (breadcrumbs.des) filters.des = breadcrumbs.des;
     filters.year = String(newYear);
 
-    //  Reload GEE raster for this filter
+    // Reload GEE raster for this filter
     console.log("♻️ Reloading GEE raster with filters:", filters);
     await loadGEEPolygonRaster(map, filters);
   };
@@ -43,7 +36,6 @@ export default function TimeSeriesSelector({ map, startYear = 1990, endYear = 20
     <div className="absolute bottom-4 left-4 select-none bg-white px-2 py-1 rounded-lg shadow-sm border border-gray-200">
       {/* Year labels */}
       <div className="flex items-center justify-between text-[10px] text-gray-600">
-        {/* <span className="text-[#115e59]">{startYear}</span> */}
         <span className="text-[#115e59] font-black">{year}</span>
       </div>
 
