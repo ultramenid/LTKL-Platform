@@ -3,6 +3,14 @@ import ReactECharts from 'echarts-for-react';
 import { TILE_SERVER_URL } from '../store/mapLayerStore.js';
 import { useMapStore } from '../store/mapStore.js';
 
+function LoadingChartSkeleton() {
+  return (
+    <div className="w-full h-full p-4">
+      <div className="w-full h-full bg-gray-200 animate-pulse rounded"></div>
+    </div>
+  );
+}
+
 export default function CoverageChartDebug() {
   // read year from zustand; fallback to 2024 if missing
   const yearFromStore = useMapStore ? useMapStore((s) => s.year) : undefined;
@@ -110,7 +118,7 @@ export default function CoverageChartDebug() {
     return { labels: mapped.map((m) => m.kab), values: mapped.map((m) => m.area) };
   }, [normalized]);
 
-  if (loading) return <div>Loading chart…</div>;
+  if (loading) return <LoadingChartSkeleton />;
   if (error) return <div style={{ color: 'crimson' }}>Error loading chart: {error}</div>;
   if (!raw) {
     return (
