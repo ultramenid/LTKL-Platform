@@ -16,15 +16,15 @@ export function RightPanel() {
       {/* Bottom Right */}
       <div
         className='  h-[35%] transition-all duration-300 ease-in-out overflow-y-hidden'>
-          <div className="flex pl-8">
-            <div className="w-[650px] h-[340px] ">
+          <div className="flex pl-8 h-full">
+            <div className="w-[650px] h-full">
               <CoverageChart />
             </div>
 
-            <div className="w-[600px] h-[340px] ">
+            <div className="w-[600px] h-full">
               <CoverageChart />
             </div>
-            <div className="w-[600px] h-[340px] ">
+            <div className="w-[600px] h-full">
               <CoverageChart />
             </div>
           </div>
