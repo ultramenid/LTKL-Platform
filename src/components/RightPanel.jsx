@@ -4,7 +4,7 @@ import Map from "./Map.jsx";
 export function RightPanel() {
   return (
     <div className="flex-1 h-screen flex flex-col">
-      {/* Top Right */}
+      {/* Map di atas */}
       <div
         className='relative bg-[#99f6e4] h-[65%]  transition-all duration-300 ease-in-out overflow-hidden'>
         <div className="flex items-center justify-center h-full">
@@ -12,7 +12,7 @@ export function RightPanel() {
         </div>
       </div>
 
-      {/* Bottom Right */}
+      {/* Chart di bawah */}
       <div
         className='  h-[35%] transition-all duration-300 ease-in-out overflow-y-hidden'>
         <div className="flex pl-8 h-full">

@@ -7,44 +7,44 @@ export default function TimeSeriesSelector({ map, startYear = 1990, endYear = 20
   const [hovered, setHovered] = useState(null);
 
   const handleChange = async (newYear) => {
-    // check map instance
+    // Periksa map instance
     if (!map) {
-      console.warn(" No map instance available");
+      console.warn("⚠️ Tidak ada map instance");
       return;
     }
 
     // Update global year
     setYear(newYear);
-    console.log("🕒 Selected year:", newYear);
+    console.log("🕒 Tahun dipilih:", newYear);
 
-    // Build filters based on current drill level
+    // Bangun filters berdasarkan level drill sekarang (kab/kec/des)
     const filters = {};
     if (breadcrumbs.kab) filters.kab = breadcrumbs.kab;
     if (breadcrumbs.kec) filters.kec = breadcrumbs.kec;
     if (breadcrumbs.des) filters.des = breadcrumbs.des;
     filters.year = String(newYear);
 
-    // Reload GEE raster for this filter
-    console.log("♻️ Reloading GEE raster with filters:", filters);
+    // Reload GEE raster dengan filter baru
+    console.log("♻️ Reload GEE raster dengan filters:", filters);
     await loadGEEPolygonRaster(map, filters);
   };
 
-  // Generate year array
+  // Generate array tahun
   const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
 
   return (
     <div className="absolute bottom-4 left-4 select-none bg-white px-2 py-1 rounded-lg shadow-sm border border-gray-200">
-      {/* Year labels */}
+      {/* Label tahun */}
       <div className="flex items-center justify-between text-[10px] text-gray-600">
         <span className="text-[#115e59] font-black">{year}</span>
       </div>
 
       {/* Timeline */}
       <div className="relative flex items-center justify-center gap-[6px] h-6">
-        {/* Base line */}
+        {/* Garis dasar */}
         <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-gray-300 -translate-y-1/2 pointer-events-none"></div>
 
-        {/* Dots with hover-only tooltip */}
+        {/* Dots dengan tooltip hover-only */}
         {years.map((y) => (
           <div key={y} className="relative flex items-center justify-center">
             {hovered === y && (

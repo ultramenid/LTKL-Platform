@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { TILE_SERVER_URL } from '../store/mapLayerStore.js';
 import { useMapStore } from '../store/mapStore.js';
@@ -12,13 +12,27 @@ function LoadingChartSkeleton() {
 }
 
 export default function CoverageChartDebug() {
-  // read year from zustand; fallback to 2024 if missing
+  // Baca tahun dari zustand; fallback ke 2024 jika tidak ada
   const yearFromStore = useMapStore ? useMapStore((s) => s.year) : undefined;
   const year = Number(yearFromStore) || 2024;
 
   const [raw, setRaw] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const echartsRef = useRef(null);
+
+  // Penanganan cleanup echarts
+  useEffect(() => {
+    return () => {
+      try {
+        if (echartsRef.current) {
+          echartsRef.current.getEchartsInstance?.()?.dispose?.();
+        }
+      } catch (e) {
+        // Abaikan error cleanup echarts
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -32,7 +46,7 @@ export default function CoverageChartDebug() {
     fetch(url)
       .then(async (r) => {
         const text = await r.text();
-        // Try parse JSON but keep raw text for debugging
+        // Coba parse JSON tapi simpan raw text untuk debugging
         try {
           const json = JSON.parse(text);
           return { ok: r.ok, json, status: r.status, statusText: r.statusText, text };
@@ -70,41 +84,41 @@ export default function CoverageChartDebug() {
     };
   }, [year]);
 
-  // Normalize backend response into { year: number, data: Array<[kab,area]> }
+  // Normalisasi backend response menjadi { year: number, data: Array<[kab,area]> }
   const normalized = useMemo(() => {
     if (!raw) return null;
 
-    // If server already returns { year: N, data: [...] }
+    // Jika server sudah return { year: N, data: [...] }
     if (raw && raw.year && Array.isArray(raw.data)) {
       return { year: Number(raw.year), data: raw.data };
     }
 
-    // If server returns keyed object like { "2024": [ ... ] }
+    // Jika server return object berkey seperti { "2024": [ ... ] }
     const keys = Object.keys(raw);
-    // if first key is numeric and value is array
-    for (const k of keys) {
-      if (/^\d{4}$/.test(k) && Array.isArray(raw[k])) {
-        return { year: Number(k), data: raw[k] };
+    // Jika key pertama numerik dan value adalah array
+    for (const yearKey of keys) {
+      if (/^\d{4}$/.test(yearKey) && Array.isArray(raw[yearKey])) {
+        return { year: Number(yearKey), data: raw[yearKey] };
       }
     }
 
-    // If server returns something like an array directly
+    // Jika server return array langsung
     if (Array.isArray(raw)) {
       return { year, data: raw };
     }
 
-    // Last attempt: find first array value
-    for (const k of keys) {
-      if (Array.isArray(raw[k])) {
-        return { year: raw.year ? Number(raw.year) : Number(k) || year, data: raw[k] };
+    // Upaya terakhir: cari array value pertama
+    for (const yearKey of keys) {
+      if (Array.isArray(raw[yearKey])) {
+        return { year: raw.year ? Number(raw.year) : Number(yearKey) || year, data: raw[yearKey] };
       }
     }
 
-    // Nothing matched
+    // Tidak ada yang cocok
     return null;
   }, [raw, year]);
 
-  // Map to labels & values
+  // Map ke labels & values
   const { labels, values } = useMemo(() => {
     if (!normalized) return { labels: [], values: [] };
     const mapped = normalized.data
@@ -113,9 +127,9 @@ export default function CoverageChartDebug() {
         const area = Number((entry && entry[1]) || 0) || 0;
         return { kab, area };
       })
-      .filter((m) => m.kab) // drop empty names
-      .sort((b, a) => b.area - a.area);
-    return { labels: mapped.map((m) => m.kab), values: mapped.map((m) => m.area) };
+      .filter((mappedItem) => mappedItem.kab) // Buang nama kosong
+      .sort((item2, item1) => item2.area - item1.area);
+    return { labels: mapped.map((mappedItem) => mappedItem.kab), values: mapped.map((mappedItem) => mappedItem.area) };
   }, [normalized]);
 
   if (loading) return <LoadingChartSkeleton />;
@@ -149,15 +163,15 @@ export default function CoverageChartDebug() {
       trigger: "axis",
       axisPointer: { type: "shadow" },
       formatter: (params) => {
-        const p = params[0];
-        return `${p.name}<br/>Area: ${Number(p.value).toLocaleString()} ha`;
+        const param = params[0];
+        return `${param.name}<br/>Area: ${Number(param.value).toLocaleString()} ha`;
       }
     },
     grid: { left: "10%", right: "10%", bottom: "18%" },
     xAxis: {
       type: "category",
       data: labels,
-      axisLabel: { rotate: 30, interval: 0, formatter: (v) => v.length > 18 ? v.slice(0,16) + "…" : v }
+      axisLabel: { rotate: 30, interval: 0, formatter: (label) => label.length > 18 ? label.slice(0,16) + "…" : label }
     },
     yAxis: {
       type: "value",
@@ -177,7 +191,7 @@ export default function CoverageChartDebug() {
 
   return (
     <div style={{ width: '100%', height: '100%' }}>
-      <ReactECharts option={option} style={{ height: '100%' }} />
+      <ReactECharts ref={echartsRef} option={option} style={{ height: '100%' }} />
     </div>
   );
 }

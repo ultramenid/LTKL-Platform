@@ -3,6 +3,7 @@ import maplibregl from "maplibre-gl";
 export const zoomToFeature = (map, feature) => {
   const coords = [];
 
+  // Extract coordinates dari geometry (support Polygon dan MultiPolygon)
   if (feature.geometry.type === "Polygon") {
     feature.geometry.coordinates.forEach((ring) =>
       ring.forEach(([lon, lat]) => coords.push([lon, lat]))
@@ -17,6 +18,7 @@ export const zoomToFeature = (map, feature) => {
 
   if (coords.length === 0) return;
 
+  // Hitung bounds dari coordinates
   const lons = coords.map(([lon]) => lon);
   const lats = coords.map(([, lat]) => lat);
 
@@ -36,13 +38,15 @@ export const zoomToMatchingFeature = (map, sourceId, matchField, matchValue) => 
   const data = src._data;
   if (!data?.features) return;
 
+  // Cari feature yang properties-nya cocok dengan filter
   const feature = data.features.find(
-    (f) => f.properties[matchField] === matchValue
+    (foundFeature) => foundFeature.properties[matchField] === matchValue
   );
   if (!feature || !feature.geometry) return;
 
   const coords = [];
 
+  // Extract coordinates + validasi tipe data
   if (feature.geometry.type === "Polygon") {
     feature.geometry.coordinates.forEach((ring) => {
       ring.forEach(([lng, lat]) => {

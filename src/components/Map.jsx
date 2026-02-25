@@ -16,9 +16,11 @@ const Map = () => {
   const { resetBreadcrumbs, setMap } = useMapStore();
   const [isMapReady, setIsMapReady] = useState(false); 
 
+  // Reset semua ke state awal
   const handleHome = () =>
     handleHomeReset(mapRef.current, resetBreadcrumbs, DEFAULT_CENTER, DEFAULT_ZOOM);
 
+  // Drill down/up ke level yang dipilih
   const handleBreadcrumbClick = (level) => {
     const { breadcrumbs, updateBreadcrumb } = useMapStore.getState();
     return handleBreadcrumbDrill(mapRef.current, level, breadcrumbs, updateBreadcrumb);
@@ -27,6 +29,7 @@ const Map = () => {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
+    // Buat map instance
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: `https://api.maptiler.com/maps/dataviz-light/style.json?key=84THmLMIMtlrEbOF2Iup`,
@@ -38,6 +41,7 @@ const Map = () => {
     mapRef.current = map;
     setMap(map);
 
+    // Load default layers saat map ready
     map.on("load", async () => {
       await loadGEEPolygonRaster(map);
       await loadLayer(map, "LTKL:kabupaten", "kabupaten-src", "kabupaten-fill");
@@ -50,8 +54,15 @@ const Map = () => {
     });
     map.addControl(scale, "bottom-right");
 
+    // Cleanup: hapus map saat component unmount
     return () => {
-      map.remove();
+      try {
+        if (mapRef.current) {
+          mapRef.current.remove();
+        }
+      } catch (e) {
+        // Abaikan error cleanup
+      }
       mapRef.current = null;
       setIsMapReady(false);
       setMap(null);

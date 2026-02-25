@@ -3,7 +3,7 @@ import { useMapStore } from "../store/mapStore.js";
 const BreadcrumbsComponent = ({onHome, handeBreadcrumbs}) => {
   const { breadcrumbs, updateBreadcrumb } = useMapStore();
 
-  // Only show breadcrumbs if any value exists
+  // Hanya tampil kalo ada breadcrumb
   const hasBreadcrumb = breadcrumbs.kab || breadcrumbs.kec || breadcrumbs.des;
   if (!hasBreadcrumb) return null;
 

@@ -42,9 +42,9 @@ export function KabupatenCard() {
     }
 
     const feature = geojson.features[0];
-    // Zoom to kabupaten and load its raster
+    // Zoom ke kabupaten dan load raster-nya
     zoomToFeature(map, feature);
-    // Load GEE raster for the selected kabupaten
+    // Load GEE raster untuk kabupaten yang dipilih
     await loadGEEPolygonRaster(map, { kab: kabName });
 
     // Load kecamatan layer

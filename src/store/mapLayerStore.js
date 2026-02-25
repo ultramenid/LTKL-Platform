@@ -5,89 +5,166 @@ import { zoomToFeature } from "../utils/mapUtils.js";
 export const GEOSERVER_URL = "https://aws.simontini.id/geoserver/ows";
 export const TILE_SERVER_URL = "https://gee.simontini.id/gee";
 
+const COLORS = {
+  HIGHLIGHT: "#27CBFC",
+  DEFAULT: "white",
+  TRANSPARENT: "rgba(0,0,0,0)",
+};
+
+const LAYERS = {
+  GEE_LAYER: "gee-lulc-layer",
+  GEE_SOURCE: "gee-lulc",
+  HOVER_SUFFIX: "-hover-line",
+};
+
 export async function loadGEEPolygonRaster(
   map,
   filters = {}
 ) {
   try {
-    // Get current year from global store
+    // Ambil tahun dari global store
     const { year } = useMapStore.getState();
 
-    // Merge filters (kab/kec/des + year)
+    // Merge filters (kab/kec/des + year) - sudah dalam format yang benar
     const query = new URLSearchParams({
       ...filters,
       year: String(year),
     }).toString();
 
-    const url = TILE_SERVER_URL + `${query ? `/lulc?${query}` : "/lulc"}`;
-    console.log(`🌍 Fetching GEE layer for year ${year}:`, url);
+    const cacheKey = `gee_${query}`;
+    const store = useMapStore.getState();
 
-    // 🛰️ Fetch tile URL
-    const response = await fetch(url);
-    const tileUrl = await response.text();
+  // Periksa cache dulu
+  const cached = store.getCacheGEE(cacheKey);
+    if (cached) {
+      const tileUrl = cached;
+      
+      // Tambahkan ke map (sama seperti fetch baru)
+      if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
+      if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
+      map.addSource(LAYERS.GEE_SOURCE, {
+        type: "raster",
+        tiles: [tileUrl],
+        tileSize: 256,
+      });
+      
+      const allLayers = map.getStyle()?.layers ?? [];
+      const beforeId =
+        allLayers.find((layer) =>
+          ["kabupaten-fill", "kecamatan-fill", "desa-fill"].includes(layer.id)
+        )?.id || undefined;
 
-    // Handle empty response
-    if (!tileUrl) {
-      console.warn("⚠️ No tile URL received from GEE");
+      map.addLayer(
+        {
+          id: LAYERS.GEE_LAYER,
+          type: "raster",
+          source: LAYERS.GEE_SOURCE,
+          paint: {
+            "raster-opacity": 1,
+          },
+        },
+        beforeId
+      );
+      
+      bringHoverLayersToTop(map);
       return;
     }
 
-    // Remove old layer/source before adding the new one
-    if (map.getLayer("gee-lulc-layer")) map.removeLayer("gee-lulc-layer");
-    if (map.getSource("gee-lulc")) map.removeSource("gee-lulc");
+    // Periksa pending request (agar tidak fetch 2x kalau user click cepat-cepat)
+    const pending = store.getPending(cacheKey);
+    if (pending) {
+      await pending;
+      return;
+    }
 
-    // Add the new raster source
-    map.addSource("gee-lulc", {
-      type: "raster",
-      tiles: [tileUrl],
-      tileSize: 256,
-    });
+    const url = TILE_SERVER_URL + `${query ? `/lulc?${query}` : "/lulc"}`;
 
-    // Determine where to insert this raster (it should be below everything else)
-    const allLayers = map.getStyle()?.layers ?? [];
-    const beforeId =
-      allLayers.find((layer) =>
-        ["kabupaten-fill", "kecamatan-fill", "desa-fill"].includes(layer.id)
-      )?.id || undefined;
+    // Buat promise dan track
+    const promise = (async () => {
+      const response = await fetch(url);
+      const tileUrl = await response.text();
 
-    // Add raster layer at the correct position
-    map.addLayer(
-      {
-        id: "gee-lulc-layer",
+      if (!tileUrl || tileUrl.trim() === "") {
+        return;
+      }
+
+      // Cache result
+      store.setCacheGEE(cacheKey, tileUrl);
+
+      // Hapus layer/source lama sebelum menambahkan yang baru
+      if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
+      if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
+
+      // Tambahkan raster source yang baru
+      map.addSource(LAYERS.GEE_SOURCE, {
         type: "raster",
-        source: "gee-lulc",
-        paint: {
-          "raster-opacity": 1,
-        },
-      },
-      beforeId // ensures raster is drawn below polygons
-    );
+        tiles: [tileUrl],
+        tileSize: 256,
+      });
 
-    console.log(`GEE LULC layer loaded successfully for year ${year}`);
-    
-    // Bring all hover line layers to the top
-    bringHoverLayersToTop(map);
+      // Tentukan di mana menempatkan raster ini (harus di bawah semuanya)
+      const allLayers = map.getStyle()?.layers ?? [];
+      const beforeId =
+        allLayers.find((layer) =>
+          ["kabupaten-fill", "kecamatan-fill", "desa-fill"].includes(layer.id)
+        )?.id || undefined;
+
+      // Tambahkan raster layer di posisi yang benar
+      map.addLayer(
+        {
+          id: LAYERS.GEE_LAYER,
+          type: "raster",
+          source: LAYERS.GEE_SOURCE,
+          paint: {
+            "raster-opacity": 1,
+          },
+        },
+        beforeId
+      );
+      
+      // Bawa semua hover line layers ke atas
+      bringHoverLayersToTop(map);
+    })();
+
+    store.setPending(cacheKey, promise);
+    await promise;
+    store.clearPending(cacheKey);
+
   } catch (err) {
     console.error("Failed to load GEE LULC raster:", err);
   }
 }
 
-// Helper function to bring all hover line layers to the top
+// Helper: Remove layer dan source-nya sekaligus
+function removeLayerAndSource(map, layerId) {
+  // Remove hover line dulu (masih referensi source)
+  const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
+  if (map.getLayer(hoverLineId)) map.removeLayer(hoverLineId);
+  
+  // Baru remove main layer
+  if (map.getLayer(layerId)) map.removeLayer(layerId);
+  
+  // Terakhir remove source (tidak ada layer yang pakai lagi)
+  const sourceId = layerId.replace("-fill", "-src");
+  if (map.getSource(sourceId)) map.removeSource(sourceId);
+}
+
+// Helper: Bring hover lines ke atas biar terlihat
 function bringHoverLayersToTop(map) {
   const layers = map.getStyle()?.layers ?? [];
-  const hoverLineIds = layers.map(layer => layer.id).filter(id => id.includes('-hover-line'));
+  const hoverLineIds = layers.map(layer => layer.id).filter(id => id.includes(LAYERS.HOVER_SUFFIX));
   
-  // Move each hover line layer to the top (last added = rendered on top)
+  // Pindahkan setiap hover line layer ke atas (terakhir ditambahkan = dirender di atas)
   hoverLineIds.forEach(id => {
     try {
       map.moveLayer(id, undefined); // undefined = move to top
     } catch (e) {
-      // Layer might not exist anymore, skip
+      // Layer mungkin tidak ada lagi, skip
     }
   });
 }
 
-// Generic layer loader
+// Layer loader generik
 export const loadLayer = async (
   map,
   layerName,
@@ -97,41 +174,66 @@ export const loadLayer = async (
   removeLayerIds = []
 ) => {
 
-  // Clean up old layers
+  // Bersihkan layer lama
   removeLayerIds.forEach((id) => {
-    if (map.getLayer(id)) map.removeLayer(id);
-    // also remove companion hover line layer if present
-    const hoverLineId = `${id}-hover-line`;
+    removeLayerAndSource(map, id);
+    const hoverLineId = `${id}${LAYERS.HOVER_SUFFIX}`;
     if (map.getLayer(hoverLineId)) map.removeLayer(hoverLineId);
-    const srcId = id.replace("-fill", "-src");
-    if (map.getSource(srcId)) map.removeSource(srcId);
   });
 
-  // Fetch GeoServer data
-  const params = new URLSearchParams({
-    service: "WFS",
-    version: "2.0.0",
-    request: "GetFeature",
-    typeNames: layerName,
-    outputFormat: "application/json",
-  });
-  if (cqlFilter) params.append("CQL_FILTER", cqlFilter);
+  // Buat cache key dari layerName + filter
+  const cacheKey = `geojson_${layerName}_${cqlFilter || 'all'}`;
+  const store = useMapStore.getState();
 
-  const url = `${GEOSERVER_URL}?${params.toString()}`;
-  const res = await fetch(url);
-  const geojson = await res.json();
+  let geojson;
 
-  // ensure each feature has an id so feature-state highlighting works consistently
+  // Periksa cache dulu
+  const cached = store.getCacheGeoJSON(cacheKey);
+  if (cached) {
+    geojson = cached;
+  } else {
+    // Periksa pending request
+    const pending = store.getPending(cacheKey);
+    if (pending) {
+      geojson = await pending;
+    } else {
+      // Fetch data dari GeoServer
+      const params = new URLSearchParams({
+        service: "WFS",
+        version: "2.0.0",
+        request: "GetFeature",
+        typeNames: layerName,
+        outputFormat: "application/json",
+      });
+      if (cqlFilter) params.append("CQL_FILTER", cqlFilter);
+
+      const url = `${GEOSERVER_URL}?${params.toString()}`;
+
+      const promise = (async () => {
+        const res = await fetch(url);
+        return await res.json();
+      })();
+
+      store.setPending(cacheKey, promise);
+      geojson = await promise;
+      store.clearPending(cacheKey);
+
+      // Cache result
+      store.setCacheGeoJSON(cacheKey, geojson);
+    }
+  }
+
+  // Pastikan setiap feature punya id agar feature-state highlighting berjalan konsisten
   if (Array.isArray(geojson.features)) {
-    geojson.features.forEach((f, i) => {
-      if (f.id === undefined) f.id = i;
+    geojson.features.forEach((feature, index) => {
+      if (feature.id === undefined) feature.id = index;
     });
   }
 
-  // Add or update GeoJSON source
+  // Tambah atau update GeoJSON source
   if (map.getSource(sourceId)) {
     (map.getSource(sourceId)).setData(geojson);
-    // If the fill layer was removed but the source remains (e.g., during cleanup), recreate it
+    // Jika fill layer dihapus tapi source masih ada (misal saat cleanup), buat ulang
     if (!map.getLayer(layerId)) {
       map.addLayer({
         id: layerId,
@@ -143,14 +245,14 @@ export const loadLayer = async (
           "fill-outline-color": [
             "case",
             ["boolean", ["feature-state", "hover"], false],
-            "#27CBFC",
-            "white",
+            COLORS.HIGHLIGHT,
+            COLORS.DEFAULT,
           ],
         },
       });
     }
-    // ensure hover line layer exists even when updating existing source
-    const hoverLineId = `${layerId}-hover-line`;
+    // Pastikan hover line layer ada bahkan saat update existing source
+    const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
     if (!map.getLayer(hoverLineId)) {
       map.addLayer({
         id: hoverLineId,
@@ -164,8 +266,8 @@ export const loadLayer = async (
           "line-color": [
             "case",
             ["boolean", ["feature-state", "hover"], false],
-            "#27CBFC",
-            "rgba(0,0,0,0)",
+            COLORS.HIGHLIGHT,
+            COLORS.TRANSPARENT,
           ],
           "line-width": 2,
           "line-opacity": 0.98,
@@ -173,7 +275,6 @@ export const loadLayer = async (
       });
     }
     else {
-      // if hover line already exists, update its paint to be visible
       const existingHover = map.getLayer(hoverLineId);
       if (existingHover) {
         map.setPaintProperty(hoverLineId, "line-width", 2);
@@ -181,13 +282,13 @@ export const loadLayer = async (
         map.setPaintProperty(hoverLineId, "line-color", [
           "case",
           ["boolean", ["feature-state", "hover"], false],
-          "#27CBFC",
-          "rgba(0,0,0,0)",
+          COLORS.HIGHLIGHT,
+          COLORS.TRANSPARENT,
         ]);
       }
     }
   } else {
-    // ensure features have stable ids so we can use feature-state for hover
+    // Pastikan features punya stable ids agar kita bisa pakai feature-state untuk hover
     map.addSource(sourceId, { type: "geojson", data: geojson, generateId: true });
     map.addLayer({
       id: layerId,
@@ -196,17 +297,16 @@ export const loadLayer = async (
       paint: {
         "fill-color": "transparent",
         "fill-opacity": 0.5,
-        // outline color uses feature-state 'hover' to emphasize only the hovered polygon
         "fill-outline-color": [
           "case",
           ["boolean", ["feature-state", "hover"], false],
-          "#27CBFC", // highlight color when hovered
-          "white"    // default
+          COLORS.HIGHLIGHT,
+          COLORS.DEFAULT
         ],
       },
     });
-    // add a dedicated line layer above the fill to render a thicker hover stroke
-    const hoverLineId = `${layerId}-hover-line`;
+    // Tambahkan dedicated line layer di atas fill untuk render hover stroke yang lebih tebal
+    const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
     if (!map.getLayer(hoverLineId)) {
       map.addLayer({
         id: hoverLineId,
@@ -217,12 +317,11 @@ export const loadLayer = async (
           "line-cap": "round",
         },
         paint: {
-          // show color only for the hovered feature via feature-state
           "line-color": [
             "case",
             ["boolean", ["feature-state", "hover"], false],
-            "#27CBFC",
-            "rgba(0,0,0,0)"
+            COLORS.HIGHLIGHT,
+            COLORS.TRANSPARENT
           ],
           "line-width": 2,
           "line-opacity": 0.98,
@@ -231,10 +330,10 @@ export const loadLayer = async (
     }
   }
 
-  // Attach interaction logic ONCE
+  // Attach logic interaksi SEKALI
   attachLayerInteraction(map, layerId);
 
-  // Bring hover line layers to the top
+  // Bawa hover line layers ke atas
   bringHoverLayersToTop(map);
 
   return geojson;
@@ -250,7 +349,7 @@ function attachLayerInteraction(map, layerId) {
   if (internalMap._attachedLayers.has(layerId)) return;
   internalMap._attachedLayers.add(layerId);
 
-  // Hover popup + per-feature border emphasis using feature-state
+  // Popup hover + penekanan border per-feature dengan feature-state
   const sourceId = layerId.replace("-fill", "-src");
   let lastHoverId = null;
 
@@ -261,8 +360,8 @@ function attachLayerInteraction(map, layerId) {
   map.on("mouseleave", layerId, () => {
     map.getCanvas().style.cursor = "";
     popup.remove();
-    // clear previous hover state
-    if (lastHoverId !== null) {
+    // Bersihkan hover state sebelumnya (hanya jika source masih ada)
+    if (lastHoverId !== null && map.getSource(sourceId)) {
       map.setFeatureState({ source: sourceId, id: lastHoverId }, { hover: false });
       lastHoverId = null;
     }
@@ -270,16 +369,18 @@ function attachLayerInteraction(map, layerId) {
 
   map.on("mousemove", layerId, (e) => {
     const feature = e.features?.[0];
-    if (!feature) return;
+    if (!feature || !map.getSource(sourceId)) return; // Periksa source ada
 
     const fid = feature.id;
-    // clear previous
+    // Bersihkan yang sebelumnya (hanya jika source masih ada)
     if (lastHoverId !== null && lastHoverId !== fid) {
-      map.setFeatureState({ source: sourceId, id: lastHoverId }, { hover: false });
+      if (map.getSource(sourceId)) {
+        map.setFeatureState({ source: sourceId, id: lastHoverId }, { hover: false });
+      }
       lastHoverId = null;
     }
 
-    if (fid !== undefined) {
+    if (fid !== undefined && map.getSource(sourceId)) {
       map.setFeatureState({ source: sourceId, id: fid }, { hover: true });
       lastHoverId = fid;
     }
@@ -298,29 +399,24 @@ function attachLayerInteraction(map, layerId) {
     const feature = e.features?.[0];
     if (!feature) return;
 
-    // DESA LEVEL (lowest)
+    // LEVEL DESA (paling rendah)
     if ("des" in feature.properties) {
       updateBreadcrumb("kabupaten", feature.properties.kab);
       updateBreadcrumb("kecamatan", feature.properties.kec);
       updateBreadcrumb("desa", feature.properties.des);
 
-      // Zoom to desa and load its raster
+      // Zoom ke desa dan load raster-nya
       zoomToFeature(map, feature);
-      // Load GEE raster for the selected desa
+      // Load GEE raster untuk desa yang dipilih
       await loadGEEPolygonRaster(map, { des: feature.properties.des });
 
-      // Remove parent boundaries (kecamatan & kabupaten)
-      ["kecamatan-fill", "kabupaten-fill"].forEach((id) => {
-        if (map.getLayer(id)) map.removeLayer(id);
-        const srcId = id.replace("-fill", "-src");
-        if (map.getSource(srcId)) map.removeSource(srcId);
-      });
+      // Hapus boundary orang tua (kecamatan & kabupaten)
+      ["kecamatan-fill", "kabupaten-fill"].forEach((id) => removeLayerAndSource(map, id));
 
-      // Load and show only the selected desa
-      if (map.getLayer("desa-fill")) map.removeLayer("desa-fill");
-      if (map.getSource("desa-src")) map.removeSource("desa-src");
+      // Load dan tampilkan hanya desa yang dipilih
+      removeLayerAndSource(map, "desa-fill");
 
-      // Load only the selected desa
+      // Load hanya desa yang dipilih
       await loadLayer(
         map,
         "LTKL:desa",
@@ -332,7 +428,7 @@ function attachLayerInteraction(map, layerId) {
       return;
     }
 
-    // KECAMATAN LEVEL → Drill into desa
+    // LEVEL KECAMATAN → Drill ke desa
     if ("kec" in feature.properties) {
       updateBreadcrumb("kabupaten", feature.properties.kab);
       updateBreadcrumb("kecamatan", feature.properties.kec);
@@ -341,14 +437,10 @@ function attachLayerInteraction(map, layerId) {
       zoomToFeature(map, feature);
       await loadGEEPolygonRaster(map, { kec: feature.properties.kec });
 
-      // Remove only kabupaten layer
-      ["kabupaten-fill"].forEach((id) => {
-        if (map.getLayer(id)) map.removeLayer(id);
-        const srcId = id.replace("-fill", "-src");
-        if (map.getSource(srcId)) map.removeSource(srcId);
-      });
+      // Hapus hanya kabupaten layer
+      removeLayerAndSource(map, "kabupaten-fill");
 
-      // Load desa boundaries under this kecamatan
+      // Load desa boundaries di bawah kecamatan ini
       await loadLayer(
         map,
         "LTKL:desa",
@@ -361,15 +453,15 @@ function attachLayerInteraction(map, layerId) {
       return;
     }
 
-    // KABUPATEN LEVEL → Drill into kecamatan
+    // LEVEL KABUPATEN → Drill ke kecamatan
     if ("kab" in feature.properties) {
       updateBreadcrumb("kabupaten", feature.properties.kab);
       updateBreadcrumb("kecamatan", undefined);
       updateBreadcrumb("desa", undefined);
 
-      // Zoom to kabupaten and load its raster
+      // Zoom ke kabupaten dan load raster-nya
       zoomToFeature(map, feature);
-      // Load GEE raster for the selected kabupaten
+      // Load GEE raster untuk kabupaten yang dipilih
       await loadGEEPolygonRaster(map, { kab: feature.properties.kab });
 
       // Load kecamatan layer
