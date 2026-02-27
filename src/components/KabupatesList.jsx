@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMapStore } from "../store/mapStore.js";
 import { loadLayer, loadGEEPolygonRaster, removeLayerAndSource } from "../store/mapLayerStore.js";
 import { zoomToMatchingFeature, waitForSourceData } from "../utils/mapUtils.js";
@@ -99,9 +100,12 @@ export function KabupatenCard() {
             <div className="bg-gradient-to-b from-cyan-50 to-white px-4 py-4">
               <div className="space-y-3">
                 <p className="text-xs text-gray-700">{DEFAULT_DESCRIPTION}</p>
-                <button className="w-full px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-500 transition text-sm cursor-pointer">
+                <Link
+                  to={`/profile/${encodeURIComponent(kabupaten.name)}`}
+                  className="w-full px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-500 transition text-sm cursor-pointer block text-center"
+                >
                   Lihat profile kabupaten
-                </button>
+                </Link>
               </div>
             </div>
           )}

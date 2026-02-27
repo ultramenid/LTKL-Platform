@@ -67,8 +67,13 @@ export const parseUrlState = () => {
   return { year, breadcrumbs, selectedKab };
 };
 
-// Initialize URL dengan default values jika kosong
+// Initialize URL dengan default values jika kosong (hanya untuk map route)
 export const initializeUrl = () => {
+  // Hanya initialize URL state di map route (/), bukan di profile pages
+  if (window.location.pathname !== "/") {
+    return;
+  }
+
   const { year, breadcrumbs, selectedKab } = parseUrlState();
   updateUrl(year, breadcrumbs, selectedKab);
 };
