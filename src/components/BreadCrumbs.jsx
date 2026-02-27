@@ -1,15 +1,19 @@
 import { useMapStore } from "../store/mapStore.js";
 
-const BreadcrumbsComponent = ({onHome, handeBreadcrumbs}) => {
-  const { breadcrumbs, updateBreadcrumb } = useMapStore();
+const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
+  const { breadcrumbs } = useMapStore();
 
-  // Hanya tampil kalo ada breadcrumb
-  const hasBreadcrumb = breadcrumbs.kab || breadcrumbs.kec || breadcrumbs.des;
-  if (!hasBreadcrumb) return null;
+  // Bangun array breadcrumb items secara dinamis
+  const items = [
+    breadcrumbs.kab && { level: "kabupaten", label: breadcrumbs.kab },
+    breadcrumbs.kec && { level: "kecamatan", label: breadcrumbs.kec },
+    breadcrumbs.des && { level: "desa",      label: breadcrumbs.des },
+  ].filter(Boolean);
+
+  if (items.length === 0) return null;
 
   return (
     <div className="absolute top-2 left-2 z-10 bg-white backdrop-blur-md p-2 rounded shadow text-xs flex gap-1 items-center">
-      {/* Home Button */}
       <button
         onClick={onHome}
         className="text-[#0f766e] hover:underline cursor-pointer font-semibold"
@@ -17,44 +21,17 @@ const BreadcrumbsComponent = ({onHome, handeBreadcrumbs}) => {
         Home
       </button>
 
-      {/* Kabupaten */}
-      {breadcrumbs.kab && (
-        <>
+      {items.map((item) => (
+        <span key={item.level} className="flex items-center gap-1">
           <span className="text-[#0f766e]">/</span>
           <button
-            onClick={() => handeBreadcrumbs("kabupaten", breadcrumbs.kab)}
+            onClick={() => handleBreadcrumbs(item.level)}
             className="text-[#0f766e] hover:underline cursor-pointer"
           >
-            {` ${breadcrumbs.kab}`}
+            {item.label}
           </button>
-        </>
-      )}
-
-      {/* Kecamatan */}
-      {breadcrumbs.kec && (
-        <>
-          <span className="text-[#0f766e]">/</span>
-          <button
-            onClick={() => handeBreadcrumbs("kecamatan", breadcrumbs.kec)}
-            className="text-[#0f766e] hover:underline cursor-pointer"
-          >
-            {` ${breadcrumbs.kec}`}
-          </button>
-        </>
-      )}
-
-      {/* Desa */}
-      {breadcrumbs.des && (
-        <>
-          <span className="text-[#0f766e]">/</span>
-          <button
-            onClick={() => updateBreadcrumb("desa", breadcrumbs.des)}
-            className="text-[#0f766e] hover:underline cursor-pointer"
-          >
-            {` ${breadcrumbs.des}`}
-          </button>
-        </>
-      )}
+        </span>
+      ))}
     </div>
   );
 };

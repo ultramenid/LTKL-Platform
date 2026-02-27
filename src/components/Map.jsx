@@ -73,7 +73,7 @@ const Map = () => {
     <>
       <div ref={mapContainer} className="h-full w-full" />
       {isMapReady && <TimeSeriesSelector map={mapRef.current} />} 
-      <BreadcrumbsComponent onHome={handleHome} handeBreadcrumbs={handleBreadcrumbClick}/>
+      <BreadcrumbsComponent onHome={handleHome} handleBreadcrumbs={handleBreadcrumbClick}/>
     </>
   );
 };
