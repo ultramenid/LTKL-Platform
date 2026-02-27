@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { TILE_SERVER_URL } from '../store/mapLayerStore.js';
 import { useMapStore } from '../store/mapStore.js';
+import { YEAR_CONFIG } from '../config/constants.js';
 
+// Loading skeleton saat chart sedang fetch data
 function LoadingChartSkeleton() {
   return (
     <div className="w-full h-full p-4">
@@ -11,17 +13,23 @@ function LoadingChartSkeleton() {
   );
 }
 
+// Chart komponen: tampilkan area (ha) per kabupaten dari LULC server
+// Data fetched dari: /lulc-stats?year=XXXX
+// Chart: bar chart area per kabupaten, sorted descending
 export default function CoverageChartDebug() {
-  // Baca tahun dari zustand; fallback ke 2024 jika tidak ada
+  // ─── GET YEAR ───
+  // Ambil tahun dari Zustand store dengan fallback ke YEAR_CONFIG.DEFAULT
   const yearFromStore = useMapStore ? useMapStore((s) => s.year) : undefined;
-  const year = Number(yearFromStore) || 2024;
+  const year = Number(yearFromStore) || YEAR_CONFIG.DEFAULT;
 
-  const [raw, setRaw] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const echartsRef = useRef(null);
+  // ─── STATE ───
+  const [serverResponse, setServerResponse] = useState(null); // Raw response dari server
+  const [error, setError] = useState(null); // Error message
+  const [loading, setLoading] = useState(true); // Loading state
+  const echartsRef = useRef(null); // Reference ke React ECharts instance
 
-  // Penanganan cleanup echarts
+  // ─── CLEANUP ECHARTS ───
+  // Dispose echarts instance saat component unmount
   useEffect(() => {
     return () => {
       try {
@@ -34,123 +42,163 @@ export default function CoverageChartDebug() {
     };
   }, []);
 
+  // ─── FETCH DATA ───
+  // Fetch LULC statistics dari tile server setiap kali tahun berubah
   useEffect(() => {
-    let mounted = true;
+    let isComponentMounted = true; // Track component mount status (untuk cleanup)
     setLoading(true);
     setError(null);
-    setRaw(null);
+    setServerResponse(null);
 
-    const url = `${TILE_SERVER_URL}/lulc-stats?year=${year}`;
-    console.debug('[CoverageChart] fetching', url);
+    const statsUrl = `${TILE_SERVER_URL}/lulc-stats?year=${year}`;
+    console.debug('[CoverageChart] fetching', statsUrl);
 
-    fetch(url)
-      .then(async (r) => {
-        const text = await r.text();
-        // Coba parse JSON tapi simpan raw text untuk debugging
+    fetch(statsUrl)
+      .then(async (response) => {
+        // Parse response text → coba JSON, simpan raw text untuk debugging
+        const responseText = await response.text();
         try {
-          const json = JSON.parse(text);
-          return { ok: r.ok, json, status: r.status, statusText: r.statusText, text };
-        } catch (e) {
-          return { ok: r.ok, json: null, status: r.status, statusText: r.statusText, text };
+          const parsedJson = JSON.parse(responseText);
+          return { 
+            ok: response.ok, 
+            json: parsedJson, 
+            status: response.status, 
+            statusText: response.statusText, 
+            text: responseText 
+          };
+        } catch (parseError) {
+          // JSON parse gagal, return raw text
+          return { 
+            ok: response.ok, 
+            json: null, 
+            status: response.status, 
+            statusText: response.statusText, 
+            text: responseText 
+          };
         }
       })
-      .then((resp) => {
-        if (!mounted) return;
-        console.debug('[CoverageChart] fetch response:', resp);
-        if (!resp.ok) {
-          setError(`Server ${resp.status}: ${resp.statusText} — ${resp.text}`);
+      .then((response) => {
+        if (!isComponentMounted) return;
+        console.debug('[CoverageChart] fetch response:', response);
+        
+        // Check HTTP status
+        if (!response.ok) {
+          setError(`Server ${response.status}: ${response.statusText} — ${response.text}`);
           setLoading(false);
           return;
         }
-        if (!resp.json) {
-          setError(`Invalid JSON from server. Response text: ${resp.text}`);
+        
+        // Check JSON parse
+        if (!response.json) {
+          setError(`Invalid JSON from server. Response text: ${response.text}`);
           setLoading(false);
           return;
         }
-        setRaw(resp.json);
+        
+        // Success: set response
+        setServerResponse(response.json);
       })
-      .catch((e) => {
-        if (!mounted) return;
-        console.error('[CoverageChart] fetch error', e);
-        setError(String(e));
+      .catch((fetchError) => {
+        if (!isComponentMounted) return;
+        console.error('[CoverageChart] fetch error', fetchError);
+        setError(String(fetchError));
       })
       .finally(() => {
-        if (!mounted) return;
+        if (!isComponentMounted) return;
         setLoading(false);
       });
 
+    // Cleanup: mark component as unmounted saat effect cleanup
     return () => {
-      mounted = false;
+      isComponentMounted = false;
     };
   }, [year]);
 
-  // Normalisasi backend response menjadi { year: number, data: Array<[kab,area]> }
-  const normalized = useMemo(() => {
-    if (!raw) return null;
+  // ─── NORMALIZE SERVER RESPONSE ───
+  // Backend bisa return berbagai format:
+  // 1. { year: N, data: [...] } 
+  // 2. { "2024": [...], "2025": [...] }
+  // 3. Array langsung [...]
+  // Normalize ke: { year: number, data: Array<[kabupaten, area]> }
+  const normalizedData = useMemo(() => {
+    if (!serverResponse) return null;
 
-    // Jika server sudah return { year: N, data: [...] }
-    if (raw && raw.year && Array.isArray(raw.data)) {
-      return { year: Number(raw.year), data: raw.data };
+    // Format 1: Already normalized { year: N, data: [...] }
+    if (serverResponse && serverResponse.year && Array.isArray(serverResponse.data)) {
+      return { year: Number(serverResponse.year), data: serverResponse.data };
     }
 
-    // Jika server return object berkey seperti { "2024": [ ... ] }
-    const keys = Object.keys(raw);
-    // Jika key pertama numerik dan value adalah array
-    for (const yearKey of keys) {
-      if (/^\d{4}$/.test(yearKey) && Array.isArray(raw[yearKey])) {
-        return { year: Number(yearKey), data: raw[yearKey] };
+    // Format 2: Object berkey numerik => ambil value array
+    const responseKeys = Object.keys(serverResponse);
+    for (const yearKey of responseKeys) {
+      // Match tahun YYYY
+      if (/^\d{4}$/.test(yearKey) && Array.isArray(serverResponse[yearKey])) {
+        return { year: Number(yearKey), data: serverResponse[yearKey] };
       }
     }
 
-    // Jika server return array langsung
-    if (Array.isArray(raw)) {
-      return { year, data: raw };
+    // Format 3: Array langsung
+    if (Array.isArray(serverResponse)) {
+      return { year, data: serverResponse };
     }
 
-    // Upaya terakhir: cari array value pertama
-    for (const yearKey of keys) {
-      if (Array.isArray(raw[yearKey])) {
-        return { year: raw.year ? Number(raw.year) : Number(yearKey) || year, data: raw[yearKey] };
+    // Format 4: Cari array value pertama (last resort)
+    for (const yearKey of responseKeys) {
+      if (Array.isArray(serverResponse[yearKey])) {
+        return { 
+          year: serverResponse.year ? Number(serverResponse.year) : Number(yearKey) || year, 
+          data: serverResponse[yearKey] 
+        };
       }
     }
 
-    // Tidak ada yang cocok
+    // Tidak ada format yang cocok
     return null;
-  }, [raw, year]);
+  }, [serverResponse, year]);
 
-  // Map ke labels & values
-  const { labels, values } = useMemo(() => {
-    if (!normalized) return { labels: [], values: [] };
-    const mapped = normalized.data
+  // ─── TRANSFORM DATA FOR CHART ───
+  // Transform data ke labels (kabupaten) & values (area)
+  // Sort descending by area
+  const { chartLabels, chartValues } = useMemo(() => {
+    if (!normalizedData) return { chartLabels: [], chartValues: [] };
+    
+    const transformedEntries = normalizedData.data
       .map((entry) => {
-        const kab = String((entry && entry[0]) || '');
-        const area = Number((entry && entry[1]) || 0) || 0;
-        return { kab, area };
+        const kabupatenName = String((entry && entry[0]) || '');
+        const areaHectare = Number((entry && entry[1]) || 0) || 0;
+        return { kabupatenName, areaHectare };
       })
-      .filter((mappedItem) => mappedItem.kab) // Buang nama kosong
-      .sort((item2, item1) => item2.area - item1.area);
-    return { labels: mapped.map((mappedItem) => mappedItem.kab), values: mapped.map((mappedItem) => mappedItem.area) };
-  }, [normalized]);
+      .filter((item) => item.kabupatenName) // Buang entry tanpa nama kabupaten
+      .sort((item1, item2) => item2.areaHectare - item1.areaHectare);
+    
+    return { 
+      chartLabels: transformedEntries.map((item) => item.kabupatenName), 
+      chartValues: transformedEntries.map((item) => item.areaHectare) 
+    };
+  }, [normalizedData]);
 
+  // ─── RENDER ERROR STATES ───
   if (loading) return <LoadingChartSkeleton />;
   if (error) return <div style={{ color: 'crimson' }}>Error loading chart: {error}</div>;
-  if (!raw) {
+  if (!serverResponse) {
     return (
       <div>
-        No data received. Open console (F12) → Network and check the response from <code>{TILE_SERVER_URL}/lulc-stats</code>.
+        No data received. Open console (F12) → Network tab and check the response from <code>{TILE_SERVER_URL}/lulc-stats</code>.
       </div>
     );
   }
-  if (!normalized) {
-    console.warn('[CoverageChart] unable to normalize server response', raw);
+  if (!normalizedData) {
+    console.warn('[CoverageChart] unable to normalize server response', serverResponse);
     return (
       <div>
-        Unexpected server response shape. Open console (F12) and inspect the object logged as <code>raw</code>.
+        Unexpected server response shape. Open console (F12) and check the <code>serverResponse</code> object logged above.
       </div>
     );
   }
 
-  const option = {
+  // ─── ECHART OPTIONS ───
+  // Setup bar chart dengan ECharts
+  const chartOption = {
     title: {
       text: `Area (ha) per Kabupaten — ${year}`,
       left: "center",
@@ -170,8 +218,12 @@ export default function CoverageChartDebug() {
     grid: { left: "10%", right: "10%", bottom: "18%" },
     xAxis: {
       type: "category",
-      data: labels,
-      axisLabel: { rotate: 30, interval: 0, formatter: (label) => label.length > 18 ? label.slice(0,16) + "…" : label }
+      data: chartLabels,
+      axisLabel: { 
+        rotate: 30, 
+        interval: 0, 
+        formatter: (label) => label.length > 18 ? label.slice(0, 16) + "…" : label 
+      }
     },
     yAxis: {
       type: "value",
@@ -180,18 +232,19 @@ export default function CoverageChartDebug() {
       {
         name: "Area (ha)",
         type: "bar",
-        data: values,
+        data: chartValues,
         barWidth: "50%",
-        itemStyle:{
+        itemStyle: {
           color: '#06b6d4'
         }
       }
     ],
   };
 
+  // ─── RENDER ───
   return (
     <div style={{ width: '100%', height: '100%' }}>
-      <ReactECharts ref={echartsRef} option={option} style={{ height: '100%' }} />
+      <ReactECharts ref={echartsRef} option={chartOption} style={{ height: '100%' }} />
     </div>
   );
 }

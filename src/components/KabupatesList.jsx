@@ -1,48 +1,56 @@
 import { useEffect, useState } from "react";
 import { useMapStore } from "../store/mapStore.js";
-import { loadLayer, loadGEEPolygonRaster } from "../store/mapLayerStore.js";
-import { zoomToFeature } from "../utils/mapUtils.js";
+import { loadLayer, loadGEEPolygonRaster, removeLayerAndSource } from "../store/mapLayerStore.js";
+import { zoomToMatchingFeature, waitForSourceData } from "../utils/mapUtils.js";
 import { KABUPATENS, DEFAULT_DESCRIPTION } from "../data/kabupatens.js";
+import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../config/constants.js";
 
+// Komponen untuk menampilkan list kabupaten di sidebar kiri
+// User bisa klik untuk drill ke kecamatan dalam kabupaten itu
 export function KabupatenCard() {
   const { map, updateBreadcrumb, selectedKab, setSelectedKab } = useMapStore();
   const [isMapReady, setIsMapReady] = useState(false);
 
+  // Check apakah map sudah siap (agar bisa load layers)
   useEffect(() => {
     if (map?.isStyleLoaded()) setIsMapReady(true);
     else map?.on("load", () => setIsMapReady(true));
   }, [map]);
 
-  const handleKabupatenClick = async (kabName) => {
+  // Click kabupaten: update breadcrumb, zoom ke kabupaten, load kecamatan layer
+  const handleKabupatenClick = async (kabupatenName) => {
     if (!map) return console.warn("⚠️ Map not ready");
-    setSelectedKab(kabName);
-    updateBreadcrumb("kabupaten", kabName);
-    updateBreadcrumb("kecamatan", undefined);
+    
+    // Update state dengan kabupaten yang dipilih
+    setSelectedKab(kabupatenName);
+    updateBreadcrumb("kabupaten", kabupatenName);
+    updateBreadcrumb("kecamatan", undefined); // Reset level lebih dalam
     updateBreadcrumb("desa", undefined);
 
-    // Fetch geometry untuk kabupaten
-    const url = `https://aws.simontini.id/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=LTKL:kabupaten&outputFormat=application/json&CQL_FILTER=kab='${kabName}'`;
-    const res = await fetch(url);
-    const geojson = await res.json();
-
-    if (!geojson.features?.length) {
-      console.warn(`⚠️ No geometry found for ${kabName}`);
-      return;
-    }
-
-    const feature = geojson.features[0];
-    zoomToFeature(map, feature);
-    await loadGEEPolygonRaster(map, { kab: kabName });
+    // Flow: Load zoom layer → Zoom → Load raster → Load kecamatan layer
+    
+    // Load kabupaten zoom layer dengan filter
+    const kabupatenFilter = `kab='${kabupatenName}'`;
+    await loadLayer(map, LAYER_TYPES.KABUPATEN, SOURCE_IDS.ZOOM_KABUPATEN, LAYER_IDS.KABUPATEN_FILL, kabupatenFilter);
+    await waitForSourceData(map, SOURCE_IDS.ZOOM_KABUPATEN);
+    zoomToMatchingFeature(map, SOURCE_IDS.ZOOM_KABUPATEN, "kab", kabupatenName);
+    
+    // Load GEE coverage untuk kabupaten ini
+    await loadGEEPolygonRaster(map, { kab: kabupatenName });
+    
+    // Load kecamatan boundaries di dalam kabupaten, hapus kabupaten layer lama
     await loadLayer(
       map,
-      "LTKL:kecamatan",
-      "kecamatan-src",
-      "kecamatan-fill",
-      `kab='${kabName}'`,
-      ["kabupaten-fill"]
+      LAYER_TYPES.KECAMATAN,
+      SOURCE_IDS.KECAMATAN,
+      LAYER_IDS.KECAMATAN_FILL,
+      `kab='${kabupatenName}'`,
+      [LAYER_IDS.KABUPATEN_FILL]
     );
+    removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
   };
 
+  // Loading skeleton saat map belum siap
   if (!isMapReady) {
     return (
       <div className="p-4 space-y-3 animate-pulse">
@@ -60,33 +68,34 @@ export function KabupatenCard() {
     );
   }
 
+  // Render list kabupaten
   return (
     <>
-      {KABUPATENS.map((kab) => (
-        <div key={kab.name} className={`border-[#134e4a]/50 border-b ${selectedKab === kab.name ? 'bg-[#f0fdfa]' : ''}`}>
+      {KABUPATENS.map((kabupaten) => (
+        <div key={kabupaten.name} className={`border-[#134e4a]/50 border-b ${selectedKab === kabupaten.name ? 'bg-[#f0fdfa]' : ''}`}>
           <div
             onClick={() => {
-              setSelectedKab(selectedKab === kab.name ? null : kab.name);
-              handleKabupatenClick(kab.name);
+              setSelectedKab(selectedKab === kabupaten.name ? null : kabupaten.name);
+              handleKabupatenClick(kabupaten.name);
             }}
             className="flex flex-col items-center justify-center shadow-[#5eead4] cursor-pointer w-full hover:bg-cyan-50 transition-all duration-300 ease-in-out px-4 py-2"
           >
             <div className="flex flex-col gap-2 w-full">
               <div className="flex gap-1 items-center">
                 <div className="w-3/12 flex items-center justify-center">
-                  <img src={kab.logoUrl} alt={kab.name} className="h-12" />
+                  <img src={kabupaten.logoUrl} alt={kabupaten.name} className="h-12" />
                 </div>
                 <div className="flex flex-col flex-1">
-                  <h1 className="font-bold">Kab. {kab.name}</h1>
-                  <h5 className="text-xs">{kab.role}</h5>
+                  <h1 className="font-bold">Kab. {kabupaten.name}</h1>
+                  <h5 className="text-xs">{kabupaten.role}</h5>
                 </div>
               </div>
-              {selectedKab !== kab.name && (
+              {selectedKab !== kabupaten.name && (
                 <p className="text-xs">{DEFAULT_DESCRIPTION}</p>
               )}
             </div>
           </div>
-          {selectedKab === kab.name && (
+          {selectedKab === kabupaten.name && (
             <div className="bg-gradient-to-b from-cyan-50 to-white px-4 py-4">
               <div className="space-y-3">
                 <p className="text-xs text-gray-700">{DEFAULT_DESCRIPTION}</p>

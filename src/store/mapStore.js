@@ -1,133 +1,186 @@
 import { create } from "zustand";
+import { updateUrl } from "../utils/urlStateSync.js";
+import { YEAR_CONFIG } from "../config/constants.js";
 
+// Zustand store untuk manage map state global
+// Bertanggung jawab untuk: breadcrumbs, selectedKab, year, map instance, cache (GEE + GeoJSON), pending requests
 export const useMapStore = create((set, get) => ({
+  // ═══════════════════ BREADCRUMB STATE ═══════════════════
+  // Track user navigation: Indonesia → Kabupaten → Kecamatan → Desa
+  // Format: {kab: 'Bantul', kec: 'Imogiri', des: 'Banyudono'}
   breadcrumbs: {},
   selectedKab: null,
-  setSelectedKab: (kab) => set({ selectedKab: kab }),
-
-  // Selector tahun global
-  year: 2024,
-  setYear: (year) => {
-    set({ year });
-    // Cache dipertahankan untuk semua tahun (cache key sudah include tahun)
+  
+  // Update kabupaten yang dipilih (dari sidebar list)
+  setSelectedKab: (kabupatenName) => {
+    set({ selectedKab: kabupatenName });
+    const state = get();
+    updateUrl(state.year, state.breadcrumbs, kabupatenName);
   },
 
-  map: null,
-  setMap: (map) => set({ map }),
-  
-  // Breadcrumbs
-  setBreadcrumbs: (breadcrumbs) => set({ breadcrumbs }),
+  // ═══════════════════ YEAR STATE ═══════════════════
+  // Global tahun untuk filter coverage GEE (shared ke semua layers)
+  year: YEAR_CONFIG.DEFAULT,
+  setYear: (newYear) => {
+    set({ year: newYear });
+    const state = get();
+    updateUrl(newYear, state.breadcrumbs, state.selectedKab);
+  },
 
-  // Update level spesifik di breadcrumbs
+  // ═══════════════════ MAP INSTANCE ═══════════════════
+  // Store referensi ke MapLibre GL instance (untuk manipulasi map dari berbagai komponen)
+  map: null,
+  setMap: (mapInstance) => set({ map: mapInstance }),
+  
+  // ═══════════════════ BREADCRUMB MANAGEMENT ═══════════════════
+  // Replace seluruh breadcrumbs object (biasa digunakan dari URL sync)
+  setBreadcrumbs: (newBreadcrumbs) => set({ breadcrumbs: newBreadcrumbs }),
+
+  // Update level spesifik di breadcrumbs (kabupaten, kecamatan, desa)
+  // Otomatis update level di bawahnya ke undefined (reset)
+  // Contoh: updateBreadcrumb("kecamatan", "Imogiri") 
+  //   → {kab: (tetap), kec: "Imogiri", des: undefined}
   updateBreadcrumb: (level, value) =>
-    set((state) => ({
-      breadcrumbs:
+    set((state) => {
+      const newBreadcrumbs =
         level === "home"
-          ? {}
+          ? {} // Reset semua
           : level === "kabupaten"
-          ? { kab: value }
+          ? { kab: value } // Reset kec & des
           : level === "kecamatan"
-          ? { kab: state.breadcrumbs.kab, kec: value }
+          ? { kab: state.breadcrumbs.kab, kec: value } // Reset des
           : level === "desa"
           ? {
               kab: state.breadcrumbs.kab,
               kec: state.breadcrumbs.kec,
               des: value,
             }
-          : state.breadcrumbs,
-    })),
+          : state.breadcrumbs;
 
-  // Reset semua breadcrumbs
-  resetBreadcrumbs: () => set({ breadcrumbs: {} }),
+      // Sync state baru ke URL query params
+      updateUrl(state.year, newBreadcrumbs, state.selectedKab);
 
-  // Konstanta TTL (2 hari dalam millisecond)
+      return { breadcrumbs: newBreadcrumbs };
+    }),
+
+  // Reset semua breadcrumbs ke initial state
+  resetBreadcrumbs: () =>
+    set((state) => {
+      updateUrl(state.year, {}, null);
+      return { breadcrumbs: {}, selectedKab: null };
+    }),
+
+  // ═══════════════════ CACHE CONFIGURATION ═══════════════════
+  // Cache TTL: 2 hari (dalam millisecond)
+  // Untuk performance: tidak fetch layer data / raster tiles yang sama 2x dalam 2 hari
   CACHE_TTL: 2 * 24 * 60 * 60 * 1000,
 
-  // Simpan dan ambil cache untuk GEE tiles (persist ke localStorage, TTL 2 hari)
+  // ═══════════════════ GEE RASTER CACHE (localStorage) ═══════════════════
+  // Menyimpan Google Earth Engine tile URLs (LULC coverage)
+  // Format: {query_string: tile_url, ...}
+  // Menggunakan localStorage dengan TTL 2 hari untuk persist across sessions
   geeCache: (() => {
     try {
-      const stored = localStorage.getItem('mapCache_gee');
-      if (!stored) return {};
-      const cache = JSON.parse(stored);
-      const now = Date.now();
-      // Filter expired cache
+      const storedJson = localStorage.getItem('mapCache_gee');
+      if (!storedJson) return {};
+      
+      const allCacheEntries = JSON.parse(storedJson);
+      const currentTime = Date.now();
+      
+      // Filter out expired entries saat load (hanya keep yang belum expired)
       const validCache = {};
-      for (const [key, entry] of Object.entries(cache)) {
-        if (entry.expiresAt && entry.expiresAt > now) {
-          validCache[key] = entry.value;
+      for (const [cacheKey, cacheEntry] of Object.entries(allCacheEntries)) {
+        if (cacheEntry.expiresAt && cacheEntry.expiresAt > currentTime) {
+          validCache[cacheKey] = cacheEntry.value;
         }
       }
       return validCache;
     } catch {
+      // jika localStorage error, return empty object
       return {};
     }
   })(),
-  setCacheGEE: (key, value) => set((state) => {
-    const expiresAt = Date.now() + state.CACHE_TTL;
-    const newCache = { ...state.geeCache };
-    const storedCache = {};
-    // Rebuild stored format dengan timestamp
-    for (const [cacheKey, cacheValue] of Object.entries(newCache)) {
-      storedCache[cacheKey] = { value: cacheValue, expiresAt: expiresAt };
+  
+  setCacheGEE: (cacheKey, tileUrl) => set((state) => {
+    const expirationTime = Date.now() + state.CACHE_TTL;
+    const updatedCache = { ...state.geeCache };
+    
+    // Rebuild localStorage format (dengan timestamp untuk setiap entry)
+    const storageFormat = {};
+    for (const [key, value] of Object.entries(updatedCache)) {
+      storageFormat[key] = { value, expiresAt: expirationTime };
     }
-    storedCache[key] = { value, expiresAt };
+    storageFormat[cacheKey] = { value: tileUrl, expiresAt: expirationTime };
     
     try {
-      localStorage.setItem('mapCache_gee', JSON.stringify(storedCache));
+      localStorage.setItem('mapCache_gee', JSON.stringify(storageFormat));
     } catch {
       // Abaikan error localStorage (quota exceeded, etc)
     }
-    newCache[key] = value;
-    return { geeCache: newCache };
+    
+    updatedCache[cacheKey] = tileUrl;
+    return { geeCache: updatedCache };
   }),
-  getCacheGEE: (key) => {
-    const cached = get().geeCache[key];
-    return cached; // Sudah di-filter saat load
+  
+  getCacheGEE: (cacheKey) => {
+    const cachedTileUrl = get().geeCache[cacheKey];
+    return cachedTileUrl; // Sudah di-filter saat initialization
   },
 
-  // Simpan dan ambil cache untuk GeoJSON (persist ke localStorage, TTL 2 hari)
+  // ═══════════════════ GEOJSON CACHE (localStorage) ═══════════════════
+  // Menyimpan GeoJSON features dari GeoServer (administrative boundaries)
+  // Format: {layer_name_filter: geojson_object, ...}
+  // Menggunakan localStorage dengan TTL 2 hari untuk persist across sessions
   geoJsonCache: (() => {
     try {
-      const stored = localStorage.getItem('mapCache_geojson');
-      if (!stored) return {};
-      const cache = JSON.parse(stored);
-      const now = Date.now();
-      // Filter expired cache
+      const storedJson = localStorage.getItem('mapCache_geojson');
+      if (!storedJson) return {};
+      
+      const allCacheEntries = JSON.parse(storedJson);
+      const currentTime = Date.now();
+      
+      // Filter out expired entries saat load
       const validCache = {};
-      for (const [key, entry] of Object.entries(cache)) {
-        if (entry.expiresAt && entry.expiresAt > now) {
-          validCache[key] = entry.value;
+      for (const [cacheKey, cacheEntry] of Object.entries(allCacheEntries)) {
+        if (cacheEntry.expiresAt && cacheEntry.expiresAt > currentTime) {
+          validCache[cacheKey] = cacheEntry.value;
         }
       }
       return validCache;
     } catch {
+      // jika localStorage error, return empty object
       return {};
     }
   })(),
-  setCacheGeoJSON: (key, value) => set((state) => {
-    const expiresAt = Date.now() + state.CACHE_TTL;
-    const newCache = { ...state.geoJsonCache };
-    const storedCache = {};
-    // Rebuild stored format dengan timestamp
-    for (const [cacheKey, cacheValue] of Object.entries(newCache)) {
-      storedCache[cacheKey] = { value: cacheValue, expiresAt: expiresAt };
+  
+  setCacheGeoJSON: (cacheKey, geoJsonData) => set((state) => {
+    const expirationTime = Date.now() + state.CACHE_TTL;
+    const updatedCache = { ...state.geoJsonCache };
+    
+    // Rebuild localStorage format (dengan timestamp untuk setiap entry)
+    const storageFormat = {};
+    for (const [key, value] of Object.entries(updatedCache)) {
+      storageFormat[key] = { value, expiresAt: expirationTime };
     }
-    storedCache[key] = { value, expiresAt };
+    storageFormat[cacheKey] = { value: geoJsonData, expiresAt: expirationTime };
     
     try {
-      localStorage.setItem('mapCache_geojson', JSON.stringify(storedCache));
+      localStorage.setItem('mapCache_geojson', JSON.stringify(storageFormat));
     } catch {
       // Abaikan error localStorage (quota exceeded, etc)
     }
-    newCache[key] = value;
-    return { geoJsonCache: newCache };
+    
+    updatedCache[cacheKey] = geoJsonData;
+    return { geoJsonCache: updatedCache };
   }),
-  getCacheGeoJSON: (key) => {
-    const cached = get().geoJsonCache[key];
-    return cached; // Sudah di-filter saat load
+  
+  getCacheGeoJSON: (cacheKey) => {
+    const cachedGeoJson = get().geoJsonCache[cacheKey];
+    return cachedGeoJson; // Sudah di-filter saat initialization
   },
 
-  // Clear semua cache (termasuk localStorage)
+  // Clear seluruh cache (memory + localStorage)
+  // Digunakan saat user click "Clear Cache" atau debugging
   clearCache: () => {
     try {
       localStorage.removeItem('mapCache_gee');
@@ -138,15 +191,22 @@ export const useMapStore = create((set, get) => ({
     set({ geeCache: {}, geoJsonCache: {} });
   },
 
-  // Track pending requests agar tidak double-fetch
+  // ═══════════════════ PENDING REQUESTS DEDUPLICATION ═══════════════════
+  // Track requests yang sedang berlangsung agar tidak fetch 2x
+  // Jika user click cepat-cepat atau component re-render, request yang sama
+  // akan di-share (tunggu promise yang sama) daripada fetch ulang
+  // Format: {request_key: promise, ...}
   pendingRequests: {},
-  setPending: (key, promise) => set((state) => ({
-    pendingRequests: { ...state.pendingRequests, [key]: promise }
+  
+  setPending: (requestKey, requestPromise) => set((state) => ({
+    pendingRequests: { ...state.pendingRequests, [requestKey]: requestPromise }
   })),
-  getPending: (key) => get().pendingRequests[key],
-  clearPending: (key) => set((state) => ({
+  
+  getPending: (requestKey) => get().pendingRequests[requestKey],
+  
+  clearPending: (requestKey) => set((state) => ({
     pendingRequests: Object.fromEntries(
-      Object.entries(state.pendingRequests).filter(([requestKey]) => requestKey !== key)
+      Object.entries(state.pendingRequests).filter(([key]) => key !== requestKey)
     )
   })),
 }));

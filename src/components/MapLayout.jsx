@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+// Simple layout state untuk toggle panels
 const useLayoutStore = create((set) => ({
   leftOpen: true,
   rightOpen: true,
@@ -7,6 +8,7 @@ const useLayoutStore = create((set) => ({
   toggleRight: () => set((s) => ({ rightOpen: !s.rightOpen })),
 }));
 
+// Header component - logo, title, action buttons
 function Header() {
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-white border-b">
@@ -26,6 +28,7 @@ function Header() {
   );
 }
 
+// Left panel - collapsible sidebar dengan filters
 function LeftPanel() {
   const { leftOpen, toggleLeft } = useLayoutStore();
   return (
@@ -35,6 +38,7 @@ function LeftPanel() {
       }`}
     >
       <div className="h-full flex flex-col">
+        {/* Toggle button untuk hide/show panel */}
         <button
           onClick={toggleLeft}
           className="self-end m-2 p-1 text-xs border rounded"
@@ -54,6 +58,7 @@ function LeftPanel() {
   );
 }
 
+// Right panel - collapsible sidebar dengan highlights
 function RightPanelLayout() {
   const { rightOpen, toggleRight } = useLayoutStore();
   return (
@@ -63,6 +68,7 @@ function RightPanelLayout() {
       }`}
     >
       <div className="h-full flex flex-col">
+        {/* Toggle button untuk hide/show panel */}
         <button
           onClick={toggleRight}
           className="self-start m-2 p-1 text-xs border rounded"
@@ -81,6 +87,7 @@ function RightPanelLayout() {
   );
 }
 
+// Main content area - map/chart placeholder
 function MainContent() {
   return (
     <main className="flex-1 bg-gray-50 p-6">
@@ -91,6 +98,7 @@ function MainContent() {
   );
 }
 
+// Main layout - header + left panel + main content + right panel
 export default function PlataformaLayout() {
   return (
     <div className="min-h-screen flex flex-col">

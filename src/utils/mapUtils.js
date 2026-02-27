@@ -1,81 +1,93 @@
 import maplibregl from "maplibre-gl";
 
-export const zoomToFeature = (map, feature) => {
-  const coords = [];
-
-  // Extract coordinates dari geometry (support Polygon dan MultiPolygon)
-  if (feature.geometry.type === "Polygon") {
-    feature.geometry.coordinates.forEach((ring) =>
-      ring.forEach(([lon, lat]) => coords.push([lon, lat]))
+// Extract semua koordinat dari geometry (Polygon atau MultiPolygon)
+// GeometryData: {type: 'Polygon', coordinates: [...]} atau {type: 'MultiPolygon', coordinates: [...]}
+// Return: array of [longitude, latitude] pairs
+const extractCoordinates = (geometryData) => {
+  const allCoordinates = [];
+  
+  if (geometryData.type === "Polygon") {
+    // Polygon: loop ring (outer boundary + holes)
+    geometryData.coordinates.forEach((ring) =>
+      ring.forEach(([lon, lat]) => {
+        if (typeof lon === "number" && typeof lat === "number") {
+          allCoordinates.push([lon, lat]);
+        }
+      })
     );
-  } else if (feature.geometry.type === "MultiPolygon") {
-    feature.geometry.coordinates.forEach((polygon) =>
+  } else if (geometryData.type === "MultiPolygon") {
+    // MultiPolygon: multiple polygons, loop semuanya
+    geometryData.coordinates.forEach((polygon) =>
       polygon.forEach((ring) =>
-        ring.forEach(([lon, lat]) => coords.push([lon, lat]))
+        ring.forEach(([lon, lat]) => {
+          if (typeof lon === "number" && typeof lat === "number") {
+            allCoordinates.push([lon, lat]);
+          }
+        })
       )
     );
   }
-
-  if (coords.length === 0) return;
-
-  // Hitung bounds dari coordinates
-  const lons = coords.map(([lon]) => lon);
-  const lats = coords.map(([, lat]) => lat);
-
-  map.fitBounds(
-    [
-      [Math.min(...lons), Math.min(...lats)],
-      [Math.max(...lons), Math.max(...lats)],
-    ],
-    { padding: 40, duration: 1000 }
-  );
+  
+  return allCoordinates;
 };
 
-export const zoomToMatchingFeature = (map, sourceId, matchField, matchValue) => {
-  const src = map.getSource(sourceId);
-  if (!src || !("_data" in src)) return;
+// Hitung bounding box dari koordinat list dan animate map ke area itu
+// paddingPixels: jarak dari edge map (pixel)
+const fitBoundsToCoordinates = (mapInstance, coordinates, paddingPixels = 100) => {
+  if (coordinates.length === 0) return;
 
-  const data = src._data;
-  if (!data?.features) return;
+  // Pisahkan lon/lat untuk hitung min/max bounds
+  const lonValues = coordinates.map(([lon]) => lon);
+  const latValues = coordinates.map(([, lat]) => lat);
 
-  // Cari feature yang properties-nya cocok dengan filter
-  const feature = data.features.find(
-    (foundFeature) => foundFeature.properties[matchField] === matchValue
-  );
-  if (!feature || !feature.geometry) return;
-
-  const coords = [];
-
-  // Extract coordinates + validasi tipe data
-  if (feature.geometry.type === "Polygon") {
-    feature.geometry.coordinates.forEach((ring) => {
-      ring.forEach(([lng, lat]) => {
-        if (typeof lng === "number" && typeof lat === "number") {
-          coords.push([lng, lat]);
-        }
-      });
-    });
-  } else if (feature.geometry.type === "MultiPolygon") {
-    feature.geometry.coordinates.forEach((polygon) => {
-      polygon.forEach((ring) => {
-        ring.forEach(([lng, lat]) => {
-          if (typeof lng === "number" && typeof lat === "number") {
-            coords.push([lng, lat]);
-          }
-        });
-      });
-    });
-  }
-
-  if (coords.length === 0) return;
-
-  const lons = coords.map(([lng]) => lng);
-  const lats = coords.map(([, lat]) => lat);
-
+  // Buat bounding box dari ekstrim koordinat
   const bounds = new maplibregl.LngLatBounds(
-    [Math.min(...lons), Math.min(...lats)],
-    [Math.max(...lons), Math.max(...lats)]
+    [Math.min(...lonValues), Math.min(...latValues)],
+    [Math.max(...lonValues), Math.max(...latValues)]
   );
 
-  map.fitBounds(bounds, { padding: 100, duration: 400 });
+  // Animate map zoom ke bounds dengan padding
+  mapInstance.fitBounds(bounds, { padding: paddingPixels, duration: 400 });
+};
+
+// tunggu sampai source data ready di map (event-driven, lebih reliable daripada timeout)
+// Bermanfaat untuk: zoom setelah data load, atau execute action pas data siap
+export const waitForSourceData = (mapInstance, sourceId) => {
+  return new Promise((resolveWaiting) => {
+    const onSourceDataReady = (sourceEvent) => {
+      if (sourceEvent.sourceId === sourceId && sourceEvent.isSourceLoaded) {
+        mapInstance.off("sourcedata", onSourceDataReady);
+        resolveWaiting();
+      }
+    };
+    mapInstance.on("sourcedata", onSourceDataReady);
+  });
+};
+
+// Zoom ke feature berdasarkan feature object (harus punya geometry)
+// Parameter: mapInstance, featureObject = {geometry: {...}, properties: {...}}
+export const zoomToFeature = (mapInstance, featureObject) => {
+  if (!featureObject?.geometry) return;
+  const featureCoordinates = extractCoordinates(featureObject.geometry);
+  fitBoundsToCoordinates(mapInstance, featureCoordinates, 40);
+};
+
+// Zoom ke feature dengan search di source berdasarkan property
+// Contoh: zoomToMatchingFeature(map, 'kabupaten-src', 'kab', 'Bantul')
+// → search feature dengan property.kab === 'Bantul', lalu zoom ke sana
+export const zoomToMatchingFeature = (mapInstance, sourceId, propertyName, propertyValue) => {
+  const source = mapInstance.getSource(sourceId);
+  if (!source || !("_data" in source)) return;
+
+  const geojsonCollection = source._data;
+  if (!geojsonCollection?.features) return;
+
+  // Cari feature yang property-nya match
+  const targetFeature = geojsonCollection.features.find(
+    (feature) => feature.properties[propertyName] === propertyValue
+  );
+  if (!targetFeature?.geometry) return;
+
+  const featureCoordinates = extractCoordinates(targetFeature.geometry);
+  fitBoundsToCoordinates(mapInstance, featureCoordinates, 100);
 };
