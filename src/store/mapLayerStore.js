@@ -173,9 +173,21 @@ export function removeLayerAndSource(map, layerId) {
 
   const allLayers = map.getStyle()?.layers ?? [];
 
-  // Cari source yang benar-benar dipakai layer ini (bukan pattern derivation)
+  // Cari source yang benar-benar dipakai layer ini
   const layerDef = allLayers.find(l => l.id === layerId);
-  const sourceId = layerDef?.source ?? layerId.replace("-fill", "-src");
+  let sourceId = layerDef?.source;
+  
+  // Jika layer tidak ditemukan, coba derive dari hover-line dulu (mungkin hover-line yang masih ada)
+  if (!sourceId) {
+    const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
+    const hoverLineDef = allLayers.find(l => l.id === hoverLineId);
+    sourceId = hoverLineDef?.source;
+  }
+  
+  // Terakhir, gunakan pattern derivation sebagai fallback
+  if (!sourceId) {
+    sourceId = layerId.replace("-fill", "-src").replace(LAYERS.HOVER_SUFFIX, "-src");
+  }
 
   // Hapus SEMUA layers yang pakai source ini (fill + hover-line + layer lainnya)
   allLayers.filter(l => l.source === sourceId).forEach(l => {
@@ -264,13 +276,17 @@ export const loadLayer = async (
     return;
   }
 
+  // Guard: jika geoJsonData kosong/null, exit
+  if (!geoJsonData || !Array.isArray(geoJsonData.features)) {
+    console.warn(`No GeoJSON features loaded for ${layerId}`);
+    return;
+  }
+
   // ─── ENSURE FEATURE IDS ───
   // Setiap feature harus punya id agar feature-state (hover highlighting) berjalan konsisten
-  if (Array.isArray(geoJsonData.features)) {
-    geoJsonData.features.forEach((feature, index) => {
-      if (feature.id === undefined) feature.id = index;
-    });
-  }
+  geoJsonData.features.forEach((feature, index) => {
+    if (feature.id === undefined) feature.id = index;
+  });
 
   // ─── ADD/UPDATE SOURCE & LAYER ───
   if (map.getSource(sourceId)) {
@@ -447,32 +463,36 @@ function attachLayerInteraction(map, layerId) {
 
     // Display nama area di popup (prioritas: desa > kecamatan > kabupaten)
     const areaName =
-      "des" in hoveredFeature.properties
-        ? hoveredFeature.properties.des
-        : "kec" in hoveredFeature.properties
-        ? hoveredFeature.properties.kec
-        : hoveredFeature.properties.kab;
-    popup.setLngLat(e.lngLat).setHTML(`<strong>${areaName}</strong>`).addTo(map);
+      hoveredFeature.properties?.des ??
+      hoveredFeature.properties?.kec ??
+      hoveredFeature.properties?.kab ??
+      "Unknown";
+    
+    if (areaName && areaName !== "Unknown") {
+      popup.setLngLat(e.lngLat).setHTML(`<strong>${areaName}</strong>`).addTo(map);
+    }
   });
 
   // ─── CLICK HANDLER: Drilldown to next level ───
   map.on("click", layerId, async (e) => {
     const clickedFeature = e.features?.[0];
-    if (!clickedFeature) return;
+    if (!clickedFeature?.properties) return;
+
+    const { kab, kec, des } = clickedFeature.properties;
 
     // === LEVEL DESA (paling dalam) ===
-    if ("des" in clickedFeature.properties) {
+    if (des) {
       // Update breadcrumb state di Zustand store
-      updateBreadcrumb("kabupaten", clickedFeature.properties.kab);
-      updateBreadcrumb("kecamatan", clickedFeature.properties.kec);
-      updateBreadcrumb("desa", clickedFeature.properties.des);
-      useMapStore.getState().setSelectedKab(resolveKabName(clickedFeature.properties.kab));
+      updateBreadcrumb("kabupaten", kab);
+      updateBreadcrumb("kecamatan", kec);
+      updateBreadcrumb("desa", des);
+      useMapStore.getState().setSelectedKab(resolveKabName(kab));
 
       // Zoom ke boundary desa yang dipilih
       zoomToFeature(map, clickedFeature);
       
       // Load GEE coverage untuk desa itu
-      await loadGEEPolygonRaster(map, { des: clickedFeature.properties.des });
+      await loadGEEPolygonRaster(map, { des });
 
       // Hapus boundary orang tua (kecamatan & kabupaten tidak perlu lagi)
       [LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.KABUPATEN_FILL].forEach((id) => removeLayerAndSource(map, id));
@@ -484,25 +504,25 @@ function attachLayerInteraction(map, layerId) {
         LAYER_TYPES.DESA,
         SOURCE_IDS.DESA,
         LAYER_IDS.DESA_FILL,
-        `kab='${clickedFeature.properties.kab}' AND kec='${clickedFeature.properties.kec}' AND des='${clickedFeature.properties.des}'`
+        `kab='${kab}' AND kec='${kec}' AND des='${des}'`
       );
 
       return;
     }
 
     // === LEVEL KECAMATAN (mid-level) ===
-    if ("kec" in clickedFeature.properties) {
+    if (kec) {
       // Update breadcrumb state
-      updateBreadcrumb("kabupaten", clickedFeature.properties.kab);
-      updateBreadcrumb("kecamatan", clickedFeature.properties.kec);
+      updateBreadcrumb("kabupaten", kab);
+      updateBreadcrumb("kecamatan", kec);
       updateBreadcrumb("desa", undefined); // Reset desa saat navigate ke kecamatan baru
-      useMapStore.getState().setSelectedKab(resolveKabName(clickedFeature.properties.kab));
+      useMapStore.getState().setSelectedKab(resolveKabName(kab));
 
       // Zoom ke boundary kecamatan yang dipilih
       zoomToFeature(map, clickedFeature);
       
       // Load GEE coverage untuk kecamatan itu
-      await loadGEEPolygonRaster(map, { kec: clickedFeature.properties.kec });
+      await loadGEEPolygonRaster(map, { kec });
 
       // Hapus kabupaten layer (tidak diperlukan saat sudah di-drill ke kecamatan)
       removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
@@ -513,7 +533,7 @@ function attachLayerInteraction(map, layerId) {
         LAYER_TYPES.DESA,
         SOURCE_IDS.DESA,
         LAYER_IDS.DESA_FILL,
-        `kab='${clickedFeature.properties.kab}' AND kec='${clickedFeature.properties.kec}'`,
+        `kab='${kab}' AND kec='${kec}'`,
         [LAYER_IDS.KECAMATAN_FILL]
       );
 
@@ -521,18 +541,18 @@ function attachLayerInteraction(map, layerId) {
     }
 
     // === LEVEL KABUPATEN (top-level) ===
-    if ("kab" in clickedFeature.properties) {
+    if (kab) {
       // Update breadcrumb state (reset kecamatan & desa)
-      updateBreadcrumb("kabupaten", clickedFeature.properties.kab);
+      updateBreadcrumb("kabupaten", kab);
       updateBreadcrumb("kecamatan", undefined);
       updateBreadcrumb("desa", undefined);
-      useMapStore.getState().setSelectedKab(resolveKabName(clickedFeature.properties.kab));
+      useMapStore.getState().setSelectedKab(resolveKabName(kab));
 
       // Zoom ke boundary kabupaten yang dipilih
       zoomToFeature(map, clickedFeature);
       
       // Load GEE coverage untuk kabupaten itu
-      await loadGEEPolygonRaster(map, { kab: clickedFeature.properties.kab });
+      await loadGEEPolygonRaster(map, { kab });
 
       // Load kecamatan boundaries di dalam kabupaten ini (replace kabupaten layer)
       await loadLayer(
@@ -540,7 +560,7 @@ function attachLayerInteraction(map, layerId) {
         LAYER_TYPES.KECAMATAN,
         SOURCE_IDS.KECAMATAN,
         LAYER_IDS.KECAMATAN_FILL,
-        `kab='${clickedFeature.properties.kab}'`,
+        `kab='${kab}'`,
         [LAYER_IDS.KABUPATEN_FILL]
       );
     }

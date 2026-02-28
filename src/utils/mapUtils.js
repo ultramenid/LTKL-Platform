@@ -54,6 +54,12 @@ const fitBoundsToCoordinates = (mapInstance, coordinates, paddingPixels = 100) =
 // Bermanfaat untuk: zoom setelah data load, atau execute action pas data siap
 export const waitForSourceData = (mapInstance, sourceId) => {
   return new Promise((resolveWaiting) => {
+    // Jika source sudah loaded, langsung resolve (tidak perlu tunggu event)
+    if (mapInstance.isSourceLoaded(sourceId)) {
+      resolveWaiting();
+      return;
+    }
+
     const onSourceDataReady = (sourceEvent) => {
       if (sourceEvent.sourceId === sourceId && sourceEvent.isSourceLoaded) {
         mapInstance.off("sourcedata", onSourceDataReady);
