@@ -7,7 +7,7 @@ export const MAP_CONFIG = {
   DEFAULT_CENTER: [120.216667, -1.5],
   DEFAULT_ZOOM: 4,
   MIN_ZOOM: 4,
-  STYLE_URL: 'https://api.maptiler.com/maps/dataviz-light/style.json?key=84THmLMIMtlrEbOF2Iup',
+  STYLE_URL: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
 };
 
 // URL server eksternal (GeoServer untuk WFS, GEE tile server)

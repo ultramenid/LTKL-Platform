@@ -46,17 +46,27 @@ const Map = () => {
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
       minZoom: MAP_CONFIG.MIN_ZOOM,
+      attributionControl: false,
     });
-    
+
+    // Custom compact attribution styled like TimeSelector
+    mapInstance.addControl(
+      new maplibregl.AttributionControl({
+        compact: true,
+        customAttribution: "© LTKL · Auriga Nusantara",
+      }),
+      "bottom-right"
+    );
+
     mapRef.current = mapInstance;
     setMap(mapInstance); // Store ke Zustand untuk akses global
 
     // Tandai map ready setelah style loaded (agar tidak render layers sebelum siap)
     mapInstance.on("load", () => setIsMapReady(true));
 
-    // Tambah scale control (untuk reference ukuran distance)
+    // Tambah scale control di atas attribution (bottom-right, ditambah setelah attribution)
     const scaleControl = new maplibregl.ScaleControl({
-      maxWidth: 150,
+      maxWidth: 100,
       unit: "metric",
     });
     mapInstance.addControl(scaleControl, "bottom-right");

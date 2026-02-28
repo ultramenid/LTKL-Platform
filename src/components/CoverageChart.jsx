@@ -7,8 +7,21 @@ import { YEAR_CONFIG } from '../config/constants.js';
 // Loading skeleton saat chart sedang fetch data
 function LoadingChartSkeleton() {
   return (
-    <div className="w-full h-full p-4">
-      <div className="w-full h-full bg-gray-200 animate-pulse rounded"></div>
+    <div className="w-full h-full flex flex-col p-4 gap-3">
+      <div className="flex items-center justify-between">
+        <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
+        <div className="h-5 w-16 bg-gray-100 rounded-full animate-pulse" />
+      </div>
+      <div className="flex-1 flex items-end gap-2 px-2">
+        {[55, 80, 65, 90, 45, 70, 60, 85, 50].map((h, i) => (
+          <div
+            key={i}
+            className="flex-1 bg-gray-100 rounded-t animate-pulse"
+            style={{ height: `${h}%`, animationDelay: `${i * 60}ms` }}
+          />
+        ))}
+      </div>
+      <div className="h-3 w-full bg-gray-100 rounded animate-pulse" />
     </div>
   );
 }
@@ -179,72 +192,118 @@ export default function CoverageChartDebug() {
 
   // ─── RENDER ERROR STATES ───
   if (loading) return <LoadingChartSkeleton />;
-  if (error) return <div style={{ color: 'crimson' }}>Error loading chart: {error}</div>;
-  if (!serverResponse) {
-    return (
-      <div>
-        No data received. Open console (F12) → Network tab and check the response from <code>{TILE_SERVER_URL}/lulc-stats</code>.
+  if (error) return (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-center">
+      <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+        <span className="text-red-400 text-sm font-bold">!</span>
       </div>
-    );
-  }
-  if (!normalizedData) {
+      <p className="text-xs font-semibold text-gray-600">Gagal memuat data</p>
+      <p className="text-[10px] text-gray-400 leading-relaxed max-w-xs">{error}</p>
+    </div>
+  );
+  if (!serverResponse || !normalizedData) {
     console.warn('[CoverageChart] unable to normalize server response', serverResponse);
     return (
-      <div>
-        Unexpected server response shape. Open console (F12) and check the <code>serverResponse</code> object logged above.
+      <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-center">
+        <p className="text-xs text-gray-400">Tidak ada data tersedia</p>
       </div>
     );
   }
 
+  // ─── SUMMARY STAT ───
+  const totalArea = chartValues.reduce((sum, v) => sum + v, 0);
+  const totalAreaLabel = totalArea >= 1_000_000
+    ? `${(totalArea / 1_000_000).toFixed(2)}M ha`
+    : totalArea >= 1_000
+    ? `${(totalArea / 1_000).toFixed(1)}K ha`
+    : `${totalArea.toLocaleString()} ha`;
+
   // ─── ECHART OPTIONS ───
-  // Setup bar chart dengan ECharts
   const chartOption = {
-    title: {
-      text: `Area (ha) per Kabupaten — ${year}`,
-      left: "center",
-      textStyle: { 
-        fontSize: 17,
-        color: "#0e7490",
-      }
-    },
     tooltip: {
       trigger: "axis",
-      axisPointer: { type: "shadow" },
+      axisPointer: { type: "none" },
+      backgroundColor: "#1e293b",
+      borderColor: "transparent",
+      textStyle: { color: "#f1f5f9", fontSize: 11 },
       formatter: (params) => {
-        const param = params[0];
-        return `${param.name}<br/>Area: ${Number(param.value).toLocaleString()} ha`;
-      }
+        const p = params[0];
+        return `<span style="font-weight:600">${p.name}</span><br/>` +
+          `<span style="color:#5eead4">${Number(p.value).toLocaleString()} ha</span>`;
+      },
     },
-    grid: { left: "10%", right: "10%", bottom: "18%" },
+    grid: { left: 12, right: 16, top: 8, bottom: 48, containLabel: true },
     xAxis: {
       type: "category",
       data: chartLabels,
-      axisLabel: { 
-        rotate: 30, 
-        interval: 0, 
-        formatter: (label) => label.length > 18 ? label.slice(0, 16) + "…" : label 
-      }
+      axisLine: { lineStyle: { color: "#e2e8f0" } },
+      axisTick: { show: false },
+      axisLabel: {
+        rotate: 30,
+        interval: 0,
+        fontSize: 10,
+        color: "#94a3b8",
+        formatter: (label) => label.length > 10 ? label.slice(0, 9) + "…" : label,
+      },
     },
     yAxis: {
       type: "value",
+      splitLine: { lineStyle: { color: "#f1f5f9", type: "dashed" } },
+      axisLabel: {
+        fontSize: 9,
+        color: "#94a3b8",
+        formatter: (v) => v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `${(v/1_000).toFixed(0)}K` : v,
+      },
     },
     series: [
       {
         name: "Area (ha)",
         type: "bar",
         data: chartValues,
-        barWidth: "50%",
+        barMaxWidth: 36,
         itemStyle: {
-          color: '#06b6d4'
-        }
-      }
+          color: "#14b8a6",
+          borderRadius: [4, 4, 0, 0],
+        },
+        emphasis: {
+          itemStyle: {
+            color: "#2dd4bf",
+          },
+        },
+      },
     ],
   };
 
   // ─── RENDER ───
   return (
-    <div style={{ width: '100%', height: '100%' }}>
-      <ReactECharts ref={echartsRef} option={chartOption} style={{ height: '100%' }} />
+    <div className="w-full h-full flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="shrink-0 flex items-center justify-between px-4 pt-3 pb-1">
+        <div>
+          <p className="text-xs font-bold text-gray-700 leading-tight">Area per Kabupaten</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">LULC Coverage · {year}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <p className="text-[9px] text-gray-400 uppercase tracking-widest">Total</p>
+            <p className="text-sm font-black text-teal-600 leading-tight">{totalAreaLabel}</p>
+          </div>
+        </div>
+      </div>
+      {/* Chart */}
+      <div className="flex-1 min-h-full relative overflow-hidden ">
+        <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
+          <ReactECharts
+            ref={echartsRef}
+            option={chartOption}
+            style={{ height: '100%', width: '100%' }}
+            onChartReady={(instance) => {
+              // Paksa resize setelah browser selesai hitung layout flex
+              requestAnimationFrame(() => instance.resize());
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

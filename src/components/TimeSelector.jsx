@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { useMapStore } from "../store/mapStore.js";
 import { loadGEEPolygonRaster } from "../store/mapLayerStore.js";
 import { YEAR_CONFIG } from "../config/constants.js";
@@ -8,73 +9,92 @@ import { YEAR_CONFIG } from "../config/constants.js";
 // Fungsi: reload GEE raster ketika user ubah tahun
 export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, endYear = YEAR_CONFIG.MAX }) {
   const { year, setYear, breadcrumbs } = useMapStore();
-  const [hovered, setHovered] = useState(null); // Track dot yang di-hover untuk tooltip
+  const [hovered, setHovered] = useState(null);
+  const [expanded, setExpanded] = useState(false);
 
   // Click year dot: update global year + reload GEE raster dengan tahun baru
   const handleChange = async (selectedYear) => {
-    // Guard: pastikan map instance ada
     if (!map) {
       console.warn("⚠️ Tidak ada map instance");
       return;
     }
-
-    // Update global year state (akan trigger URL sync otomatis)
     setYear(selectedYear);
-    console.log("🕒 Tahun dipilih:", selectedYear);
 
-    // Build filters berdasarkan drill level sekarang (kab/kec/des)
-    // Pass filters ini ke GEE server: "mau raster tahun XXXX untuk area YYY"
     const geeFilters = {};
     if (breadcrumbs.kab) geeFilters.kab = breadcrumbs.kab;
     if (breadcrumbs.kec) geeFilters.kec = breadcrumbs.kec;
     if (breadcrumbs.des) geeFilters.des = breadcrumbs.des;
     geeFilters.year = String(selectedYear);
 
-    // Reload GEE raster coverage dengan tahun & area yang baru
-    console.log("♻️ Reload GEE raster dengan filters:", geeFilters);
     await loadGEEPolygonRaster(map, geeFilters);
   };
 
-  // Generate array tahun dari min ke max (untuk render dots)
   const yearArray = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
 
   return (
-    <div className="absolute bottom-4 left-4 select-none bg-white px-2 py-1 rounded-lg shadow-sm border border-gray-200">
-      {/* Current year display */}
-      <div className="flex items-center justify-between text-[10px] text-gray-600">
-        <span className="text-[#115e59] font-black">{year}</span>
-      </div>
+    <div className="absolute bottom-5 left-4 select-none">
+      {/* ── Collapsed pill ── */}
+      {!expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
+        >
+          <CalendarDays size={12} className="text-teal-400" />
+          <span className="text-xs font-black text-teal-400">{year}</span>
+          <ChevronRight size={14} className="text-white" />
+        </button>
+      )}
 
-      {/* Timeline slider dengan dots */}
-      <div className="relative flex items-center justify-center gap-[6px] h-6">
-        {/* Background line (dasar timeline) */}
-        <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-gray-300 -translate-y-1/2 pointer-events-none"></div>
+      {/* ── Expanded panel ── */}
+      {expanded && (
+        <div className="bg-gray-900/80 backdrop-blur-md rounded-xl shadow-lg border border-white/10 px-3 py-2 flex items-center gap-3">
+          {/* Year label — klik untuk collapse */}
+          <button
+            onClick={() => setExpanded(false)}
+            className="shrink-0 text-right cursor-pointer hover:opacity-70 transition-opacity"
+          >
+            <div className="flex items-center gap-1">
+              <ChevronLeft size={12} className="text-white/30" />
+              <p className="text-[8px] text-white/40 uppercase tracking-widest font-semibold leading-none">Tahun</p>
+            </div>
+            <p className="text-sm font-black text-teal-400 leading-tight mt-0.5">{year}</p>
+          </button>
 
-        {/* Year dots dengan tooltip hover */}
-        {yearArray.map((yearDot) => (
-          <div key={yearDot} className="relative flex items-center justify-center">
-            {/* Tooltip yang muncul saat hover */}
-            {hovered === yearDot && (
-              <div className="absolute -top-5 px-1.5 py-[1px] bg-[#14b8a6] text-white text-[10px] rounded shadow-sm animate-fadeIn whitespace-nowrap">
-                {yearDot}
-              </div>
-            )}
-            {/* Dot button untuk select tahun */}
-            <button
-              onClick={() => handleChange(yearDot)}
-              onMouseEnter={() => setHovered(yearDot)}
-              onMouseLeave={() => setHovered(null)}
-              className={`
-                z-10 w-[9px] h-[9px] cursor-pointer rounded-full flex items-center justify-center border border-white transition-all duration-200
-                ${yearDot === year
-                  ? "bg-[#14b8a6] scale-110 shadow ring-1 ring-emerald-300"
-                  : "bg-gray-300 hover:bg-gray-400 hover:scale-105"
-                }
-              `}
-            />
+          {/* Divider */}
+          <div className="w-px h-5 bg-white/10" />
+
+          {/* Timeline dots */}
+          <div className="relative flex items-center gap-1.5">
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 pointer-events-none" />
+            {yearArray.map((yearDot) => {
+              const isSelected = yearDot === year;
+              const isPast = yearDot < year;
+              return (
+                <div key={yearDot} className="relative flex items-center justify-center">
+                  {hovered === yearDot && (
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-teal-500 text-white text-[9px] font-bold rounded shadow-lg whitespace-nowrap">
+                      {yearDot}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleChange(yearDot)}
+                    onMouseEnter={() => setHovered(yearDot)}
+                    onMouseLeave={() => setHovered(null)}
+                    className={`z-10 rounded-full cursor-pointer border transition-all duration-200 ${
+                      isSelected
+                        ? "w-2.5 h-2.5 bg-teal-400 border-teal-300 shadow-md shadow-teal-500/40 scale-110"
+                        : isPast
+                        ? "w-2 h-2 bg-teal-700 border-teal-600 hover:bg-teal-500"
+                        : "w-2 h-2 bg-white/20 border-white/10 hover:bg-white/40"
+                    }`}
+                  />
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
+
