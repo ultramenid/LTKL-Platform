@@ -209,4 +209,7 @@ export const useMapStore = create((set, get) => ({
       Object.entries(state.pendingRequests).filter(([key]) => key !== requestKey)
     )
   })),
+
+  // Hapus semua pending requests sekaligus (dipakai saat AbortController di-reset)
+  clearAllPending: () => set({ pendingRequests: {} }),
 }));

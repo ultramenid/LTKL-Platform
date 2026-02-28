@@ -6,6 +6,7 @@ import { KABUPATENS } from "../data/kabupatens.js";
 // Normalize GeoJSON kab property ke canonical name di KABUPATENS list (case-insensitive)
 const resolveKabName = (rawKab) =>
   KABUPATENS.find((k) => k.name.toLowerCase() === String(rawKab).toLowerCase())?.name ?? rawKab;
+
 import {
   API_ENDPOINTS,
   COLORS,
@@ -24,6 +25,20 @@ const LAYERS = {
   GEE_SOURCE: SOURCE_IDS.GEE,
   HOVER_SUFFIX: "-hover-line",
 };
+
+// ─── ABORT CONTROLLER (module-level) ───
+// Digunakan untuk cancel semua in-flight fetch requests saat user klik Home
+// Diganti (abort + new) setiap kali abortActiveRequests() dipanggil
+let activeController = new AbortController();
+
+// Cancel semua in-flight requests (fetch GeoServer + GEE tile server)
+// Juga clear pending request dedup agar request baru bisa berjalan fresh
+export function abortActiveRequests() {
+  activeController.abort();
+  activeController = new AbortController();
+  // Clear semua pending request references agar tidak await promise yang sudah di-abort
+  useMapStore.getState().clearAllPending();
+}
 
 // Load raster coverage dari Google Earth Engine (LULC data)
 // Parameters: filters = {kab, kec, des, year} untuk filter coverage area
@@ -95,7 +110,7 @@ export async function loadGEEPolygonRaster(
 
     // Buat promise dan track di store (agar request lain bisa tunggu)
     const fetchPromise = (async () => {
-      const response = await fetch(tileServerUrl);
+      const response = await fetch(tileServerUrl, { signal: activeController.signal });
       const geeRasterTileUrl = await response.text();
 
       if (!geeRasterTileUrl || geeRasterTileUrl.trim() === "") {
@@ -145,23 +160,30 @@ export async function loadGEEPolygonRaster(
     store.clearPending(cacheKey);
 
   } catch (err) {
+    if (err.name === "AbortError") return; // Dibatalkan saat Home di-klik, bukan error
     console.error("Failed to load GEE LULC raster:", err);
   }
 }
 
-// Helper: Hapus layer dan source-nya secara bersamaan
-// Important: hapus hover line dulu (masih reference ke source), baru layer, terakhir source
+// Helper: Hapus all layers yang reference source, lalu hapus sourcenya
+// Cari sourceId langsung dari map style (bukan hanya pattern "-fill" → "-src")
+// agar zoom layers (zoomkabupaten-src, dll) juga bisa di-cleanup dengan benar
 export function removeLayerAndSource(map, layerId) {
-  // Hapus hover line dulu (masih pakai reference ke source)
-  const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
-  if (map.getLayer(hoverLineId)) map.removeLayer(hoverLineId);
-  
-  // Hapus main layer
-  if (map.getLayer(layerId)) map.removeLayer(layerId);
-  
-  // Terakhir hapus source (setelah semua layer yang pakai sudah dihapus)
-  const sourceId = layerId.replace("-fill", "-src");
-  if (map.getSource(sourceId)) map.removeSource(sourceId);
+  if (!map || !map.getStyle) return;
+
+  const allLayers = map.getStyle()?.layers ?? [];
+
+  // Cari source yang benar-benar dipakai layer ini (bukan pattern derivation)
+  const layerDef = allLayers.find(l => l.id === layerId);
+  const sourceId = layerDef?.source ?? layerId.replace("-fill", "-src");
+
+  // Hapus SEMUA layers yang pakai source ini (fill + hover-line + layer lainnya)
+  allLayers.filter(l => l.source === sourceId).forEach(l => {
+    try { if (map.getLayer(l.id)) map.removeLayer(l.id); } catch (e) { /* skip */ }
+  });
+
+  // Setelah semua layers dihapus, baru hapus source
+  try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch (e) { /* skip */ }
 }
 
 // Helper: Pindahkan semua hover line layers ke atas supaya terlihat
@@ -193,54 +215,53 @@ export const loadLayer = async (
   removeLayerIds = []
 ) => {
   // ─── CLEANUP LAYER LAMA ───
-  removeLayerIds.forEach((id) => {
-    removeLayerAndSource(map, id);
-    const hoverLineId = `${id}${LAYERS.HOVER_SUFFIX}`;
-    if (map.getLayer(hoverLineId)) map.removeLayer(hoverLineId);
-  });
+  // removeLayerAndSource sudah handle hover-line + fill layer sekaligus
+  removeLayerIds.forEach((id) => removeLayerAndSource(map, id));
 
   // ─── CEK CACHE ───
-  // Buat cache key dari layerName + filter (agar berbeda layer = berbeda cache)
   const cacheKey = `geojson_${layerName}_${cqlFilter || 'all'}`;
   const store = useMapStore.getState();
 
   let geoJsonData;
 
-  // Coba ambil dari cache dulu
-  const cachedGeoJson = store.getCacheGeoJSON(cacheKey);
-  if (cachedGeoJson) {
-    geoJsonData = cachedGeoJson;
-  } else {
-    // Cek pending request (jangan fetch 2x kalau ada request yang sedang berlangsung)
-    const pendingRequest = store.getPending(cacheKey);
-    if (pendingRequest) {
-      geoJsonData = await pendingRequest;
+  try {
+    // Coba ambil dari cache dulu
+    const cachedGeoJson = store.getCacheGeoJSON(cacheKey);
+    if (cachedGeoJson) {
+      geoJsonData = cachedGeoJson;
     } else {
-      // ─── FETCH DARI GEOSERVER ───
-      const wfsParams = new URLSearchParams({
-        service: WFS_CONFIG.SERVICE,
-        version: WFS_CONFIG.VERSION,
-        request: WFS_CONFIG.REQUEST,
-        typeNames: layerName,
-        outputFormat: WFS_CONFIG.OUTPUT_FORMAT,
-      });
-      if (cqlFilter) wfsParams.append("CQL_FILTER", cqlFilter);
+      // Cek pending request (jangan fetch 2x kalau ada request yang sedang berlangsung)
+      const pendingRequest = store.getPending(cacheKey);
+      if (pendingRequest) {
+        geoJsonData = await pendingRequest;
+      } else {
+        // ─── FETCH DARI GEOSERVER ───
+        const wfsParams = new URLSearchParams({
+          service: WFS_CONFIG.SERVICE,
+          version: WFS_CONFIG.VERSION,
+          request: WFS_CONFIG.REQUEST,
+          typeNames: layerName,
+          outputFormat: WFS_CONFIG.OUTPUT_FORMAT,
+        });
+        if (cqlFilter) wfsParams.append("CQL_FILTER", cqlFilter);
 
-      const geoserverUrl = `${GEOSERVER_URL}?${wfsParams.toString()}`;
+        const geoserverUrl = `${GEOSERVER_URL}?${wfsParams.toString()}`;
 
-      const fetchPromise = (async () => {
-        const response = await fetch(geoserverUrl);
-        return await response.json();
-      })();
+        const fetchPromise = (async () => {
+          const response = await fetch(geoserverUrl, { signal: activeController.signal });
+          return await response.json();
+        })();
 
-      // Track pending request agar request lain bisa tunggu
-      store.setPending(cacheKey, fetchPromise);
-      geoJsonData = await fetchPromise;
-      store.clearPending(cacheKey);
-
-      // Cache result untuk performance
-      store.setCacheGeoJSON(cacheKey, geoJsonData);
+        store.setPending(cacheKey, fetchPromise);
+        geoJsonData = await fetchPromise;
+        store.clearPending(cacheKey);
+        store.setCacheGeoJSON(cacheKey, geoJsonData);
+      }
     }
+  } catch (err) {
+    if (err.name === "AbortError") return; // Dibatalkan saat Home di-klik, bukan error
+    console.error(`Failed to load layer ${layerId}:`, err);
+    return;
   }
 
   // ─── ENSURE FEATURE IDS ───
@@ -313,6 +334,10 @@ export const loadLayer = async (
     }
   } else {
     // Source tidak ada: create source + layers baru
+    // Hapus layer lama dulu jika masih ada (bisa terjadi saat source sudah di-remove tapi layer belum)
+    if (map.getLayer(`${layerId}${LAYERS.HOVER_SUFFIX}`)) map.removeLayer(`${layerId}${LAYERS.HOVER_SUFFIX}`);
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+
     map.addSource(sourceId, { type: "geojson", data: geoJsonData, generateId: true });
     
     // Create fill layer

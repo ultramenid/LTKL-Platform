@@ -1,4 +1,4 @@
-import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore.js";
+import { loadGEEPolygonRaster, loadLayer, removeLayerAndSource } from "../store/mapLayerStore.js";
 import { zoomToMatchingFeature, waitForSourceData } from "../utils/mapUtils.js";
 import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../config/constants.js";
 
@@ -52,9 +52,10 @@ export const loadLevelLayers = async (mapInstance, breadcrumbData, adminLevel) =
   await loadGEEPolygonRaster(mapInstance, levelConfigMap.geeRasterFilter);
   await loadLayer(mapInstance, levelConfigMap.nextLevelType, nextSourceId, nextLayerId, levelConfigMap.nextLevelCqlFilter);
 
-  // Cleanup: hapus zoom layer setelah selesai (biar tidak duplicate dengan layer lain)
-  if (mapInstance.getLayer(levelConfigMap.zoomLayerId)) mapInstance.removeLayer(levelConfigMap.zoomLayerId);
-  if (mapInstance.getSource(levelConfigMap.zoomSourceId)) mapInstance.removeSource(levelConfigMap.zoomSourceId);
+  // Cleanup: hapus zoom layer + semua hover-line yang masih reference sourcenya
+  // removeLayerAndSource mencari source actual dari map style (bukan pattern derivation)
+  // sehingga zoomkabupaten-src / zoomkecamatan-src bisa di-cleanup dengan benar
+  removeLayerAndSource(mapInstance, levelConfigMap.zoomLayerId);
 };
 
 // Load layer desa level (tidak perlu zoom layer terpisah, beri waktu untuk data ready)

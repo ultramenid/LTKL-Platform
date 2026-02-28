@@ -1,4 +1,4 @@
-import { loadGEEPolygonRaster, loadLayer, removeLayerAndSource } from "../store/mapLayerStore.js";
+import { loadGEEPolygonRaster, loadLayer, removeLayerAndSource, abortActiveRequests } from "../store/mapLayerStore.js";
 import { zoomToMatchingFeature, waitForSourceData } from "./mapUtils.js";
 import { useMapStore } from "../store/mapStore.js";
 import { LAYER_IDS, LAYER_TYPES, SOURCE_IDS } from "../config/constants.js";
@@ -7,8 +7,6 @@ import { LAYER_IDS, LAYER_TYPES, SOURCE_IDS } from "../config/constants.js";
 const ALL_LAYER_IDS = [LAYER_IDS.DESA_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.KABUPATEN_FILL];
 
 // Reset map ke tampilan awal (Indonesia keseluruhan)
-// Menghapus semua layer drilldown, reset zoom ke pusat Indonesia, reload layer kabupaten
-// Digunakan saat user klik tombol "Home" atau reset state
 export async function handleHomeReset(
   mapInstance,
   resetBreadcrumbsCallback,
@@ -17,24 +15,21 @@ export async function handleHomeReset(
 ) {
   if (!mapInstance) return;
 
-  // Hapus semua layer drilldown dari map
+  // 1. Batalkan semua in-flight fetch requests (GeoServer + GEE) segera
+  abortActiveRequests();
+
+  // 2. Hapus semua layer drilldown dari map
   ALL_LAYER_IDS.forEach((layerId) => removeLayerAndSource(mapInstance, layerId));
 
-  // Reset state di Zustand store
+  // 3. Reset state di Zustand store (ini memicu useEffect di Map.jsx → reload kabupaten otomatis)
   resetBreadcrumbsCallback();
   useMapStore.getState().setSelectedKab(null);
   
-  // Animate kembali ke tampilan awal
+  // 4. Animate kembali ke tampilan awal
   mapInstance.flyTo({ center: initialCenterCoordinate, zoom: initialZoomLevel });
 
-  // Reload layer kabupaten dan coverage GEE di tampilan awal
-  await loadLayer(
-    mapInstance,
-    LAYER_TYPES.KABUPATEN,
-    SOURCE_IDS.KABUPATEN,
-    LAYER_IDS.KABUPATEN_FILL
-  );
-  await loadGEEPolygonRaster(mapInstance);
+  // useEffect di Map.jsx akan reload kabupaten layer + GEE otomatis
+  // setelah breadcrumbs direset di atas
 }
 
 // Navigate antar level administratif (Indonesia → kabupaten → kecamatan → desa)
