@@ -1,6 +1,11 @@
 import maplibregl from "maplibre-gl";
 import { useMapStore } from "./mapStore.js";
 import { zoomToFeature } from "../utils/mapUtils.js";
+import { KABUPATENS } from "../data/kabupatens.js";
+
+// Normalize GeoJSON kab property ke canonical name di KABUPATENS list (case-insensitive)
+const resolveKabName = (rawKab) =>
+  KABUPATENS.find((k) => k.name.toLowerCase() === String(rawKab).toLowerCase())?.name ?? rawKab;
 import {
   API_ENDPOINTS,
   COLORS,
@@ -436,6 +441,7 @@ function attachLayerInteraction(map, layerId) {
       updateBreadcrumb("kabupaten", clickedFeature.properties.kab);
       updateBreadcrumb("kecamatan", clickedFeature.properties.kec);
       updateBreadcrumb("desa", clickedFeature.properties.des);
+      useMapStore.getState().setSelectedKab(resolveKabName(clickedFeature.properties.kab));
 
       // Zoom ke boundary desa yang dipilih
       zoomToFeature(map, clickedFeature);
@@ -465,6 +471,7 @@ function attachLayerInteraction(map, layerId) {
       updateBreadcrumb("kabupaten", clickedFeature.properties.kab);
       updateBreadcrumb("kecamatan", clickedFeature.properties.kec);
       updateBreadcrumb("desa", undefined); // Reset desa saat navigate ke kecamatan baru
+      useMapStore.getState().setSelectedKab(resolveKabName(clickedFeature.properties.kab));
 
       // Zoom ke boundary kecamatan yang dipilih
       zoomToFeature(map, clickedFeature);
@@ -494,6 +501,7 @@ function attachLayerInteraction(map, layerId) {
       updateBreadcrumb("kabupaten", clickedFeature.properties.kab);
       updateBreadcrumb("kecamatan", undefined);
       updateBreadcrumb("desa", undefined);
+      useMapStore.getState().setSelectedKab(resolveKabName(clickedFeature.properties.kab));
 
       // Zoom ke boundary kabupaten yang dipilih
       zoomToFeature(map, clickedFeature);
