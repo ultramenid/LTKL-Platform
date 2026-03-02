@@ -2,12 +2,9 @@ import { create } from "zustand";
 import { updateUrl } from "../utils/urlStateSync.js";
 import { YEAR_CONFIG, CACHE_CONFIG } from "../config/constants.js";
 
-// Zustand store untuk manage map state global
-// Bertanggung jawab untuk: breadcrumbs, selectedKab, year, map instance, cache (GEE + GeoJSON), pending requests
+// Global state: breadcrumbs, tahun, map instance, cache GEE & GeoJSON, pending requests
 export const useMapStore = create((set, get) => ({
-  // ═══════════════════ BREADCRUMB STATE ═══════════════════
-  // Track user navigation: Indonesia → Kabupaten → Kecamatan → Desa
-  // Format: {kab: 'Bantul', kec: 'Imogiri', des: 'Banyudono'}
+  // ─── Breadcrumb State ───
   breadcrumbs: {},
   selectedKab: null,
   
@@ -18,8 +15,7 @@ export const useMapStore = create((set, get) => ({
     updateUrl(state.year, state.breadcrumbs, kabupatenName);
   },
 
-  // ═══════════════════ YEAR STATE ═══════════════════
-  // Global tahun untuk filter coverage GEE (shared ke semua layers)
+  // ─── Year State ───
   year: YEAR_CONFIG.DEFAULT,
   setYear: (newYear) => {
     set({ year: newYear });
@@ -27,19 +23,15 @@ export const useMapStore = create((set, get) => ({
     updateUrl(newYear, state.breadcrumbs, state.selectedKab);
   },
 
-  // ═══════════════════ MAP INSTANCE ═══════════════════
-  // Store referensi ke MapLibre GL instance (untuk manipulasi map dari berbagai komponen)
+  // ─── Map Instance ───
   map: null,
   setMap: (mapInstance) => set({ map: mapInstance }),
   
-  // ═══════════════════ BREADCRUMB MANAGEMENT ═══════════════════
+  // ─── Breadcrumb Management ───
   // Replace seluruh breadcrumbs object (biasa digunakan dari URL sync)
   setBreadcrumbs: (newBreadcrumbs) => set({ breadcrumbs: newBreadcrumbs }),
 
-  // Update level spesifik di breadcrumbs (kabupaten, kecamatan, desa)
-  // Otomatis update level di bawahnya ke undefined (reset)
-  // Contoh: updateBreadcrumb("kecamatan", "Imogiri") 
-  //   → {kab: (tetap), kec: "Imogiri", des: undefined}
+  // Update level spesifik di breadcrumbs + reset level di bawahnya ke undefined
   updateBreadcrumb: (level, value) =>
     set((state) => {
       const newBreadcrumbs =
@@ -70,13 +62,8 @@ export const useMapStore = create((set, get) => ({
       return { breadcrumbs: {}, selectedKab: null };
     }),
 
-  // ═══════════════════ CACHE CONFIGURATION ═══════════════════
-  // TTL dan storage keys dikonfigurasi di CACHE_CONFIG (src/config/constants.js)
-
-  // ═══════════════════ GEE RASTER CACHE (localStorage) ═══════════════════
-  // Menyimpan Google Earth Engine tile URLs (LULC coverage)
-  // Format: {query_string: tile_url, ...}
-  // TTL dan storage key dikonfigurasi via CACHE_CONFIG di constants.js
+  // ─── GEE Cache (localStorage) ───
+  // Menyimpan Google Earth Engine tile URLs; format: {query_string: tile_url}
   geeCache: (() => {
     try {
       const storedJson = localStorage.getItem(CACHE_CONFIG.STORAGE_KEY_GEE);
@@ -85,7 +72,7 @@ export const useMapStore = create((set, get) => ({
       const allCacheEntries = JSON.parse(storedJson);
       const currentTime = Date.now();
       
-      // Filter out expired entries saat load (hanya keep yang belum expired)
+      // Buang expired entries saat load
       const validCache = {};
       for (const [cacheKey, cacheEntry] of Object.entries(allCacheEntries)) {
         if (cacheEntry.expiresAt && cacheEntry.expiresAt > currentTime) {
@@ -103,7 +90,6 @@ export const useMapStore = create((set, get) => ({
     const expirationTime = Date.now() + CACHE_CONFIG.GEE_TTL_MS;
     const updatedCache = { ...state.geeCache };
     
-    // Rebuild localStorage format (dengan timestamp untuk setiap entry)
     const storageFormat = {};
     for (const [key, value] of Object.entries(updatedCache)) {
       storageFormat[key] = { value, expiresAt: expirationTime };
@@ -122,11 +108,10 @@ export const useMapStore = create((set, get) => ({
   
   getCacheGEE: (cacheKey) => {
     const cachedTileUrl = get().geeCache[cacheKey];
-    return cachedTileUrl; // Sudah di-filter saat initialization
+    return cachedTileUrl;
   },
 
-  // Hapus satu entry dari GEE cache (in-memory + localStorage)
-  // Dipanggil saat URL terdeteksi expired saat divalidasi sebelum dipakai
+  // Hapus satu GEE cache entry (dipanggil saat URL expired saat validasi)
   clearCacheGEE: (cacheKey) => set((state) => {
     const updatedCache = { ...state.geeCache };
     delete updatedCache[cacheKey];
@@ -146,10 +131,8 @@ export const useMapStore = create((set, get) => ({
     return { geeCache: updatedCache };
   }),
 
-  // ═══════════════════ GEOJSON CACHE (localStorage) ═══════════════════
-  // Menyimpan GeoJSON features dari GeoServer (administrative boundaries)
-  // Format: {layer_name_filter: geojson_object, ...}
-  // TTL dan storage key dikonfigurasi via CACHE_CONFIG di constants.js
+  // ─── GeoJSON Cache (localStorage) ───
+  // Menyimpan GeoJSON features dari GeoServer; format: {layer_name_filter: geojson_object}
   geoJsonCache: (() => {
     try {
       const storedJson = localStorage.getItem(CACHE_CONFIG.STORAGE_KEY_GEOJSON);
@@ -158,7 +141,7 @@ export const useMapStore = create((set, get) => ({
       const allCacheEntries = JSON.parse(storedJson);
       const currentTime = Date.now();
       
-      // Filter out expired entries saat load
+      // Buang expired entries saat load
       const validCache = {};
       for (const [cacheKey, cacheEntry] of Object.entries(allCacheEntries)) {
         if (cacheEntry.expiresAt && cacheEntry.expiresAt > currentTime) {
@@ -176,7 +159,6 @@ export const useMapStore = create((set, get) => ({
     const expirationTime = Date.now() + CACHE_CONFIG.GEOJSON_TTL_MS;
     const updatedCache = { ...state.geoJsonCache };
     
-    // Rebuild localStorage format (dengan timestamp untuk setiap entry)
     const storageFormat = {};
     for (const [key, value] of Object.entries(updatedCache)) {
       storageFormat[key] = { value, expiresAt: expirationTime };
@@ -195,11 +177,10 @@ export const useMapStore = create((set, get) => ({
   
   getCacheGeoJSON: (cacheKey) => {
     const cachedGeoJson = get().geoJsonCache[cacheKey];
-    return cachedGeoJson; // Sudah di-filter saat initialization
+    return cachedGeoJson;
   },
 
-  // Clear seluruh cache (memory + localStorage)
-  // Digunakan saat user click "Clear Cache" atau debugging
+  // Bersihkan semua cache (memory + localStorage)
   clearCache: () => {
     try {
       localStorage.removeItem(CACHE_CONFIG.STORAGE_KEY_GEE);
@@ -210,11 +191,8 @@ export const useMapStore = create((set, get) => ({
     set({ geeCache: {}, geoJsonCache: {} });
   },
 
-  // ═══════════════════ PENDING REQUESTS DEDUPLICATION ═══════════════════
-  // Track requests yang sedang berlangsung agar tidak fetch 2x
-  // Jika user click cepat-cepat atau component re-render, request yang sama
-  // akan di-share (tunggu promise yang sama) daripada fetch ulang
-  // Format: {request_key: promise, ...}
+  // ─── Pending Requests ───
+  // Track in-flight requests untuk dedup — request yang sama share satu promise
   pendingRequests: {},
   
   setPending: (requestKey, requestPromise) => set((state) => ({

@@ -1,11 +1,8 @@
 // filepath: src/utils/dataTransform.js
 // Helper functions untuk transform API responses ke format yang kita butuh
 
-// Normalize berbagai format response dari server jadi { year, data }
-// Server bisa return format berbeda, function ini handle semuanya:
-// - { year: 2024, data: [...] }
-// - { "2024": [...] }
-// - [...] (array langsung)
+// Normalize response server ke format { year, data }
+// Handle berbagai format: {year, data}, {"2024":[...]}, atau array langsung
 export const normalizeServerResponse = (rawResponse, fallbackYear) => {
   if (!rawResponse) return null;
 
@@ -41,10 +38,7 @@ export const normalizeServerResponse = (rawResponse, fallbackYear) => {
   return null;
 };
 
-// Transform array [["Bantul", 1000], ["Sleman", 2000]] 
-// menjadi {labels, values} untuk chart
-// Contoh: transformDataForChart([['Bantul', 1000], ['Sleman', 2000]]) 
-// → {labels: ['Bantul', 'Sleman'], values: [1000, 2000]}
+// Transform [[name, value]...] menjadi {labels, values} untuk chart
 export const transformDataForChart = (dataArray) => {
   if (!Array.isArray(dataArray) || dataArray.length === 0) {
     return { labels: [], values: [] };
@@ -66,9 +60,7 @@ export const transformDataForChart = (dataArray) => {
   };
 };
 
-// Check apakah item adalah valid entry format [name, value]
-// Contoh: isValidDataEntry(['Bantul', 1000]) → true
-// isValidDataEntry(['Bantul']) → false
+// Cek apakah item valid sebagai data entry [name, value]
 export const isValidDataEntry = (dataItem) => {
   return (
     Array.isArray(dataItem) &&

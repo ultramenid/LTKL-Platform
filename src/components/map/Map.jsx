@@ -2,15 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Menu } from "lucide-react";
-import { useMapStore } from "../store/mapStore.js";
-import BreadcrumbsComponent from "./map/BreadCrumbs.jsx";
-import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore.js";
-import TimeSeriesSelector from "./map/TimeSelector.jsx";
-import MapLegend from "./map/MapLegend.jsx";
-import { handleHomeReset, handleBreadcrumbDrill } from "../utils/mapDrilldown.js";
-import { loadLevelLayers, loadDesaLevel } from "../utils/mapLoadingSetup.js";
-import { MAP_CONFIG, LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../config/constants.js";
+import { useMapStore } from "../../store/mapStore.js";
+import BreadcrumbsComponent from "./BreadCrumbs.jsx";
+import { loadGEEPolygonRaster, loadLayer } from "../../store/mapLayerStore.js";
+import TimeSeriesSelector from "./TimeSelector.jsx";
+import MapLegend from "./MapLegend.jsx";
+import { handleHomeReset, handleBreadcrumbDrill } from "../../utils/mapDrilldown.js";
+import { loadLevelLayers, loadDesaLevel } from "../../utils/mapLoadingSetup.js";
+import { MAP_CONFIG, LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../../config/constants.js";
 
+// Ambil config dari constants (untuk avoid hardcoding)
 const DEFAULT_CENTER = MAP_CONFIG.DEFAULT_CENTER;
 const DEFAULT_ZOOM = MAP_CONFIG.DEFAULT_ZOOM;
 
@@ -28,7 +29,8 @@ const Map = ({ onToggleSidebar }) => {
   const handleHome = () =>
     handleHomeReset(mapRef.current, resetBreadcrumbs, DEFAULT_CENTER, DEFAULT_ZOOM);
 
-  // Klik breadcrumb: drill ke level yang dipilih
+  // Click breadcrumb: drill down ke level yang dipilih atau reset level lebih dalam
+  // Contoh: breadcrumb "Bantul" (kab level) → update breadcrumb ke {kab: 'Bantul', ...}
   const handleBreadcrumbClick = (level) => {
     const { breadcrumbs, updateBreadcrumb } = useMapStore.getState();
     return handleBreadcrumbDrill(mapRef.current, level, breadcrumbs, updateBreadcrumb);
@@ -39,6 +41,7 @@ const Map = ({ onToggleSidebar }) => {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
+    // Create MapLibre GL map instance dengan config dari constants
     const mapInstance = new maplibregl.Map({
       container: mapContainer.current,
       style: MAP_CONFIG.STYLE_URL,
@@ -58,14 +61,14 @@ const Map = ({ onToggleSidebar }) => {
     );
 
     mapRef.current = mapInstance;
-    setMap(mapInstance);
+    setMap(mapInstance); // Store ke Zustand untuk akses global
 
     // karena map kita selalu lebar, class maplibregl-compact-show harus di-remove manual
     mapInstance.on("load", () => {
       setIsMapReady(true);
     });
 
-    // Tambah scale control setelah attribution (bottom-right)
+    // Tambah scale control di atas attribution (bottom-right, ditambah setelah attribution)
     const scaleControl = new maplibregl.ScaleControl({
       maxWidth: 100,
       unit: "metric",
@@ -87,7 +90,9 @@ const Map = ({ onToggleSidebar }) => {
     };
   }, [setMap]);
 
-  // Jalankan saat breadcrumbs berubah atau map ready — load layer sesuai drill level
+  // ─── LOAD LAYERS BASED ON BREADCRUMB ───
+  // Jalankan saat: breadcrumbs berubah (dari URL sync atau manual drill) atau map ready
+  // Load layer yang tepat sesuai drill level: kabupaten → kecamatan → desa
   useEffect(() => {
     if (!isMapReady || !mapRef.current) return;
     
@@ -123,7 +128,7 @@ const Map = ({ onToggleSidebar }) => {
       {/* Map container */}
       <div ref={mapContainer} className="h-full w-full" />
 
-      {/* Tombol hamburger — mobile only, pojok kanan atas */}
+      {/* Tombol hamburger — hanya muncul di mobile, pojok kanan atas agar tidak bentrok breadcrumb */}
       {isMapReady && (
         <button
           onClick={onToggleSidebar}
@@ -142,7 +147,7 @@ const Map = ({ onToggleSidebar }) => {
         </div>
       )}
       
-      {/* Breadcrumbs navigation */}
+      {/* Breadcrumbs navigation component */}
       <BreadcrumbsComponent onHome={handleHome} handleBreadcrumbs={handleBreadcrumbClick} />
     </>
   );

@@ -44,12 +44,15 @@ export const SOURCE_IDS = {
 
 // Warna untuk UI (highlight, border, background, dll)
 export const COLORS = {
-  HIGHLIGHT: '#27CBFC',       // Biru terang - saat hover/selected
-  DEFAULT: 'white',            // Putih - default border color
-  TRANSPARENT: 'rgba(0,0,0,0)', // Transparan - untuk hidden elements
-  PRIMARY: '#14b8a6',          // Teal - primary color
-  PRIMARY_DARK: '#115e59',     // Teal gelap
-  PRIMARY_TEXT: '#0f766e',     // Teal untuk text
+  HIGHLIGHT: '#27CBFC',              // Biru terang - saat hover/selected
+  DEFAULT: 'white',                  // Putih - default border color
+  TRANSPARENT: 'rgba(0,0,0,0)',      // Transparan - untuk hidden elements
+  PRIMARY: '#14b8a6',                // Teal - primary color
+  PRIMARY_DARK: '#115e59',           // Teal gelap
+  PRIMARY_TEXT: '#0f766e',           // Teal untuk text
+  // Alpha variant — dipakai untuk area-fill di chart agar tidak terlalu dominan
+  PRIMARY_ALPHA: 'rgba(20,184,166,0.15)',  // Teal transparan untuk area fill
+  HIGHLIGHT_ALPHA: 'rgba(39,203,252,0.15)', // Biru transparan untuk area fill
 };
 
 // Konfigurasi cache (berapa lama data disimpan, key untuk localStorage)

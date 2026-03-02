@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { useMapStore } from "../store/mapStore.js";
-import { loadGEEPolygonRaster } from "../store/mapLayerStore.js";
-import { YEAR_CONFIG } from "../config/constants.js";
+import { useMapStore } from "../../store/mapStore.js";
+import { loadGEEPolygonRaster } from "../../store/mapLayerStore.js";
+import { YEAR_CONFIG } from "../../config/constants.js";
 
 // Komponen timeline slider untuk memilih tahun coverage data
 // Letak: bottom-left corner map

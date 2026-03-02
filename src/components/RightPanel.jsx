@@ -1,5 +1,5 @@
-import CoverageChart from "./CoverageChart.jsx";
-import Map from "./Map.jsx";
+import CoverageChart from "./map/CoverageChart.jsx";
+import Map from "./map/Map.jsx";
 
 // Right panel - Main content area
 // Layout: Map (top 65%) + Charts (bottom 35%)

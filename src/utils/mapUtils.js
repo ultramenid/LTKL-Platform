@@ -1,13 +1,10 @@
 import maplibregl from "maplibre-gl";
 
-// Extract semua koordinat dari geometry (Polygon atau MultiPolygon)
-// GeometryData: {type: 'Polygon', coordinates: [...]} atau {type: 'MultiPolygon', coordinates: [...]}
-// Return: array of [longitude, latitude] pairs
+// Ekstrak semua koordinat dari geometry (Polygon/MultiPolygon) sebagai array [lon, lat]
 const extractCoordinates = (geometryData) => {
   const allCoordinates = [];
   
   if (geometryData.type === "Polygon") {
-    // Polygon: loop ring (outer boundary + holes)
     geometryData.coordinates.forEach((ring) =>
       ring.forEach(([lon, lat]) => {
         if (typeof lon === "number" && typeof lat === "number") {
@@ -16,7 +13,6 @@ const extractCoordinates = (geometryData) => {
       })
     );
   } else if (geometryData.type === "MultiPolygon") {
-    // MultiPolygon: multiple polygons, loop semuanya
     geometryData.coordinates.forEach((polygon) =>
       polygon.forEach((ring) =>
         ring.forEach(([lon, lat]) => {
@@ -31,27 +27,22 @@ const extractCoordinates = (geometryData) => {
   return allCoordinates;
 };
 
-// Hitung bounding box dari koordinat list dan animate map ke area itu
-// paddingPixels: jarak dari edge map (pixel)
+// Hitung bounding box dari koordinat dan animate map ke area itu (paddingPixels: pixel dari edge)
 const fitBoundsToCoordinates = (mapInstance, coordinates, paddingPixels = 100) => {
   if (coordinates.length === 0) return;
 
-  // Pisahkan lon/lat untuk hitung min/max bounds
   const lonValues = coordinates.map(([lon]) => lon);
   const latValues = coordinates.map(([, lat]) => lat);
 
-  // Buat bounding box dari ekstrim koordinat
   const bounds = new maplibregl.LngLatBounds(
     [Math.min(...lonValues), Math.min(...latValues)],
     [Math.max(...lonValues), Math.max(...latValues)]
   );
 
-  // Animate map zoom ke bounds dengan padding
   mapInstance.fitBounds(bounds, { padding: paddingPixels, duration: 400 });
 };
 
-// tunggu sampai source data ready di map (event-driven, lebih reliable daripada timeout)
-// Bermanfaat untuk: zoom setelah data load, atau execute action pas data siap
+// Tunggu source data ready di map secara event-driven (lebih reliable dari setTimeout)
 export const waitForSourceData = (mapInstance, sourceId) => {
   return new Promise((resolveWaiting) => {
     // Jika source sudah loaded, langsung resolve (tidak perlu tunggu event)
@@ -70,17 +61,14 @@ export const waitForSourceData = (mapInstance, sourceId) => {
   });
 };
 
-// Zoom ke feature berdasarkan feature object (harus punya geometry)
-// Parameter: mapInstance, featureObject = {geometry: {...}, properties: {...}}
+// Zoom ke feature yang punya geometry (dari GeoJSON feature object)
 export const zoomToFeature = (mapInstance, featureObject) => {
   if (!featureObject?.geometry) return;
   const featureCoordinates = extractCoordinates(featureObject.geometry);
   fitBoundsToCoordinates(mapInstance, featureCoordinates, 40);
 };
 
-// Zoom ke feature dengan search di source berdasarkan property
-// Contoh: zoomToMatchingFeature(map, 'kabupaten-src', 'kab', 'Bantul')
-// → search feature dengan property.kab === 'Bantul', lalu zoom ke sana
+// Cari feature di source berdasarkan property, lalu zoom ke sana
 export const zoomToMatchingFeature = (mapInstance, sourceId, propertyName, propertyValue) => {
   const source = mapInstance.getSource(sourceId);
   if (!source || !("_data" in source)) return;

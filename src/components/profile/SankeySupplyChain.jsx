@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useMemo } from 'react';
 import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
-import { COLORS } from '../config/constants.js';
+import { COLORS } from '../../config/constants.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Komponen Sankey interaktif bergaya Trase.earth — layout D3, render React SVG
@@ -453,7 +453,7 @@ export function SankeySupplyChain() {
             const diHighlight     = adalahLinkDiHover || adalahTrajectoryNode;
             const adaHoverApapun  = namaNodeDiHover !== null || linkDiHover !== null;
             const warna           = diHighlight ? COLORS.PRIMARY : '#d1d5db';
-            const opasitas        = diHighlight ? 0.75 : adaHoverApapun ? 0.06 : 0.4;
+            const opasitas        = diHighlight ? 0.75 : adaHoverApapun ? 0.26 : 0.4;
             const lebarStroke     = Math.max(1, singleLink.width);
             return (
               <path

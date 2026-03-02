@@ -1,5 +1,5 @@
 import { Home, ChevronRight } from "lucide-react";
-import { useMapStore } from "../store/mapStore.js";
+import { useMapStore } from "../../store/mapStore.js";
 
 // Komponen navigasi breadcrumb untuk drill-down antar level administratif (kab → kec → desa)
 // Letak: top-left corner, overlay di atas peta

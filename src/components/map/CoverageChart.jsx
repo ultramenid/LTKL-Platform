@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { TILE_SERVER_URL } from '../store/mapLayerStore.js';
-import { useMapStore } from '../store/mapStore.js';
-import { YEAR_CONFIG } from '../config/constants.js';
+import { TILE_SERVER_URL } from '../../store/mapLayerStore.js';
+import { useMapStore } from '../../store/mapStore.js';
+import { YEAR_CONFIG } from '../../config/constants.js';
 
 // Loading skeleton saat chart sedang fetch data
 function LoadingChartSkeleton() {

@@ -42,18 +42,14 @@ export function abortActiveRequests() {
   useMapStore.getState().clearAllPending();
 }
 
-// Load raster coverage dari Google Earth Engine (LULC data)
-// Parameters: filters = {kab, kec, des, year} untuk filter coverage area
-// Menggunakan cache untuk performance, dedup pending requests agar tidak fetch 2x
+// Load GEE LULC raster — cache-first + image probe validasi token, dedup pending requests
 export async function loadGEEPolygonRaster(
   map,
   filters = {}
 ) {
   try {
-    // Get tahun dari Zustand store (state global)
     const { year } = useMapStore.getState();
 
-    // Merge filters (tambahan filter + tahun) → format URL query param
     const queryParams = new URLSearchParams({
       ...filters,
       year: String(year),
@@ -65,9 +61,8 @@ export async function loadGEEPolygonRaster(
     // ─── CEK CACHE DULU ───
     const cachedTileUrl = store.getCacheGEE(cacheKey);
     if (cachedTileUrl) {
-      // Validasi URL sebelum dipakai - GEE auth token bisa expire meski TTL belum habis
-      // Pakai Image() bukan fetch/HEAD karena GEE domain blokir CORS untuk XHR/fetch
-      // Image requests tidak kena CORS restriction: onload = valid, onerror = expired/invalid
+      // Validasi URL via Image probe — GEE token bisa expire meski TTL belum habis
+      // Image() dipakai (bukan fetch HEAD) karena GEE blokir CORS untuk XHR
       const testTileUrl = cachedTileUrl
         .replace("{z}", "4")
         .replace("{x}", "12")
@@ -88,7 +83,6 @@ export async function loadGEEPolygonRaster(
       });
 
       if (cachedUrlIsValid) {
-        // URL masih valid, render ke map
         if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
         if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
         map.addSource(LAYERS.GEE_SOURCE, {
@@ -118,7 +112,7 @@ export async function loadGEEPolygonRaster(
         return;
       }
 
-      // URL sudah expired (GEE auth token habis) - hapus cache lama, lanjut fetch ulang di bawah
+      // Token GEE expired — hapus cache lama, fetch ulang
       store.clearCacheGEE(cacheKey);
     }
 
@@ -133,7 +127,6 @@ export async function loadGEEPolygonRaster(
     // ─── FETCH DATA DARI TILE SERVER ───
     const tileServerUrl = TILE_SERVER_URL + `${queryParams ? `/lulc?${queryParams}` : "/lulc"}`;
 
-    // Buat promise dan track di store (agar request lain bisa tunggu)
     const fetchPromise = (async () => {
       const response = await fetch(tileServerUrl, { signal: activeController.signal });
       const geeRasterTileUrl = await response.text();
@@ -142,28 +135,24 @@ export async function loadGEEPolygonRaster(
         return;
       }
 
-      // Cache result untuk next time
       store.setCacheGEE(cacheKey, geeRasterTileUrl);
 
-      // Remove layer/source lama sebelum menambahkan yang baru
       if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
       if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
 
-      // Tambahkan raster source dengan tile URL dari server
       map.addSource(LAYERS.GEE_SOURCE, {
         type: "raster",
         tiles: [geeRasterTileUrl],
         tileSize: 256,
       });
 
-      // Find layer yang seharusnya berada dibawah GEE raster
+      // Tempatkan GEE raster di bawah administrative boundaries
       const allLayers = map.getStyle()?.layers ?? [];
       const layerIdToPlaceBelow =
         allLayers.find((layer) =>
           [LAYER_IDS.KABUPATEN_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.DESA_FILL].includes(layer.id)
         )?.id || undefined;
 
-      // Tambahkan raster layer di posisi yang benar (dibawah administrative boundaries)
       map.addLayer(
         {
           id: LAYERS.GEE_LAYER,
@@ -190,9 +179,8 @@ export async function loadGEEPolygonRaster(
   }
 }
 
-// Helper: Hapus all layers yang reference source, lalu hapus sourcenya
-// Cari sourceId langsung dari map style (bukan hanya pattern "-fill" → "-src")
-// agar zoom layers (zoomkabupaten-src, dll) juga bisa di-cleanup dengan benar
+// Hapus semua layers yang pakai suatu source, lalu hapus source-nya
+// Cari sourceId dari map style (bukan string derivation) agar zoom layers juga tercakup
 export function removeLayerAndSource(map, layerId) {
   if (!map || !map.getStyle) return;
 
@@ -202,7 +190,7 @@ export function removeLayerAndSource(map, layerId) {
   const layerDef = allLayers.find(l => l.id === layerId);
   let sourceId = layerDef?.source;
   
-  // Jika layer tidak ditemukan, coba derive dari hover-line dulu (mungkin hover-line yang masih ada)
+  // Jika layer tidak ditemukan, coba derive dari hover-line (bisa jadi fill sudah terhapus)
   if (!sourceId) {
     const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
     const hoverLineDef = allLayers.find(l => l.id === hoverLineId);
@@ -223,8 +211,7 @@ export function removeLayerAndSource(map, layerId) {
   try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch (e) { /* skip */ }
 }
 
-// Helper: Pindahkan semua hover line layers ke atas supaya terlihat
-// Hover lines harus di atas admin boundaries agar visible saat user hover
+// Pindahkan semua hover line layers ke atas agar terlihat di atas admin boundaries
 function bringHoverLayersToTop(map) {
   const allLayers = map.getStyle()?.layers ?? [];
   const hoverLineIds = allLayers.map(layer => layer.id).filter(id => id.includes(LAYERS.HOVER_SUFFIX));
@@ -239,10 +226,8 @@ function bringHoverLayersToTop(map) {
   });
 }
 
-// Load GeoJSON layer dari GeoServer (dengan cache & dedup pending requests)
-// layerName: nama layer di GeoServer (e.g., "kabupatens", "kecamatan", "desa")
-// cqlFilter: CQL filter untuk query (e.g., "kab='Bantul'")
-// removeLayerIds: layer IDs yang harus dihapus dulu (untuk cleanup)
+// Load GeoJSON layer dari GeoServer (cache-first, dedup pending requests)
+// removeLayerIds: layer yang harus dihapus sebelum load
 export const loadLayer = async (
   map,
   layerName,
@@ -262,12 +247,11 @@ export const loadLayer = async (
   let geoJsonData;
 
   try {
-    // Coba ambil dari cache dulu
     const cachedGeoJson = store.getCacheGeoJSON(cacheKey);
     if (cachedGeoJson) {
       geoJsonData = cachedGeoJson;
     } else {
-      // Cek pending request (jangan fetch 2x kalau ada request yang sedang berlangsung)
+      // Dedup: tunggu pending request yang sama jika ada
       const pendingRequest = store.getPending(cacheKey);
       if (pendingRequest) {
         geoJsonData = await pendingRequest;
@@ -433,8 +417,7 @@ export const loadLayer = async (
   return geoJsonData;
 };
 
-// Attach mouse hover & click interactions ke layer
-// Termasuk: cursor change, popup hint, drilldown logic
+// Attach mouse hover & click interactions ke layer (hover highlight, popup nama, drilldown)
 function attachLayerInteraction(map, layerId) {
   const { updateBreadcrumb } = useMapStore.getState();
   const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
@@ -507,7 +490,6 @@ function attachLayerInteraction(map, layerId) {
 
     // === LEVEL DESA (paling dalam) ===
     if (des) {
-      // Update breadcrumb state di Zustand store
       updateBreadcrumb("kabupaten", kab);
       updateBreadcrumb("kecamatan", kec);
       updateBreadcrumb("desa", des);
@@ -522,7 +504,7 @@ function attachLayerInteraction(map, layerId) {
       // Hapus boundary orang tua (kecamatan & kabupaten tidak perlu lagi)
       [LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.KABUPATEN_FILL].forEach((id) => removeLayerAndSource(map, id));
 
-      // Remove old desa layer dan load ulang dengan filter presisi 3-level
+      // Hapus layer desa lama dan load ulang dengan filter 3-level
       removeLayerAndSource(map, LAYER_IDS.DESA_FILL);
       await loadLayer(
         map,
@@ -537,7 +519,6 @@ function attachLayerInteraction(map, layerId) {
 
     // === LEVEL KECAMATAN (mid-level) ===
     if (kec) {
-      // Update breadcrumb state
       updateBreadcrumb("kabupaten", kab);
       updateBreadcrumb("kecamatan", kec);
       updateBreadcrumb("desa", undefined); // Reset desa saat navigate ke kecamatan baru
@@ -567,7 +548,6 @@ function attachLayerInteraction(map, layerId) {
 
     // === LEVEL KABUPATEN (top-level) ===
     if (kab) {
-      // Update breadcrumb state (reset kecamatan & desa)
       updateBreadcrumb("kabupaten", kab);
       updateBreadcrumb("kecamatan", undefined);
       updateBreadcrumb("desa", undefined);

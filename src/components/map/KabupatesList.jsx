@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
-import { useMapStore } from "../store/mapStore.js";
-import { loadLayer, loadGEEPolygonRaster, removeLayerAndSource } from "../store/mapLayerStore.js";
-import { zoomToMatchingFeature, waitForSourceData } from "../utils/mapUtils.js";
-import { KABUPATENS, DEFAULT_DESCRIPTION } from "../data/kabupatens.js";
-import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../config/constants.js";
-import { buildSingleFilter } from "../utils/filterBuilder.js";
+import { useMapStore } from "../../store/mapStore.js";
+import { loadLayer, loadGEEPolygonRaster, removeLayerAndSource } from "../../store/mapLayerStore.js";
+import { zoomToMatchingFeature, waitForSourceData } from "../../utils/mapUtils.js";
+import { KABUPATENS, DEFAULT_DESCRIPTION } from "../../data/kabupatens.js";
+import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../../config/constants.js";
+import { buildSingleFilter } from "../../utils/filterBuilder.js";
 
 // Komponen untuk menampilkan list kabupaten di sidebar kiri
 // User bisa klik untuk drill ke kecamatan dalam kabupaten itu

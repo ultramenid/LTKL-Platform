@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search, Layers, X } from "lucide-react";
-import { KabupatenCard } from "./KabupatesList.jsx";
+import { KabupatenCard } from "./map/KabupatesList.jsx";
 
 // Left sidebar panel - Logo + search + Kabupaten list
 // Fungsi: tempat user memilih kabupaten untuk drill-down ke peta
