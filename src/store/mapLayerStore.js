@@ -40,6 +40,34 @@ export function abortActiveRequests() {
   useMapStore.getState().clearAllPending();
 }
 
+// ─── HELPER: Validate GEE tile URL masih accessible ───
+// GEE URLs punya lifetime terbatas (~2 jam), perlu check sebelum pakai cache
+// Melakukan quick HEAD request ke sample tile untuk verify URL masih valid
+async function isGEETileURLValid(tileUrl) {
+  if (!tileUrl) return false;
+  
+  try {
+    // Ganti template tile coordinates dengan sample tile untuk test
+    const testUrl = tileUrl.replace('{z}', '10').replace('{x}', '512').replace('{y}', '512');
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 detik timeout
+    
+    const response = await fetch(testUrl, {
+      method: 'HEAD',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    // URL valid jika return 200 OK atau 206 Partial Content (range request)
+    return response.ok || response.status === 206;
+  } catch (err) {
+    // Network error, timeout, atau CORS → URL tidak accessible (mungkin sudah expire)
+    return false;
+  }
+}
+
 // Load raster coverage dari Google Earth Engine (LULC data)
 // Parameters: filters = {kab, kec, des, year} untuk filter coverage area
 // Menggunakan cache untuk performance, dedup pending requests agar tidak fetch 2x
@@ -63,38 +91,45 @@ export async function loadGEEPolygonRaster(
     // ─── CEK CACHE DULU ───
     const cachedTileUrl = store.getCacheGEE(cacheKey);
     if (cachedTileUrl) {
-      // Data sudah pernah diminta, gunakan dari cache
-      // Tambahkan ke map dengan source & layer yang sama seperti fetch baru
-      if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
-      if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
-      map.addSource(LAYERS.GEE_SOURCE, {
-        type: "raster",
-        tiles: [cachedTileUrl],
-        tileSize: 256,
-      });
+      // Validate URL masih accessible (tidak expire)
+      // GEE URLs expire ~2 jam, perlu check sebelum pakai
+      const isValid = await isGEETileURLValid(cachedTileUrl);
       
-      // Find layer yang seharusnya berada dibawah (kabupaten, kecamatan, atau desa)
-      const allLayers = map.getStyle()?.layers ?? [];
-      const layerIdToPlaceBelow =
-        allLayers.find((layer) =>
-          [LAYER_IDS.KABUPATEN_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.DESA_FILL].includes(layer.id)
-        )?.id || undefined;
-
-      map.addLayer(
-        {
-          id: LAYERS.GEE_LAYER,
+      if (isValid) {
+        // URL masih valid, gunakan dari cache
+        // Tambahkan ke map dengan source & layer yang sama seperti fetch baru
+        if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
+        if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
+        map.addSource(LAYERS.GEE_SOURCE, {
           type: "raster",
-          source: LAYERS.GEE_SOURCE,
-          paint: {
-            "raster-opacity": 1,
+          tiles: [cachedTileUrl],
+          tileSize: 256,
+        });
+        
+        // Find layer yang seharusnya berada dibawah (kabupaten, kecamatan, atau desa)
+        const allLayers = map.getStyle()?.layers ?? [];
+        const layerIdToPlaceBelow =
+          allLayers.find((layer) =>
+            [LAYER_IDS.KABUPATEN_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.DESA_FILL].includes(layer.id)
+          )?.id || undefined;
+
+        map.addLayer(
+          {
+            id: LAYERS.GEE_LAYER,
+            type: "raster",
+            source: LAYERS.GEE_SOURCE,
+            paint: {
+              "raster-opacity": 1,
+            },
           },
-        },
-        layerIdToPlaceBelow
-      );
-      
-      // Pastikan hover line layers ada di atas (visible)
-      bringHoverLayersToTop(map);
-      return;
+          layerIdToPlaceBelow
+        );
+        
+        // Pastikan hover line layers ada di atas (visible)
+        bringHoverLayersToTop(map);
+        return;
+      }
+      // ─── URL sudah expire, skip cache dan lanjut ke fetch fresh ───
     }
 
     // ─── CEK PENDING REQUEST (avoid duplicate requests) ───
