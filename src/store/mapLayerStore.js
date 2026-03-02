@@ -16,6 +16,7 @@ import {
   SOURCE_IDS,
   WFS_CONFIG,
 } from "../config/constants.js";
+import { buildSingleFilter, buildKecamatanFilter, buildDesaFilter } from "../utils/filterBuilder.js";
 
 // Re-export untuk backward compatibility
 export const GEOSERVER_URL = API_ENDPOINTS.GEOSERVER;
@@ -528,7 +529,7 @@ function attachLayerInteraction(map, layerId) {
         LAYER_TYPES.DESA,
         SOURCE_IDS.DESA,
         LAYER_IDS.DESA_FILL,
-        `kab='${kab}' AND kec='${kec}' AND des='${des}'`
+        buildDesaFilter({ kab, kec, des })
       );
 
       return;
@@ -557,7 +558,7 @@ function attachLayerInteraction(map, layerId) {
         LAYER_TYPES.DESA,
         SOURCE_IDS.DESA,
         LAYER_IDS.DESA_FILL,
-        `kab='${kab}' AND kec='${kec}'`,
+        buildKecamatanFilter({ kab, kec }),
         [LAYER_IDS.KECAMATAN_FILL]
       );
 
@@ -584,7 +585,7 @@ function attachLayerInteraction(map, layerId) {
         LAYER_TYPES.KECAMATAN,
         SOURCE_IDS.KECAMATAN,
         LAYER_IDS.KECAMATAN_FILL,
-        `kab='${kab}'`,
+        buildSingleFilter('kab', kab),
         [LAYER_IDS.KABUPATEN_FILL]
       );
     }

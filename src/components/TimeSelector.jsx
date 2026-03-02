@@ -47,7 +47,7 @@ export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, e
 
       {/* ── Expanded panel ── */}
       {expanded && (
-        <div className="bg-gray-900/80 backdrop-blur-md rounded-xl shadow-lg border border-white/10 px-3 py-2 flex items-center gap-3">
+        <div className="bg-gray-900/80 backdrop-blur-md rounded-xl shadow-lg border border-white/10 px-3 py-2 flex items-start lg:items-center gap-3">
           {/* Year label — klik untuk collapse */}
           <button
             onClick={() => setExpanded(false)}
@@ -61,36 +61,42 @@ export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, e
           </button>
 
           {/* Divider */}
-          <div className="w-px h-5 bg-white/10" />
+          <div className="w-px h-5 bg-white/10 shrink-0" />
 
-          {/* Timeline dots */}
-          <div className="relative flex items-center gap-1.5">
-            <div className="absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 pointer-events-none" />
-            {yearArray.map((yearDot) => {
-              const isSelected = yearDot === year;
-              const isPast = yearDot < year;
-              return (
-                <div key={yearDot} className="relative flex items-center justify-center">
-                  {hovered === yearDot && (
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-teal-500 text-white text-[9px] font-bold rounded shadow-lg whitespace-nowrap">
-                      {yearDot}
-                    </div>
-                  )}
-                  <button
-                    onClick={() => handleChange(yearDot)}
-                    onMouseEnter={() => setHovered(yearDot)}
-                    onMouseLeave={() => setHovered(null)}
-                    className={`z-10 rounded-full cursor-pointer border transition-all duration-200 ${
-                      isSelected
-                        ? "w-2.5 h-2.5 bg-teal-400 border-teal-300 shadow-md shadow-teal-500/40 scale-110"
-                        : isPast
-                        ? "w-2 h-2 bg-teal-700 border-teal-600 hover:bg-teal-500"
-                        : "w-2 h-2 bg-white/20 border-white/10 hover:bg-white/40"
-                    }`}
-                  />
-                </div>
-              );
-            })}
+          {/* Timeline dots
+              Mobile: flex-wrap grid (max ~5 per baris) di dalam container terbatas
+              Desktop: single horizontal row dengan garis timeline */}
+          <div className="relative">
+            {/* Garis horizontal — hanya desktop (single row) */}
+            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 pointer-events-none" />
+
+            <div className="flex flex-wrap lg:flex-nowrap items-center gap-1.5 max-w-[12rem] lg:max-w-none">
+              {yearArray.map((yearDot) => {
+                const isSelected = yearDot === year;
+                const isPast = yearDot < year;
+                return (
+                  <div key={yearDot} className="relative flex items-center justify-center">
+                    {hovered === yearDot && (
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-teal-500 text-white text-[9px] font-bold rounded shadow-lg whitespace-nowrap z-10">
+                        {yearDot}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => handleChange(yearDot)}
+                      onMouseEnter={() => setHovered(yearDot)}
+                      onMouseLeave={() => setHovered(null)}
+                      className={`z-10 rounded-full cursor-pointer border transition-all duration-200 ${
+                        isSelected
+                          ? "w-2.5 h-2.5 bg-teal-400 border-teal-300 shadow-md shadow-teal-500/40 scale-110"
+                          : isPast
+                          ? "w-2 h-2 bg-teal-700 border-teal-600 hover:bg-teal-500"
+                          : "w-2 h-2 bg-white/20 border-white/10 hover:bg-white/40"
+                      }`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

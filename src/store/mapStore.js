@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { updateUrl } from "../utils/urlStateSync.js";
-import { YEAR_CONFIG } from "../config/constants.js";
+import { YEAR_CONFIG, CACHE_CONFIG } from "../config/constants.js";
 
 // Zustand store untuk manage map state global
 // Bertanggung jawab untuk: breadcrumbs, selectedKab, year, map instance, cache (GEE + GeoJSON), pending requests
@@ -71,19 +71,15 @@ export const useMapStore = create((set, get) => ({
     }),
 
   // ═══════════════════ CACHE CONFIGURATION ═══════════════════
-  // GEE URL TTL: 1.5 jam (URL expire ~2 jam, cache lebih pendek untuk aman)
-  GEE_TTL: 1.5 * 60 * 60 * 1000,
-  
-  // GeoJSON TTL: 2 hari (administrative boundaries jarang berubah)
-  CACHE_TTL: 2 * 24 * 60 * 60 * 1000,
+  // TTL dan storage keys dikonfigurasi di CACHE_CONFIG (src/config/constants.js)
 
   // ═══════════════════ GEE RASTER CACHE (localStorage) ═══════════════════
   // Menyimpan Google Earth Engine tile URLs (LULC coverage)
   // Format: {query_string: tile_url, ...}
-  // Menggunakan localStorage dengan TTL 2 hari untuk persist across sessions
+  // TTL dan storage key dikonfigurasi via CACHE_CONFIG di constants.js
   geeCache: (() => {
     try {
-      const storedJson = localStorage.getItem('mapCache_gee');
+      const storedJson = localStorage.getItem(CACHE_CONFIG.STORAGE_KEY_GEE);
       if (!storedJson) return {};
       
       const allCacheEntries = JSON.parse(storedJson);
@@ -104,7 +100,7 @@ export const useMapStore = create((set, get) => ({
   })(),
   
   setCacheGEE: (cacheKey, tileUrl) => set((state) => {
-    const expirationTime = Date.now() + state.GEE_TTL;
+    const expirationTime = Date.now() + CACHE_CONFIG.GEE_TTL_MS;
     const updatedCache = { ...state.geeCache };
     
     // Rebuild localStorage format (dengan timestamp untuk setiap entry)
@@ -115,7 +111,7 @@ export const useMapStore = create((set, get) => ({
     storageFormat[cacheKey] = { value: tileUrl, expiresAt: expirationTime };
     
     try {
-      localStorage.setItem('mapCache_gee', JSON.stringify(storageFormat));
+      localStorage.setItem(CACHE_CONFIG.STORAGE_KEY_GEE, JSON.stringify(storageFormat));
     } catch {
       // Abaikan error localStorage (quota exceeded, etc)
     }
@@ -137,11 +133,11 @@ export const useMapStore = create((set, get) => ({
 
     // Hapus dari localStorage (delete key spesifik, jangan ganggu entry lain)
     try {
-      const storedJson = localStorage.getItem('mapCache_gee');
+      const storedJson = localStorage.getItem(CACHE_CONFIG.STORAGE_KEY_GEE);
       if (storedJson) {
         const storageEntries = JSON.parse(storedJson);
         delete storageEntries[cacheKey];
-        localStorage.setItem('mapCache_gee', JSON.stringify(storageEntries));
+        localStorage.setItem(CACHE_CONFIG.STORAGE_KEY_GEE, JSON.stringify(storageEntries));
       }
     } catch {
       // Abaikan error localStorage
@@ -153,10 +149,10 @@ export const useMapStore = create((set, get) => ({
   // ═══════════════════ GEOJSON CACHE (localStorage) ═══════════════════
   // Menyimpan GeoJSON features dari GeoServer (administrative boundaries)
   // Format: {layer_name_filter: geojson_object, ...}
-  // Menggunakan localStorage dengan TTL 2 hari untuk persist across sessions
+  // TTL dan storage key dikonfigurasi via CACHE_CONFIG di constants.js
   geoJsonCache: (() => {
     try {
-      const storedJson = localStorage.getItem('mapCache_geojson');
+      const storedJson = localStorage.getItem(CACHE_CONFIG.STORAGE_KEY_GEOJSON);
       if (!storedJson) return {};
       
       const allCacheEntries = JSON.parse(storedJson);
@@ -177,7 +173,7 @@ export const useMapStore = create((set, get) => ({
   })(),
   
   setCacheGeoJSON: (cacheKey, geoJsonData) => set((state) => {
-    const expirationTime = Date.now() + state.CACHE_TTL;
+    const expirationTime = Date.now() + CACHE_CONFIG.GEOJSON_TTL_MS;
     const updatedCache = { ...state.geoJsonCache };
     
     // Rebuild localStorage format (dengan timestamp untuk setiap entry)
@@ -188,7 +184,7 @@ export const useMapStore = create((set, get) => ({
     storageFormat[cacheKey] = { value: geoJsonData, expiresAt: expirationTime };
     
     try {
-      localStorage.setItem('mapCache_geojson', JSON.stringify(storageFormat));
+      localStorage.setItem(CACHE_CONFIG.STORAGE_KEY_GEOJSON, JSON.stringify(storageFormat));
     } catch {
       // Abaikan error localStorage (quota exceeded, etc)
     }
@@ -206,8 +202,8 @@ export const useMapStore = create((set, get) => ({
   // Digunakan saat user click "Clear Cache" atau debugging
   clearCache: () => {
     try {
-      localStorage.removeItem('mapCache_gee');
-      localStorage.removeItem('mapCache_geojson');
+      localStorage.removeItem(CACHE_CONFIG.STORAGE_KEY_GEE);
+      localStorage.removeItem(CACHE_CONFIG.STORAGE_KEY_GEOJSON);
     } catch {
       // Abaikan error localStorage
     }

@@ -6,6 +6,7 @@ import { loadLayer, loadGEEPolygonRaster, removeLayerAndSource } from "../store/
 import { zoomToMatchingFeature, waitForSourceData } from "../utils/mapUtils.js";
 import { KABUPATENS, DEFAULT_DESCRIPTION } from "../data/kabupatens.js";
 import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../config/constants.js";
+import { buildSingleFilter } from "../utils/filterBuilder.js";
 
 // Komponen untuk menampilkan list kabupaten di sidebar kiri
 // User bisa klik untuk drill ke kecamatan dalam kabupaten itu
@@ -30,7 +31,7 @@ export function KabupatenCard({ filterText = "" }) {
     updateBreadcrumb("desa", undefined);
 
     // Flow: Load zoom layer → Zoom → Load raster → Load kecamatan layer
-    const kabupatenFilter = `kab='${kabupatenName}'`;
+    const kabupatenFilter = buildSingleFilter('kab', kabupatenName);
     await loadLayer(map, LAYER_TYPES.KABUPATEN, SOURCE_IDS.ZOOM_KABUPATEN, LAYER_IDS.KABUPATEN_FILL, kabupatenFilter);
     await waitForSourceData(map, SOURCE_IDS.ZOOM_KABUPATEN);
     zoomToMatchingFeature(map, SOURCE_IDS.ZOOM_KABUPATEN, "kab", kabupatenName);
@@ -44,7 +45,7 @@ export function KabupatenCard({ filterText = "" }) {
       LAYER_TYPES.KECAMATAN,
       SOURCE_IDS.KECAMATAN,
       LAYER_IDS.KECAMATAN_FILL,
-      `kab='${kabupatenName}'`,
+      buildSingleFilter('kab', kabupatenName),
       [LAYER_IDS.KABUPATEN_FILL]
     );
     removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
@@ -70,7 +71,7 @@ export function KabupatenCard({ filterText = "" }) {
 
   // Filter list berdasarkan search text
   const filtered = KABUPATENS.filter(
-    (k) => !filterText || k.name.toLowerCase().includes(filterText.toLowerCase())
+    (kabupatenEntry) => !filterText || kabupatenEntry.name.toLowerCase().includes(filterText.toLowerCase())
   );
 
   if (filtered.length === 0) {

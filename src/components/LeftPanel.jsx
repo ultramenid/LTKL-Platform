@@ -4,11 +4,12 @@ import { KabupatenCard } from "./KabupatesList.jsx";
 
 // Left sidebar panel - Logo + search + Kabupaten list
 // Fungsi: tempat user memilih kabupaten untuk drill-down ke peta
-export function LeftPanel() {
+// Di mobile menjadi overlay drawer — onClose menutup drawer saat user selesai
+export function LeftPanel({ onClose }) {
   const [searchText, setSearchText] = useState("");
 
   return (
-    <div className="w-full h-screen flex flex-col bg-white border-r border-gray-100">
+    <div className="w-full h-full flex flex-col bg-white border-r border-gray-100">
       {/* ── Header: Logo + Platform identity ── */}
       <div className="shrink-0 px-5 py-4 border-b border-gray-100 bg-white">
         <div className="flex items-center gap-3">
@@ -20,11 +21,21 @@ export function LeftPanel() {
               style={{ height: "58px", width: "auto", objectPosition: "top left" }}
             />
           </div>
-          <div className="flex-1 min-w-0">
+          {/* Tombol tutup drawer — hanya muncul di mobile, langsung setelah logo */}
+          <button
+            onClick={onClose}
+            className="lg:hidden w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+            aria-label="Tutup sidebar"
+          >
+            <X size={14} className="text-gray-500" />
+          </button>
+          {/* Teks platform — disembunyikan di mobile karena ruang terbatas */}
+          <div className="hidden lg:block flex-1 min-w-0">
             <p className="text-[11px] font-bold text-gray-800 leading-tight tracking-tight">Lingkar Temu</p>
             <p className="text-[11px] font-bold text-gray-800 leading-tight tracking-tight">Kabupaten Lestari</p>
           </div>
-          <div className="w-7 h-7 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
+          {/* Icon dekoratif — hanya muncul di desktop */}
+          <div className="hidden lg:flex w-7 h-7 rounded-lg bg-teal-50 items-center justify-center shrink-0">
             <Layers size={14} className="text-teal-500" />
           </div>
         </div>

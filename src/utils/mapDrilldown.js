@@ -2,6 +2,7 @@ import { loadGEEPolygonRaster, loadLayer, removeLayerAndSource, abortActiveReque
 import { zoomToMatchingFeature, waitForSourceData } from "./mapUtils.js";
 import { useMapStore } from "../store/mapStore.js";
 import { LAYER_IDS, LAYER_TYPES, SOURCE_IDS } from "../config/constants.js";
+import { buildSingleFilter, buildKecamatanFilter } from "../utils/filterBuilder.js";
 
 // Daftar semua layer ID untuk cleanup saat reset
 const ALL_LAYER_IDS = [LAYER_IDS.DESA_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.KABUPATEN_FILL];
@@ -53,14 +54,14 @@ export async function handleBreadcrumbDrill(
     [LAYER_IDS.DESA_FILL, LAYER_IDS.KECAMATAN_FILL].forEach(id => removeLayerAndSource(mapInstance, id));
 
     // Filter CQL: hanya kecamatan yang ada di kabupaten ini
-    const kabupatenFilter = `kab='${breadcrumbState.kab}'`;
+    const kabupatenFilter = buildSingleFilter('kab', breadcrumbState.kab);
     await loadLayer(mapInstance, LAYER_TYPES.KABUPATEN, SOURCE_IDS.ZOOM_KABUPATEN, LAYER_IDS.KABUPATEN_FILL, kabupatenFilter);
     await waitForSourceData(mapInstance, SOURCE_IDS.ZOOM_KABUPATEN);
     zoomToMatchingFeature(mapInstance, SOURCE_IDS.ZOOM_KABUPATEN, "kab", breadcrumbState.kab);
     
     // Load GEE coverage (hanya untuk kabupaten dipilih) dan layer kecamatan
     await loadGEEPolygonRaster(mapInstance, { kab: breadcrumbState.kab });
-    await loadLayer(mapInstance, LAYER_TYPES.KECAMATAN, SOURCE_IDS.KECAMATAN, LAYER_IDS.KECAMATAN_FILL, `kab='${breadcrumbState.kab}'`);
+    await loadLayer(mapInstance, LAYER_TYPES.KECAMATAN, SOURCE_IDS.KECAMATAN, LAYER_IDS.KECAMATAN_FILL, kabupatenFilter);
     removeLayerAndSource(mapInstance, LAYER_IDS.KABUPATEN_FILL);
 
     return;
@@ -73,14 +74,14 @@ export async function handleBreadcrumbDrill(
     removeLayerAndSource(mapInstance, LAYER_IDS.DESA_FILL);
 
     // Filter CQL: hanya desa yang ada di kecamatan ini
-    const kecamatanFilter = `kec='${breadcrumbState.kec}'`;
+    const kecamatanFilter = buildSingleFilter('kec', breadcrumbState.kec);
     await loadLayer(mapInstance, LAYER_TYPES.KECAMATAN, SOURCE_IDS.ZOOM_KECAMATAN, LAYER_IDS.KECAMATAN_FILL, kecamatanFilter);
     await waitForSourceData(mapInstance, SOURCE_IDS.ZOOM_KECAMATAN);
     zoomToMatchingFeature(mapInstance, SOURCE_IDS.ZOOM_KECAMATAN, "kec", breadcrumbState.kec);
     
     // Load GEE coverage (untuk kecamatan dipilih) dan layer desa
     await loadGEEPolygonRaster(mapInstance, { kec: breadcrumbState.kec });
-    await loadLayer(mapInstance, LAYER_TYPES.DESA, SOURCE_IDS.DESA, LAYER_IDS.DESA_FILL, `kec='${breadcrumbState.kec}'`);
+    await loadLayer(mapInstance, LAYER_TYPES.DESA, SOURCE_IDS.DESA, LAYER_IDS.DESA_FILL, kecamatanFilter);
     removeLayerAndSource(mapInstance, LAYER_IDS.KECAMATAN_FILL);
 
     return;
@@ -89,7 +90,7 @@ export async function handleBreadcrumbDrill(
   // LEVEL 3: User pilih desa → zoom ke desa spesifik
   if (adminLevel === "desa" && breadcrumbState.kab && breadcrumbState.kec && breadcrumbState.des) {
     // Filter CQL: desa di kabupaten dan kecamatan tertentu
-    const desaFilter = `kab='${breadcrumbState.kab}' AND kec='${breadcrumbState.kec}'`;
+    const desaFilter = buildKecamatanFilter({ kab: breadcrumbState.kab, kec: breadcrumbState.kec });
     
     // Load zoom layer untuk navigasi yang halus
     await loadLayer(mapInstance, LAYER_TYPES.DESA, SOURCE_IDS.ZOOM_DESA, LAYER_IDS.DESA_FILL, desaFilter);

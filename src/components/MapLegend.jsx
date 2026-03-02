@@ -88,9 +88,9 @@ export default function MapLegend() {
       {/* ── Expanded panel ── */}
       {/* Panel terbuka ke atas (bottom-full) dengan tinggi tetap + scroll */}
       {expanded && (
-        <div className="absolute bottom-full mb-2 left-0 bg-gray-900/85 backdrop-blur-md rounded-xl shadow-xl border border-white/10 p-3 w-52 h-[50vh] overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-2.5">
+        <div className="absolute bottom-full  left-0 bg-gray-900/85 backdrop-blur-md rounded-xl shadow-xl border border-white/10 w-52 h-[50vh] flex flex-col overflow-hidden">
+          {/* Header — sticky, tidak ikut scroll */}
+          <div className="shrink-0 flex items-center justify-between px-3 pt-3 pb-2 border-b border-white/10">
             <div className="flex items-center gap-1.5">
               <Layers size={11} className="text-teal-400" />
               <p className="text-[10px] font-black text-white/80 uppercase tracking-widest">LULC Legend</p>
@@ -103,8 +103,8 @@ export default function MapLegend() {
             </button>
           </div>
 
-          {/* Legend items */}
-          <div className="space-y-1">
+          {/* Legend items — scrollable area */}
+          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
             {LULC_LEGEND.map((category) => (
               <div key={category.id}>
                 {/* Parent category row */}
@@ -135,8 +135,6 @@ export default function MapLegend() {
               </div>
             ))}
           </div>
-
-         
         </div>
       )}
     </div>

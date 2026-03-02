@@ -1,6 +1,7 @@
 import { loadGEEPolygonRaster, loadLayer, removeLayerAndSource } from "../store/mapLayerStore.js";
 import { zoomToMatchingFeature, waitForSourceData } from "../utils/mapUtils.js";
 import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../config/constants.js";
+import { buildSingleFilter, buildDesaFilter } from "../utils/filterBuilder.js";
 
 // Load layers untuk navigasi drill-down ke level administratif (kabupaten atau kecamatan)
 // Contoh: loadLevelLayers(map, {kab: 'Bantul'}, 'kab')
@@ -15,13 +16,13 @@ export const loadLevelLayers = async (mapInstance, breadcrumbData, adminLevel) =
       zoomSourceId: SOURCE_IDS.ZOOM_KABUPATEN,
       zoomLayerId: LAYER_IDS.KABUPATEN_FILL,
       // Filter CQL: hanya kabupaten yang dipilih
-      zoomCqlFilter: `kab='${breadcrumbData.kab}'`,
+      zoomCqlFilter: buildSingleFilter('kab', breadcrumbData.kab),
       zoomPropertyName: "kab",
       // Filter untuk GEE raster coverage
       geeRasterFilter: { kab: breadcrumbData.kab },
       // Layer berikutnya: kecamatan di dalam kabupaten ini
       nextLevelType: LAYER_TYPES.KECAMATAN,
-      nextLevelCqlFilter: `kab='${breadcrumbData.kab}'`,
+      nextLevelCqlFilter: buildSingleFilter('kab', breadcrumbData.kab),
     },
     kec: {
       // Layer untuk zoom ke shape kecamatan
@@ -29,13 +30,13 @@ export const loadLevelLayers = async (mapInstance, breadcrumbData, adminLevel) =
       zoomSourceId: SOURCE_IDS.ZOOM_KECAMATAN,
       zoomLayerId: LAYER_IDS.KECAMATAN_FILL,
       // Filter CQL: hanya kecamatan yang dipilih
-      zoomCqlFilter: `kec='${breadcrumbData.kec}'`,
+      zoomCqlFilter: buildSingleFilter('kec', breadcrumbData.kec),
       zoomPropertyName: "kec",
       // Filter untuk GEE raster coverage
       geeRasterFilter: { kec: breadcrumbData.kec },
       // Layer berikutnya: desa di dalam kecamatan ini
       nextLevelType: LAYER_TYPES.DESA,
-      nextLevelCqlFilter: `kec='${breadcrumbData.kec}'`,
+      nextLevelCqlFilter: buildSingleFilter('kec', breadcrumbData.kec),
     },
   }[adminLevel];
 
@@ -62,9 +63,9 @@ export const loadLevelLayers = async (mapInstance, breadcrumbData, adminLevel) =
 // Contoh: loadDesaLevel(map, {kab: 'Bantul', kec: 'Sleman', des: 'Banyudono'})
 // Berbeda dari loadLevelLayers: desa adalah level paling dalam (leaf level)
 export const loadDesaLevel = async (mapInstance, breadcrumbData) => {
-  // Filter menggunakan 3 level untuk precision: kab, kec, dan desa
+  // buildDesaFilter butuh kab + kec + des untuk presisi 3-level
   // Ini memastikan kita get shape yang tepat (tidak ada desa dengan nama sama di kec berbeda)
-  const desaCqlFilter = `kab='${breadcrumbData.kab}' AND kec='${breadcrumbData.kec}' AND des='${breadcrumbData.des}'`;
+  const desaCqlFilter = buildDesaFilter(breadcrumbData);
   
   // Load layer desa dengan filter presisi
   await loadLayer(

@@ -1,6 +1,7 @@
 import './App.css'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Routes, Route, useParams } from 'react-router-dom'
+import { Menu } from 'lucide-react'
 import { useMapStore } from './store/mapStore'
 import { parseUrlState } from './utils/urlStateSync'
 import { LeftPanel } from './components/LeftPanel'
@@ -14,13 +15,31 @@ function MapView() {
     useMapStore.setState({ year, breadcrumbs, selectedKab });
   }, []);
 
+  // State drawer sidebar — hanya aktif di mobile (lg+ sidebar selalu terlihat)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
-    <div className='h-screen flex'>
-      <div className='w-[22%]'>
-        <LeftPanel />
+    <div className='h-screen flex relative overflow-hidden'>
+      {/* Backdrop gelap saat sidebar terbuka di mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar: drawer fixed di mobile, kolom statis di desktop */}
+      <div className={`
+        fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out
+        lg:relative lg:w-[22%] lg:translate-x-0 lg:z-auto
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <LeftPanel onClose={() => setIsSidebarOpen(false)} />
       </div>
-      <div className='w-[78%]'> 
-        <RightPanel />
+
+      {/* Right panel: full width di mobile, 78% di desktop */}
+      <div className='flex-1 min-w-0'>
+        <RightPanel onToggleSidebar={() => setIsSidebarOpen((previous) => !previous)} />
       </div>
     </div>
   );

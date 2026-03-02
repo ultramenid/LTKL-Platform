@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Menu } from "lucide-react";
 import { useMapStore } from "../store/mapStore.js";
 import BreadcrumbsComponent from "./BreadCrumbs.jsx";
 import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore.js";
@@ -14,7 +15,7 @@ import { MAP_CONFIG, LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../config/consta
 const DEFAULT_CENTER = MAP_CONFIG.DEFAULT_CENTER;
 const DEFAULT_ZOOM = MAP_CONFIG.DEFAULT_ZOOM;
 
-const Map = () => {
+const Map = ({ onToggleSidebar }) => {
   // ─── REFS ───
   const mapContainer = useRef(null); // DOM container untuk map
   const mapRef = useRef(null); // MapLibre GL instance
@@ -62,8 +63,10 @@ const Map = () => {
     mapRef.current = mapInstance;
     setMap(mapInstance); // Store ke Zustand untuk akses global
 
-    // Tandai map ready setelah style loaded (agar tidak render layers sebelum siap)
-    mapInstance.on("load", () => setIsMapReady(true));
+    // karena map kita selalu lebar, class maplibregl-compact-show harus di-remove manual
+    mapInstance.on("load", () => {
+      setIsMapReady(true);
+    });
 
     // Tambah scale control di atas attribution (bottom-right, ditambah setelah attribution)
     const scaleControl = new maplibregl.ScaleControl({
@@ -124,10 +127,21 @@ const Map = () => {
     <>
       {/* Map container */}
       <div ref={mapContainer} className="h-full w-full" />
+
+      {/* Tombol hamburger — hanya muncul di mobile, pojok kanan atas agar tidak bentrok breadcrumb */}
+      {isMapReady && (
+        <button
+          onClick={onToggleSidebar}
+          className="absolute top-4 right-4 z-20 lg:hidden flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
+          aria-label="Buka menu"
+        >
+          <Menu size={14} className="text-white/80" />
+        </button>
+      )}
       
       {/* Bottom-left overlay group: Legend pill + Time selector — satu grup posisi */}
       {isMapReady && (
-        <div className="absolute bottom-5 left-4 flex flex-col gap-1 items-start select-none">
+        <div className="absolute bottom-10 left-4 flex flex-col gap-1 items-start select-none">
           <MapLegend />
           <TimeSeriesSelector map={mapRef.current} />
         </div>

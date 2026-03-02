@@ -1,8 +1,8 @@
 import { Home, ChevronRight } from "lucide-react";
 import { useMapStore } from "../store/mapStore.js";
 
-// Breadcrumb navigation component
-// Letak: top-left corner map (overlay)
+// Komponen navigasi breadcrumb untuk drill-down antar level administratif (kab → kec → desa)
+// Letak: top-left corner, overlay di atas peta
 const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
   const { breadcrumbs } = useMapStore();
 

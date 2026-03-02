@@ -54,7 +54,10 @@ export const COLORS = {
 
 // Konfigurasi cache (berapa lama data disimpan, key untuk localStorage)
 export const CACHE_CONFIG = {
-  TTL_MS: 2 * 24 * 60 * 60 * 1000, // Simpan data 2 hari
+  // GEE auth token expire ~2 jam, cache 1.5 jam agar tidak serving URL kadaluarsa
+  GEE_TTL_MS: 1.5 * 60 * 60 * 1000,
+  // GeoJSON boundaries jarang berubah, cache 2 hari cukup efisien
+  GEOJSON_TTL_MS: 2 * 24 * 60 * 60 * 1000,
   STORAGE_KEY_GEE: 'mapCache_gee',
   STORAGE_KEY_GEOJSON: 'mapCache_geojson',
 };
@@ -72,14 +75,6 @@ export const WFS_CONFIG = {
   VERSION: '2.0.0',
   REQUEST: 'GetFeature',
   OUTPUT_FORMAT: 'application/json',
-};
-
-// Konfigurasi UI (posisi elemen, animasi, durasi)
-export const UI_CONFIG = {
-  BREADCRUMB_POSITION: { top: 8, left: 8 }, // pixel dari corner
-  TIME_SELECTOR_POSITION: { bottom: 16, left: 16 },
-  TOOLTIP_ANIMATION: 'fadeIn',
-  TRANSITION_DURATION_MS: 300,
 };
 
 // Konfigurasi tahun (default, min, max)

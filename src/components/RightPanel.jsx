@@ -4,12 +4,13 @@ import Map from "./Map.jsx";
 // Right panel - Main content area
 // Layout: Map (top 65%) + Charts (bottom 35%)
 // Fungsi: tampilkan map interaktif dan data visualization
-export function RightPanel() {
+// onToggleSidebar: callback untuk buka/tutup sidebar drawer di mobile
+export function RightPanel({ onToggleSidebar }) {
   return (
     <div className="flex-1 h-screen flex flex-col">
       {/* MAP SECTION (65% height) */}
       <div className='relative bg-gray-100 h-[65%] transition-all duration-300 ease-in-out overflow-hidden'>
-        <Map />
+        <Map onToggleSidebar={onToggleSidebar} />
       </div>
 
       {/* CHART SECTION (35% height) */}
