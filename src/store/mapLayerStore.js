@@ -64,7 +64,7 @@ export async function loadGEEPolygonRaster(
     const cachedTileUrl = store.getCacheGEE(cacheKey);
     if (cachedTileUrl) {
       // Data sudah pernah diminta, gunakan dari cache
-      // Percaya TTL 2 hari, langsung pakai tanpa validasi blocking
+      // Percaya TTL 2 hari, langsung pakai tanpa blocking
       // Tambahkan ke map dengan source & layer yang sama seperti fetch baru
       if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
       if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);

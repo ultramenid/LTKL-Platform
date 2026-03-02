@@ -71,8 +71,10 @@ export const useMapStore = create((set, get) => ({
     }),
 
   // ═══════════════════ CACHE CONFIGURATION ═══════════════════
-  // Cache TTL: 2 hari (dalam millisecond)
-  // Untuk performance: tidak fetch layer data / raster tiles yang sama 2x dalam 2 hari
+  // GEE URL TTL: 1.5 jam (URL expire ~2 jam, cache lebih pendek untuk aman)
+  GEE_TTL: 1.5 * 60 * 60 * 1000,
+  
+  // GeoJSON TTL: 2 hari (administrative boundaries jarang berubah)
   CACHE_TTL: 2 * 24 * 60 * 60 * 1000,
 
   // ═══════════════════ GEE RASTER CACHE (localStorage) ═══════════════════
@@ -102,7 +104,7 @@ export const useMapStore = create((set, get) => ({
   })(),
   
   setCacheGEE: (cacheKey, tileUrl) => set((state) => {
-    const expirationTime = Date.now() + state.CACHE_TTL;
+    const expirationTime = Date.now() + state.GEE_TTL;
     const updatedCache = { ...state.geeCache };
     
     // Rebuild localStorage format (dengan timestamp untuk setiap entry)
