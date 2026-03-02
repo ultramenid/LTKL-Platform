@@ -64,39 +64,59 @@ export async function loadGEEPolygonRaster(
     // ─── CEK CACHE DULU ───
     const cachedTileUrl = store.getCacheGEE(cacheKey);
     if (cachedTileUrl) {
-      // Data sudah pernah diminta, gunakan dari cache
-      // Percaya TTL 1.5 jam (GEE URL expire ~2 jam, cache lebih pendek untuk aman)
-      // Tambahkan ke map dengan source & layer yang sama seperti fetch baru
-      if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
-      if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
-      map.addSource(LAYERS.GEE_SOURCE, {
-        type: "raster",
-        tiles: [cachedTileUrl],
-        tileSize: 256,
-      });
-      
-      // Find layer yang seharusnya berada dibawah (kabupaten, kecamatan, atau desa)
-      const allLayers = map.getStyle()?.layers ?? [];
-      const layerIdToPlaceBelow =
-        allLayers.find((layer) =>
-          [LAYER_IDS.KABUPATEN_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.DESA_FILL].includes(layer.id)
-        )?.id || undefined;
+      // Validasi URL sebelum dipakai - GEE auth token bisa expire meski TTL belum habis
+      // HEAD request ke tile 0/0/0: server return 200 jika token masih valid, 4xx jika expired
+      // Menggunakan activeController.signal agar ikut di-cancel saat user klik Home
+      const testTileUrl = cachedTileUrl
+        .replace("{z}", "0")
+        .replace("{x}", "0")
+        .replace("{y}", "0");
+      let cachedUrlIsValid = false;
+      try {
+        const validationResponse = await fetch(testTileUrl, {
+          method: "HEAD",
+          signal: activeController.signal,
+        });
+        cachedUrlIsValid = validationResponse.ok;
+      } catch (validationError) {
+        // Jika user klik Home (abort), re-throw agar ditangkap outer catch — jangan hapus cache
+        if (validationError.name === "AbortError") throw validationError;
+        // Network error lain: anggap URL tidak valid, lanjut fetch ulang
+      }
 
-      map.addLayer(
-        {
-          id: LAYERS.GEE_LAYER,
+      if (cachedUrlIsValid) {
+        // URL masih valid, render ke map
+        if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
+        if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
+        map.addSource(LAYERS.GEE_SOURCE, {
           type: "raster",
-          source: LAYERS.GEE_SOURCE,
-          paint: {
-            "raster-opacity": 1,
+          tiles: [cachedTileUrl],
+          tileSize: 256,
+        });
+
+        const allLayers = map.getStyle()?.layers ?? [];
+        const layerIdToPlaceBelow =
+          allLayers.find((layer) =>
+            [LAYER_IDS.KABUPATEN_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.DESA_FILL].includes(layer.id)
+          )?.id || undefined;
+
+        map.addLayer(
+          {
+            id: LAYERS.GEE_LAYER,
+            type: "raster",
+            source: LAYERS.GEE_SOURCE,
+            paint: { "raster-opacity": 1 },
           },
-        },
-        layerIdToPlaceBelow
-      );
-      
-      // Pastikan hover line layers ada di atas (visible)
-      bringHoverLayersToTop(map);
-      return;
+          layerIdToPlaceBelow
+        );
+
+        // Pastikan hover line layers ada di atas (visible)
+        bringHoverLayersToTop(map);
+        return;
+      }
+
+      // URL sudah expired (GEE auth token habis) - hapus cache lama, lanjut fetch ulang di bawah
+      store.clearCacheGEE(cacheKey);
     }
 
     // ─── CEK PENDING REQUEST (avoid duplicate requests) ───

@@ -129,6 +129,27 @@ export const useMapStore = create((set, get) => ({
     return cachedTileUrl; // Sudah di-filter saat initialization
   },
 
+  // Hapus satu entry dari GEE cache (in-memory + localStorage)
+  // Dipanggil saat URL terdeteksi expired saat divalidasi sebelum dipakai
+  clearCacheGEE: (cacheKey) => set((state) => {
+    const updatedCache = { ...state.geeCache };
+    delete updatedCache[cacheKey];
+
+    // Hapus dari localStorage (delete key spesifik, jangan ganggu entry lain)
+    try {
+      const storedJson = localStorage.getItem('mapCache_gee');
+      if (storedJson) {
+        const storageEntries = JSON.parse(storedJson);
+        delete storageEntries[cacheKey];
+        localStorage.setItem('mapCache_gee', JSON.stringify(storageEntries));
+      }
+    } catch {
+      // Abaikan error localStorage
+    }
+
+    return { geeCache: updatedCache };
+  }),
+
   // ═══════════════════ GEOJSON CACHE (localStorage) ═══════════════════
   // Menyimpan GeoJSON features dari GeoServer (administrative boundaries)
   // Format: {layer_name_filter: geojson_object, ...}
