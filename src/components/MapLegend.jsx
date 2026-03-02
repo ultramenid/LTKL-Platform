@@ -104,7 +104,7 @@ export default function MapLegend() {
           </div>
 
           {/* Legend items — scrollable area */}
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+          <div className="legend-scroll flex-1 overflow-y-auto px-3 py-2 space-y-1">
             {LULC_LEGEND.map((category) => (
               <div key={category.id}>
                 {/* Parent category row */}
