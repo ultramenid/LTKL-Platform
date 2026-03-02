@@ -7,15 +7,15 @@ Lihat `DEVELOPMENT_RULES.md` untuk rules lengkap dan contohnya.
 
 ## 🏗️ Stack & Entry Points
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18 + Vite |
-| State | Zustand (`src/store/`) |
-| Map | MapLibre GL 5.x |
-| Routing | React Router v6 |
-| Styling | Tailwind CSS v4 |
-| Charting | ECharts for React |
-| Hosting | Vercel (SPA rewrite di `vercel.json`) |
+| Layer    | Technology                            |
+| -------- | ------------------------------------- |
+| Frontend | React 18 + Vite                       |
+| State    | Zustand (`src/store/`)                |
+| Map      | MapLibre GL 5.x                       |
+| Routing  | React Router v6                       |
+| Styling  | Tailwind CSS v4                       |
+| Charting | ECharts for React                     |
+| Hosting  | Vercel (SPA rewrite di `vercel.json`) |
 
 - **Dev server:** `npm run dev` → `http://localhost:5173`
 - **Build:** `npm run build`
@@ -47,14 +47,15 @@ src/
 ## ✅ Non-Negotiable Rules
 
 ### 1. Semua Konstanta dari `constants.js`
+
 Tidak ada magic number atau string hardcode di luar `src/config/constants.js`.
 
 ```js
 // ✅ BENAR
-import { LAYER_IDS, API_ENDPOINTS, CACHE_CONFIG } from '../config/constants.js';
+import { LAYER_IDS, API_ENDPOINTS, CACHE_CONFIG } from "../config/constants.js";
 
 // ❌ SALAH
-const layerId = 'kabupaten-fill'; // hardcoded langsung
+const layerId = "kabupaten-fill"; // hardcoded langsung
 ```
 
 ### 2. Semua Komentar Bahasa Indonesia
@@ -97,7 +98,7 @@ const controller = new AbortController();
 
 ```js
 // ✅ BENAR
-import { buildKecamatanFilter } from '../utils/filterBuilder.js';
+import { buildKecamatanFilter } from "../utils/filterBuilder.js";
 const filter = buildKecamatanFilter({ kab, kec });
 
 // ❌ SALAH
@@ -119,6 +120,7 @@ const filter = `kab='${kab}' AND kec='${kec}'`;
 ## 🔄 Data Flow Utama
 
 ### GEE Tile Caching
+
 ```
 loadGEEPolygonRaster()
   → cek in-memory geeCache (Zustand)
@@ -131,6 +133,7 @@ loadGEEPolygonRaster()
 ```
 
 ### Drill-Down Navigation
+
 ```
 User klik layer di map
   → attachLayerInteraction → click handler
@@ -144,16 +147,18 @@ User klik layer di map
 ```
 
 ### URL ↔ State Sync
+
 ```
 Setiap perubahan state → updateUrl() → browser history (no reload)
 App start → parseUrlState() → restore ke Zustand → trigger useEffect
 ```
 
 ### Two useEffect Pattern di `Map.jsx`
+
 ```js
 // Effect 1: Init map SEKALI
 useEffect(() => {
-  map.on('load', () => setIsMapReady(true));
+  map.on("load", () => setIsMapReady(true));
 }, [setMap]);
 
 // Effect 2: Load layers saat breadcrumbs berubah
@@ -162,16 +167,17 @@ useEffect(() => {
   loadLayers();
 }, [breadcrumbs, isMapReady]);
 ```
+
 Jangan gabungkan kedua effect ini — mereka memisahkan init dari data loading untuk cegah race condition.
 
 ---
 
 ## 🔌 Integrasi Eksternal
 
-| Service | URL | Tipe Data |
-|---|---|---|
-| GEE Tile Server | `https://gee.simontini.id/gee` | Raster LULC tiles (XYZ) |
-| GeoServer WFS | `https://aws.simontini.id/geoserver/ows` | GeoJSON boundaries |
+| Service         | URL                                      | Tipe Data               |
+| --------------- | ---------------------------------------- | ----------------------- |
+| GEE Tile Server | `https://gee.simontini.id/gee`           | Raster LULC tiles (XYZ) |
+| GeoServer WFS   | `https://aws.simontini.id/geoserver/ows` | GeoJSON boundaries      |
 
 - GEE URL mengandung token sementara (~2 jam) → cache TTL 1.5 jam (`CACHE_CONFIG.GEE_TTL_MS`)
 - GeoJSON boundaries jarang berubah → cache TTL 2 hari (`CACHE_CONFIG.GEOJSON_TTL_MS`)
@@ -182,16 +188,17 @@ Jangan gabungkan kedua effect ini — mereka memisahkan init dari data loading u
 ## 🗂️ Zustand Store Keys
 
 ### `mapStore.js`
-| Key | Tipe | Keterangan |
-|---|---|---|
-| `map` | MapLibre instance | Map yang sedang aktif |
-| `isMapReady` | boolean | True setelah `map.on('load')` |
-| `breadcrumbs` | `{ kab, kec, des }` | Level navigasi saat ini |
-| `year` | number | Tahun LULC yang dipilih |
-| `selectedKab` | string | Kabupaten yang aktif |
-| `geeCache` | object | Cache URL tile GEE |
-| `geoJsonCache` | object | Cache GeoJSON boundaries |
-| `pendingRequests` | Set | Track request yang sedang berjalan |
+
+| Key               | Tipe                | Keterangan                         |
+| ----------------- | ------------------- | ---------------------------------- |
+| `map`             | MapLibre instance   | Map yang sedang aktif              |
+| `isMapReady`      | boolean             | True setelah `map.on('load')`      |
+| `breadcrumbs`     | `{ kab, kec, des }` | Level navigasi saat ini            |
+| `year`            | number              | Tahun LULC yang dipilih            |
+| `selectedKab`     | string              | Kabupaten yang aktif               |
+| `geeCache`        | object              | Cache URL tile GEE                 |
+| `geoJsonCache`    | object              | Cache GeoJSON boundaries           |
+| `pendingRequests` | Set                 | Track request yang sedang berjalan |
 
 ---
 
@@ -208,17 +215,21 @@ Jangan gabungkan kedua effect ini — mereka memisahkan init dari data loading u
 ## ➕ Cara Menambah Fitur Baru
 
 ### Tambah Konstanta Baru
+
 Edit `src/config/constants.js` — jangan scatter di file lain.
 
 ### Tambah CQL Filter Baru
+
 Tambah fungsi baru di `src/utils/filterBuilder.js`, import di semua tempat yang butuh.
 
 ### Tambah Layer Baru
+
 1. Tambah IDs ke `LAYER_IDS` dan `SOURCE_IDS` di `constants.js`
 2. Implementasi load/remove di `mapLayerStore.js`
 3. Ikuti urutan remove: hover → fill → source
 
 ### Tambah State Global Baru
+
 Tambah ke store yang relevan (`mapStore.js`) dengan komentar WHY dalam Bahasa Indonesia.
 
 ---
@@ -227,19 +238,20 @@ Tambah ke store yang relevan (`mapStore.js`) dengan komentar WHY dalam Bahasa In
 
 ```js
 // Lihat semua state Zustand di konsol browser
-useMapStore.getState()
+useMapStore.getState();
 
 // Periksa cache GEE
-localStorage.getItem('mapCache_gee')
+localStorage.getItem("mapCache_gee");
 
 // Periksa cache GeoJSON
-localStorage.getItem('mapCache_geojson')
+localStorage.getItem("mapCache_geojson");
 
 // Periksa pending requests
-useMapStore.getState().pendingRequests
+useMapStore.getState().pendingRequests;
 ```
 
 Network tab:
+
 - Filter `geoserver` → WFS calls
 - Filter `gee.simontini` → GEE tile calls
 

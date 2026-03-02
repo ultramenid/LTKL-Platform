@@ -127,8 +127,8 @@ export default function MapLegend() {
                       style={{ backgroundColor: child.color }}
                     />
                     <div className="min-w-0">
-                      <p className="text-[9px] font-medium text-white/65 leading-tight">{child.nameEn}</p>
-                      <p className="text-[7.5px] text-white/30 leading-tight">{child.nameId}</p>
+                      <p className="text-[9px] font-medium text-white/65 leading-tight">{child.nameId}</p>
+                      <p className="text-[7.5px] text-white/30 leading-tight">{child.nameEn}</p>
                     </div>
                   </div>
                 ))}
