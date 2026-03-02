@@ -2,27 +2,30 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
+import { SankeySupplyChain } from './SankeySupplyChain.jsx';
 import { KABUPATENS } from '../data/kabupatens.js';
+import { COLORS } from '../config/constants.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DataUSA-style analytics profile page
-// Dark hero → stats bar → section nav → Population & Diversity / Economy / Civics
+// Halaman profil analitik bergaya DataUSA untuk setiap kabupaten
+// Struktur: hero gelap → baris statistik → navigasi seksi → Kependudukan / Ekonomi / Kewarganegaraan
 // ─────────────────────────────────────────────────────────────────────────────
 export function ProfilePage({ kabupatenName }) {
   const [activeSection, setActiveSection] = useState('population');
 
   const kabupatenData = KABUPATENS.find(
-    (k) => k.name.toLowerCase() === kabupatenName.toLowerCase()
+    (kabupatenRecord) => kabupatenRecord.name.toLowerCase() === kabupatenName.toLowerCase()
   );
 
-  // ─── NAV SECTIONS ───
+  // ─── BAGIAN NAVIGASI ───
   const navSections = [
-    { id: 'population', label: 'Population & Diversity', color: '#14b8a6' },
-    { id: 'economy', label: 'Economy', color: '#27CBFC' },
-    { id: 'civics', label: 'Civics', color: '#0f766e' },
+    { id: 'population', label: 'Population & Diversity', color: COLORS.PRIMARY },
+    { id: 'economy', label: 'Economy', color: COLORS.HIGHLIGHT },
+    { id: 'civics', label: 'Civics', color: COLORS.PRIMARY_TEXT },
+    { id: 'supplychain', label: 'Supply Chain', color: COLORS.PRIMARY_TEXT },
   ];
 
-  // ─── POPULATION PYRAMID ───
+  // ─── PIRAMIDA PENDUDUK ───
   const ageBands = ['0-4','5-9','10-14','15-19','20-24','25-29','30-34','35-39','40-44','45-49','50-54','55-59','60-64','65-69','70-74','75+'];
   const maleValues  = [8.2, 8.5, 8.8, 9.1, 10.2, 11.4, 12.1, 11.8, 11.2, 10.6, 9.8, 9.0, 7.8, 6.2, 4.4, 3.8];
   const femaleValues= [7.9, 8.1, 8.6, 8.9,  9.8, 11.0, 12.3, 12.0, 11.5, 10.9,10.2, 9.5, 8.4, 6.9, 5.2, 5.8];
@@ -43,7 +46,7 @@ export function ProfilePage({ kabupatenName }) {
     ],
   }), []);
 
-  // ─── RACE/ETHNICITY STACKED BAR ───
+  // ─── GRAFIK BATANG BERTUMPUK SUKU/ETNIS ───
   const raceYears = ['2015','2016','2017','2018','2019','2020','2021','2022','2023'];
   const raceOption = useMemo(() => ({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
@@ -60,7 +63,7 @@ export function ProfilePage({ kabupatenName }) {
     ],
   }), []);
 
-  // ─── INDUSTRIES TREEMAP ───
+  // ─── TREEMAP INDUSTRI ───
   const industriesTreemapOption = useMemo(() => ({
     tooltip: { formatter: p => `${p.name}<br/>${p.value.toLocaleString()} workers` },
     series: [{
@@ -74,7 +77,7 @@ export function ProfilePage({ kabupatenName }) {
         { name: 'Government',        value: 28000, itemStyle: { color: '#ef4444' } },
         { name: 'Construction',      value: 22000, itemStyle: { color: '#8b5cf6' } },
         { name: 'Education',         value: 19000, itemStyle: { color: '#ec4899' } },
-        { name: 'Healthcare',        value: 17000, itemStyle: { color: '#14b8a6' } },
+        { name: 'Healthcare',        value: 17000, itemStyle: { color: COLORS.PRIMARY } },
         { name: 'Finance',           value: 13000, itemStyle: { color: '#f97316' } },
         { name: 'Transport',         value: 11000, itemStyle: { color: '#6366f1' } },
         { name: 'Other Services',    value: 9000,  itemStyle: { color: '#64748b' } },
@@ -82,7 +85,7 @@ export function ProfilePage({ kabupatenName }) {
     }],
   }), []);
 
-  // ─── OCCUPATION HORIZONTAL BAR ───
+  // ─── GRAFIK BATANG HORIZONTAL PEKERJAAN ───
   const occupationOption = useMemo(() => ({
     tooltip: { trigger: 'axis' },
     grid: { left: 160, right: 50, top: 10, bottom: 10 },
@@ -94,12 +97,12 @@ export function ProfilePage({ kabupatenName }) {
     series: [{
       type: 'bar',
       data: [48200, 41500, 39800, 37200, 29400, 24100, 21600, 18700, 16300, 14800],
-      itemStyle: { color: '#14b8a6' },
+      itemStyle: { color: COLORS.PRIMARY },
       label: { show: true, position: 'right', fontSize: 10, formatter: v => `${(v.value/1000).toFixed(0)}k` },
     }],
   }), []);
 
-  // ─── WAGE DISTRIBUTION ───
+  // ─── DISTRIBUSI UPAH ───
   const wageBands = ['<Rp1Jt','Rp1-2Jt','Rp2-3Jt','Rp3-5Jt','Rp5-7Jt','Rp7-10Jt','>Rp10Jt'];
   const wageOption = useMemo(() => ({
     tooltip: { trigger: 'axis' },
@@ -113,7 +116,7 @@ export function ProfilePage({ kabupatenName }) {
     ],
   }), []);
 
-  // ─── INCOME HISTORY LINE ───
+  // ─── RIWAYAT PENDAPATAN ───
   const incomeYears = ['2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023'];
   const incomeOption = useMemo(() => ({
     tooltip: { trigger: 'axis' },
@@ -123,13 +126,13 @@ export function ProfilePage({ kabupatenName }) {
     series: [{
       type: 'line', smooth: true,
       data: [3200000,3400000,3600000,3800000,4100000,4400000,4600000,4300000,4700000,5100000,5400000],
-      lineStyle: { color: '#14b8a6', width: 2.5 },
+      lineStyle: { color: COLORS.PRIMARY, width: 2.5 },
       areaStyle: { color: 'rgba(20,184,166,0.15)' },
-      itemStyle: { color: '#14b8a6' },
+      itemStyle: { color: COLORS.PRIMARY },
     }],
   }), []);
 
-  // ─── CIVICS: ELECTION BAR ───
+  // ─── PEMILU: GRAFIK BATANG ───
   const civicsOption = useMemo(() => ({
     tooltip: { trigger: 'axis' },
     legend: { bottom: 0, textStyle: { fontSize: 10 } },
@@ -143,7 +146,7 @@ export function ProfilePage({ kabupatenName }) {
     ],
   }), []);
 
-  // ─── FOREIGN BORN LINE ───
+  // ─── TREN MIGRAN ───
   const migrantOption = useMemo(() => ({
     tooltip: { trigger: 'axis' },
     grid: { left: 56, right: 20, top: 10, bottom: 30 },
@@ -152,13 +155,13 @@ export function ProfilePage({ kabupatenName }) {
     series: [{
       type: 'line', smooth: true,
       data: [7.1, 7.3, 7.6, 7.9, 8.0, 8.1, 8.3, 8.4, 8.4, 8.5, 8.5],
-      lineStyle: { color: '#27CBFC', width: 2.5 },
+      lineStyle: { color: COLORS.HIGHLIGHT, width: 2.5 },
       areaStyle: { color: 'rgba(39,203,252,0.15)' },
-      itemStyle: { color: '#27CBFC' },
+      itemStyle: { color: COLORS.HIGHLIGHT },
     }],
   }), []);
 
-  // ─── TRADE EXPORTS TREEMAP ───
+  // ─── TREEMAP EKSPOR PERDAGANGAN ───
   const tradeTreemapOption = useMemo(() => ({
     tooltip: { formatter: p => `${p.name}<br/>Rp${(p.value/1000).toFixed(0)}M` },
     series: [{
@@ -172,33 +175,37 @@ export function ProfilePage({ kabupatenName }) {
         { name: 'Karet',          value: 8500,  itemStyle: { color: '#ef4444' } },
         { name: 'Kayu & Kertas',  value: 6200,  itemStyle: { color: '#8b5cf6' } },
         { name: 'Elektronik',     value: 5800,  itemStyle: { color: '#ec4899' } },
-        { name: 'Mesin',          value: 4900,  itemStyle: { color: '#14b8a6' } },
+        { name: 'Mesin',          value: 4900,  itemStyle: { color: COLORS.PRIMARY } },
         { name: 'Tekstil',        value: 3700,  itemStyle: { color: '#f97316' } },
       ],
     }],
   }), []);
 
+
   return (
     <div className="min-h-screen bg-white font-sans">
 
       {/* ══════════════════════════════════════════════════
-          HERO — dark bg + landscape photo, centered title
+          HERO — latar gelap + foto lanskap, judul terpusat
       ══════════════════════════════════════════════════ */}
       <div className="relative bg-gray-900 overflow-hidden">
-        {/* Photo background */}
+        {/* Latar belakang foto */}
         <div className="absolute inset-0 opacity-25"
           style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&auto=format&fit=crop")', backgroundSize: 'cover', backgroundPosition: 'center' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/70 to-black/90" />
-
-        {/* Back nav */}
+        
+        
+        {/* Navigasi kembali ke peta */}
         <div className="relative z-10 px-4 md:px-8 pt-5">
           <Link to="/" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm transition">
             <ArrowLeft size={16} />
             Back to Map
           </Link>
+          
         </div>
 
-        {/* Title */}
+
+        {/* Judul halaman */}
         <div className="relative z-10 text-center py-8 md:py-10 px-4 md:px-8">
           <p className="text-white/50 uppercase text-[10px] tracking-[0.3em] font-semibold mb-4">Kabupaten · Sulawesi Tengah</p>
           <div className="flex items-center justify-center gap-5">
@@ -214,7 +221,7 @@ export function ProfilePage({ kabupatenName }) {
           <p className="text-white/50 text-xs mt-4 uppercase tracking-[0.2em]">Indonesia · 2025 Profile</p>
         </div>
 
-        {/* Stats bar */}
+        {/* Baris statistik ringkasan */}
         <div className="relative z-10 border-t border-white/10">
           <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 divide-x divide-white/10 py-5 px-4 md:px-0">
             {[
@@ -233,74 +240,36 @@ export function ProfilePage({ kabupatenName }) {
           </div>
         </div>
 
-        {/* Section nav tabs */}
+        {/* Tab navigasi antar seksi */}
         <div className="relative z-10 border-t border-white/10 bg-black/30">
           <div className="max-w-5xl mx-auto flex overflow-x-auto">
             {navSections.map(sec => (
               <button key={sec.id} onClick={() => setActiveSection(sec.id)}
-                className={`px-4 md:px-8 py-3 text-sm font-semibold uppercase tracking-wider transition border-b-2 whitespace-nowrap ${
+                className={`cursor-pointer px-4 md:px-8 py-3 text-sm font-semibold uppercase tracking-wider transition border-b-2 whitespace-nowrap ${
                   activeSection === sec.id ? 'text-white border-white' : 'text-white/40 border-transparent hover:text-white/70'
                 }`}>
                 {sec.label}
               </button>
             ))}
-            <a href="#about" className="ml-auto px-4 md:px-8 py-3 text-white/40 hover:text-white/70 text-sm font-semibold uppercase tracking-wider whitespace-nowrap">
-              About
-            </a>
           </div>
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════
-          ABOUT — white bg, 2-col text + quick facts
-      ══════════════════════════════════════════════════ */}
-      <div id="about" className="bg-gray-50 border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="col-span-1 md:col-span-2 space-y-3 text-sm text-gray-700 leading-relaxed">
-            <h2 className="text-base font-bold text-gray-900 mb-4">About</h2>
-            <p>
-              Kabupaten {kabupatenName} merupakan salah satu wilayah administratif di Sulawesi Tengah dengan karakteristik geografi yang unik, mencakup area pegunungan, dataran, dan pesisir. Wilayah ini memiliki kekayaan sumber daya alam yang signifikan, terutama di sektor pertanian, kehutanan, dan pertambangan.
-            </p>
-            <p>
-              Perekonomian kabupaten bertumpu pada sektor primer dengan komoditas unggulan berupa kakao, padi, dan hasil hutan. Sektor sekunder dan tersier terus berkembang seiring investasi infrastruktur yang pesat dalam beberapa tahun terakhir.
-            </p>
-            <p>
-              Dengan populasi sekitar 274.800 jiwa dan tingkat pertumbuhan 2,1% per tahun, {kabupatenName} menjadi salah satu kabupaten dengan dinamika kependudukan yang aktif di kawasan Indonesia Timur.
-            </p>
-          </div>
-          <div>
-            <div className="bg-white rounded border border-gray-200 p-4 text-xs space-y-2">
-              <p className="font-bold text-gray-700 uppercase tracking-wide text-[10px] mb-3">Quick Facts</p>
-              {[
-                { k: 'Province',    v: 'Sulawesi Tengah' },
-                { k: 'Area',        v: '~8,000 km²' },
-                { k: 'Kecamatan',   v: '17 Sub-districts' },
-                { k: 'Desa',        v: '176 Desa / Kelurahan' },
-                { k: 'Ibukota',     v: `Kota ${kabupatenName}` },
-              ].map(({ k, v }) => (
-                <div key={k} className="flex justify-between border-b border-gray-100 pb-1 last:border-0">
-                  <span className="text-gray-500">{k}</span>
-                  <span className="font-semibold text-gray-800">{v}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+     
 
       {/* ══════════════════════════════════════════════════
-          POPULATION & DIVERSITY
+          KEPENDUDUKAN & KERAGAMAN
       ══════════════════════════════════════════════════ */}
       {activeSection === 'population' && (
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-14">
 
-          {/* Section header */}
+          {/* Header seksi kependudukan */}
           <div className="flex items-center gap-3 pb-2 border-b-2 border-teal-500">
             <div className="w-3 h-3 rounded-full bg-teal-500" />
             <h2 className="text-lg font-bold text-gray-900 tracking-tight">Population &amp; Diversity</h2>
           </div>
 
-          {/* Population by Location */}
+          {/* Penduduk berdasarkan kecamatan */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-gray-700 uppercase tracking-widest">Population by Location</h3>
@@ -329,7 +298,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Gender & Age Pyramid */}
+          {/* Piramida jenis kelamin & usia */}
           <div>
             <h3 className="text-xs font-bold text-gray-700 uppercase tracking-widest mb-5">Residents by Gender &amp; Age</h3>
             <div className="flex flex-col md:flex-row items-start gap-8">
@@ -355,7 +324,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Citizenship */}
+          {/* Kewarganegaraan & asal-usul */}
           <div>
             <h3 className="text-xs font-bold text-gray-700 uppercase tracking-widest mb-4">Citizenship &amp; Origin</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -394,7 +363,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Diversity */}
+          {/* Keragaman etnis */}
           <div>
             <div className="flex items-center gap-2 mb-5">
               <div className="w-2 h-2 rounded-full bg-teal-400" />
@@ -432,7 +401,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Migrants trend */}
+          {/* Tren populasi migran */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-3">
@@ -456,7 +425,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Languages */}
+          {/* Bahasa yang digunakan di rumah */}
           <div className="bg-teal-50 border border-teal-100 rounded-lg p-6">
             <div className="flex items-center gap-2 mb-5">
               <div className="w-2 h-2 rounded-full bg-teal-400" />
@@ -483,7 +452,7 @@ export function ProfilePage({ kabupatenName }) {
       )}
 
       {/* ══════════════════════════════════════════════════
-          ECONOMY
+          EKONOMI
       ══════════════════════════════════════════════════ */}
       {activeSection === 'economy' && (
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-14">
@@ -493,7 +462,7 @@ export function ProfilePage({ kabupatenName }) {
             <h2 className="text-lg font-bold text-gray-900 tracking-tight">Economy</h2>
           </div>
 
-          {/* Employment overview */}
+          {/* Gambaran umum ketenagakerjaan */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-5">
               <h3 className="text-xs font-bold text-gray-700 uppercase tracking-widest">Employment</h3>
@@ -519,7 +488,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Industry cards */}
+          {/* Kartu industri utama */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 rounded-full bg-teal-400" />
@@ -541,7 +510,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Occupations */}
+          {/* Pekerjaan utama */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 rounded-full bg-teal-400" />
@@ -552,7 +521,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Income history */}
+          {/* Riwayat pendapatan rumah tangga */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 rounded-full bg-teal-400" />
@@ -580,7 +549,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Wage distribution */}
+          {/* Distribusi upah berdasarkan jenis kelamin */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 rounded-full bg-teal-400" />
@@ -591,7 +560,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Trade exports */}
+          {/* Perdagangan & ekspor */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 rounded-full bg-teal-400" />
@@ -622,7 +591,7 @@ export function ProfilePage({ kabupatenName }) {
       )}
 
       {/* ══════════════════════════════════════════════════
-          CIVICS
+          KEWARGANEGARAAN
       ══════════════════════════════════════════════════ */}
       {activeSection === 'civics' && (
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-14">
@@ -632,7 +601,7 @@ export function ProfilePage({ kabupatenName }) {
             <h2 className="text-lg font-bold text-gray-900 tracking-tight">Civics</h2>
           </div>
 
-          {/* Local government */}
+          {/* Pemerintahan daerah */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               { label: 'Bupati',       value: 'M. Rizal Intjenae', sub: 'Incumbent since 2021' },
@@ -647,7 +616,7 @@ export function ProfilePage({ kabupatenName }) {
             ))}
           </div>
 
-          {/* Presidential elections */}
+          {/* Hasil pemilu presiden */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 rounded-full bg-teal-600" />
@@ -663,7 +632,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* APBD Budget */}
+          {/* Anggaran APBD 2025 */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 rounded-full bg-teal-600" />
@@ -684,7 +653,7 @@ export function ProfilePage({ kabupatenName }) {
             </div>
           </div>
 
-          {/* Public services */}
+          {/* Layanan publik */}
           <div className="bg-teal-50 border border-teal-200 rounded-lg p-6">
             <div className="flex items-center gap-2 mb-5">
               <div className="w-2 h-2 rounded-full bg-teal-500" />
@@ -708,7 +677,74 @@ export function ProfilePage({ kabupatenName }) {
         </div>
       )}
 
-      {/* ─── FOOTER ─── */}
+      {/* ══════════════════════════════════════════════════
+          RANTAI PASOK
+      ══════════════════════════════════════════════════ */}
+      {activeSection === 'supplychain' && (
+        // Semua blok sejajar dengan max-w-5xl agar konsisten dengan seksi lain
+        <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-8">
+
+          {/* Header */}
+          <div className="flex items-center gap-3 pb-2 border-b-2" style={{ borderColor: COLORS.PRIMARY }}>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.PRIMARY }} />
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight">Supply Chain — Kelapa Sawit 2022</h2>
+          </div>
+
+          {/* Kartu statistik ringkasan ekspor */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Total Volume Ekspor', value: '26,0 Jt',  satuan: 'ton CPO (2022)'   },
+              { label: 'Eksportir Terbesar',  value: 'Wilmar',   satuan: 'Nabati Indonesia' },
+              { label: 'Tujuan Utama',        value: 'India',    satuan: '35% dari total'   },
+              { label: 'Provinsi Terbesar',   value: 'Riau',     satuan: '~7 juta ton'      },
+            ].map((kartuStat) => (
+              <div key={kartuStat.label} className="rounded-xl border p-4 text-center" style={{ borderColor: `${COLORS.PRIMARY}33`, backgroundColor: `${COLORS.PRIMARY}08` }}>
+                <p className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: COLORS.PRIMARY_TEXT }}>{kartuStat.label}</p>
+                <p className="text-2xl font-black mt-1" style={{ color: COLORS.PRIMARY }}>{kartuStat.value}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{kartuStat.satuan}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Sankey rantai pasok CPO — dirender dengan D3 + React SVG untuk kontrol hover penuh */}
+          <SankeySupplyChain />
+
+          {/* Ringkasan aliran per negara tujuan */}
+          <div>
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.PRIMARY }} />
+              <h3 className="text-xs font-bold text-gray-700 uppercase tracking-widest">Volume per Negara Tujuan</h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                { negara: 'India',           volume: 9100, persentase: 35.0 },
+                { negara: 'Tiongkok',        volume: 7000, persentase: 26.9 },
+                { negara: 'Pakistan',        volume: 3100, persentase: 11.9 },
+                { negara: 'Bangladesh',      volume: 2100, persentase:  8.1 },
+                { negara: 'Belanda',         volume: 1600, persentase:  6.2 },
+                { negara: 'Amerika Serikat', volume: 1000, persentase:  3.8 },
+                { negara: 'Lainnya',         volume: 2100, persentase:  8.1 },
+              ].map((barisTujuan) => (
+                <div key={barisTujuan.negara} className="flex items-center gap-4">
+                  <span className="text-xs font-medium text-gray-700 w-36 shrink-0">{barisTujuan.negara}</span>
+                  <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="h-3 rounded-full transition-all"
+                      style={{ width: `${barisTujuan.persentase * 2.86}%`, backgroundColor: COLORS.PRIMARY }}
+                    />
+                  </div>
+                  <span className="text-xs font-bold w-20 text-right shrink-0" style={{ color: COLORS.PRIMARY }}>
+                    {barisTujuan.volume.toLocaleString()}k ton
+                  </span>
+                  <span className="text-[10px] text-gray-400 w-10 shrink-0 text-right">{barisTujuan.persentase}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── FOOTER HALAMAN ─── */}
       <div className="bg-gray-900 text-white px-4 md:px-8 py-8 mt-16">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
