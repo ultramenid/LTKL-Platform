@@ -32,7 +32,7 @@ export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, e
   const yearArray = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
 
   return (
-    <div className="absolute bottom-5 left-4 select-none">
+    <div>
       {/* ── Collapsed pill ── */}
       {!expanded && (
         <button

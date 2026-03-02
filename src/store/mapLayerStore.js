@@ -3,9 +3,10 @@ import { useMapStore } from "./mapStore.js";
 import { zoomToFeature } from "../utils/mapUtils.js";
 import { KABUPATENS } from "../data/kabupatens.js";
 
-// Normalize GeoJSON kab property ke canonical name di KABUPATENS list (case-insensitive)
+// Normalize GeoJSON kab property ke canonical name di KABUPATENS list
+// Case-insensitive matching, fallback ke original value jika tidak ketemu (data mungkin tidak konsisten)
 const resolveKabName = (rawKab) =>
-  KABUPATENS.find((k) => k.name.toLowerCase() === String(rawKab).toLowerCase())?.name ?? rawKab;
+  KABUPATENS.find((kabupatenRecord) => kabupatenRecord.name.toLowerCase() === String(rawKab).toLowerCase())?.name ?? rawKab;
 
 import {
   API_ENDPOINTS,
@@ -64,7 +65,7 @@ export async function loadGEEPolygonRaster(
     const cachedTileUrl = store.getCacheGEE(cacheKey);
     if (cachedTileUrl) {
       // Data sudah pernah diminta, gunakan dari cache
-      // Percaya TTL 2 hari, langsung pakai tanpa blocking
+      // Percaya TTL 1.5 jam (GEE URL expire ~2 jam, cache lebih pendek untuk aman)
       // Tambahkan ke map dengan source & layer yang sama seperti fetch baru
       if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
       if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);

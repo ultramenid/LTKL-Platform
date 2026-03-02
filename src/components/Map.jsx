@@ -5,6 +5,7 @@ import { useMapStore } from "../store/mapStore.js";
 import BreadcrumbsComponent from "./BreadCrumbs.jsx";
 import { loadGEEPolygonRaster, loadLayer } from "../store/mapLayerStore.js";
 import TimeSeriesSelector from "./TimeSelector.jsx";
+import MapLegend from "./MapLegend.jsx";
 import { handleHomeReset, handleBreadcrumbDrill } from "../utils/mapDrilldown.js";
 import { loadLevelLayers, loadDesaLevel } from "../utils/mapLoadingSetup.js";
 import { MAP_CONFIG, LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../config/constants.js";
@@ -124,8 +125,13 @@ const Map = () => {
       {/* Map container */}
       <div ref={mapContainer} className="h-full w-full" />
       
-      {/* Time selector overlay (hanya tampil saat map ready) */}
-      {isMapReady && <TimeSeriesSelector map={mapRef.current} />}
+      {/* Bottom-left overlay group: Legend pill + Time selector — satu grup posisi */}
+      {isMapReady && (
+        <div className="absolute bottom-5 left-4 flex flex-col gap-1 items-start select-none">
+          <MapLegend />
+          <TimeSeriesSelector map={mapRef.current} />
+        </div>
+      )}
       
       {/* Breadcrumbs navigation component */}
       <BreadcrumbsComponent onHome={handleHome} handleBreadcrumbs={handleBreadcrumbClick} />
