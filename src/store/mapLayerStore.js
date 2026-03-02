@@ -65,24 +65,26 @@ export async function loadGEEPolygonRaster(
     const cachedTileUrl = store.getCacheGEE(cacheKey);
     if (cachedTileUrl) {
       // Validasi URL sebelum dipakai - GEE auth token bisa expire meski TTL belum habis
-      // HEAD request ke tile 0/0/0: server return 200 jika token masih valid, 4xx jika expired
-      // Menggunakan activeController.signal agar ikut di-cancel saat user klik Home
+      // Pakai Image() bukan fetch/HEAD karena GEE domain blokir CORS untuk XHR/fetch
+      // Image requests tidak kena CORS restriction: onload = valid, onerror = expired/invalid
       const testTileUrl = cachedTileUrl
-        .replace("{z}", "0")
-        .replace("{x}", "0")
-        .replace("{y}", "0");
-      let cachedUrlIsValid = false;
-      try {
-        const validationResponse = await fetch(testTileUrl, {
-          method: "HEAD",
-          signal: activeController.signal,
-        });
-        cachedUrlIsValid = validationResponse.ok;
-      } catch (validationError) {
-        // Jika user klik Home (abort), re-throw agar ditangkap outer catch — jangan hapus cache
-        if (validationError.name === "AbortError") throw validationError;
-        // Network error lain: anggap URL tidak valid, lanjut fetch ulang
-      }
+        .replace("{z}", "4")
+        .replace("{x}", "12")
+        .replace("{y}", "7");
+      const signal = activeController.signal;
+
+      // Abort-aware image probe: resolve true/false, reject hanya saat abort
+      const cachedUrlIsValid = await new Promise((resolve, reject) => {
+        if (signal.aborted) { reject(new DOMException("Aborted", "AbortError")); return; }
+
+        const img = new Image();
+        const onAbort = () => { img.src = ""; reject(new DOMException("Aborted", "AbortError")); };
+        signal.addEventListener("abort", onAbort, { once: true });
+
+        img.onload  = () => { signal.removeEventListener("abort", onAbort); resolve(true); };
+        img.onerror = () => { signal.removeEventListener("abort", onAbort); resolve(false); };
+        img.src = testTileUrl;
+      });
 
       if (cachedUrlIsValid) {
         // URL masih valid, render ke map
