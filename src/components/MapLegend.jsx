@@ -114,8 +114,8 @@ export default function MapLegend() {
                     style={{ backgroundColor: category.color }}
                   />
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-white/90 leading-tight">{category.nameEn}</p>
-                    <p className="text-[8px] text-white/40 leading-tight">{category.nameId}</p>
+                    <p className="text-[10px] font-bold text-white/90 leading-tight">{category.nameId}</p>
+                    <p className="text-[8px] text-white/40 leading-tight">{category.nameEn}</p>
                   </div>
                 </div>
 
