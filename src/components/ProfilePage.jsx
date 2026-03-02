@@ -240,18 +240,20 @@ export function ProfilePage({ kabupatenName }) {
           </div>
         </div>
 
-        {/* Tab navigasi antar seksi */}
-        <div className="relative z-10 border-t border-white/10 bg-black/30">
-          <div className="max-w-5xl mx-auto flex overflow-x-auto">
-            {navSections.map(sec => (
-              <button key={sec.id} onClick={() => setActiveSection(sec.id)}
-                className={`cursor-pointer px-4 md:px-8 py-3 text-sm font-semibold uppercase tracking-wider transition border-b-2 whitespace-nowrap ${
-                  activeSection === sec.id ? 'text-white border-white' : 'text-white/40 border-transparent hover:text-white/70'
-                }`}>
-                {sec.label}
-              </button>
-            ))}
-          </div>
+      </div>
+
+      {/* Tab navigasi antar seksi — sticky agar selalu terlihat saat scroll
+          Dipindah keluar dari div hero karena overflow-hidden pada parent memblokir sticky */}
+      <div className="sticky top-0 z-30 border-t border-white/10 bg-gray-900 shadow-md">
+        <div className="max-w-5xl mx-auto flex overflow-x-auto">
+          {navSections.map(sec => (
+            <button key={sec.id} onClick={() => setActiveSection(sec.id)}
+              className={`cursor-pointer px-4 md:px-8 py-3 text-sm font-semibold uppercase tracking-wider transition border-b-2 whitespace-nowrap ${
+                activeSection === sec.id ? 'text-white border-white' : 'text-white/40 border-transparent hover:text-white/70'
+              }`}>
+              {sec.label}
+            </button>
+          ))}
         </div>
       </div>
 
