@@ -1,10 +1,7 @@
 import CoverageChart from "./map/CoverageChart.jsx";
 import Map from "./map/Map.jsx";
 
-// Right panel - Main content area
-// Layout: Map (top 65%) + Charts (bottom 35%)
-// Fungsi: tampilkan map interaktif dan data visualization
-// onToggleSidebar: callback untuk buka/tutup sidebar drawer di mobile
+// Panel utama — map (65%) + chart (35%)
 export function RightPanel({ onToggleSidebar }) {
   return (
     <div className="flex-1 h-screen flex flex-col">
@@ -13,8 +10,7 @@ export function RightPanel({ onToggleSidebar }) {
         <Map onToggleSidebar={onToggleSidebar} />
       </div>
 
-      {/* CHART SECTION (35% height) */}
-      {/* Horizontal scrollable area dengan multiple coverage charts */}
+      {/* CHART SECTION (35%) — horizontal scrollable */}
       <div className='h-[35%] transition-all duration-300 ease-in-out flex flex-col border-t border-gray-100 bg-white'>
         {/* Section header */}
         <div className="shrink-0 flex items-center justify-between px-5 pt-3 pb-2 border-b border-gray-100">

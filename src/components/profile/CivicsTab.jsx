@@ -10,11 +10,9 @@ const DATA_PEJABAT_PEMERINTAH = [
 ];
 
 // ─── DATA HASIL PEMILU PER TAHUN ───
-// Lima siklus pemilu dari 2004 sampai 2024
 const TAHUN_PEMILU = ['2024','2019','2014','2009','2004'];
 
 // ─── OPSI CHART HASIL PEMILU ───
-// Stacked horizontal bar supaya mudah dibanding share suara per kandidat
 const OPSI_PEMILU = {
   tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
   legend: { bottom: 0, textStyle: { fontSize: 10 }, itemWidth: 12, itemHeight: 10 },
@@ -37,7 +35,6 @@ const DATA_APBD = [
 ];
 
 // ─── DATA LAYANAN PUBLIK ───
-// Pendidikan, Kesehatan, dan Infrastruktur sebagai tiga kategori utama
 const DATA_LAYANAN_PUBLIK = [
   {
     kategori: 'Education',
@@ -56,10 +53,7 @@ const DATA_LAYANAN_PUBLIK = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tab Politik & Pemerintahan
-// Menampilkan profil pejabat, hasil pemilu, APBD, dan layanan publik
-// ─────────────────────────────────────────────────────────────────────────────
 export function CivicsTab() {
   return (
     <ProfileSection>

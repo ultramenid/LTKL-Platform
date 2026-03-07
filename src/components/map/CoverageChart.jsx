@@ -26,12 +26,9 @@ function LoadingChartSkeleton() {
   );
 }
 
-// Chart komponen: tampilkan area (ha) per kabupaten dari LULC server
-// Data fetched dari: /lulc-stats?year=XXXX
-// Chart: bar chart area per kabupaten, sorted descending
+// Chart bar area (ha) per kabupaten dari LULC server (/lulc-stats?year=XXXX)
 export default function CoverageChartDebug() {
   // ─── GET YEAR ───
-  // Ambil tahun dari Zustand store dengan fallback ke YEAR_CONFIG.DEFAULT
   const yearFromStore = useMapStore ? useMapStore((s) => s.year) : undefined;
   const year = Number(yearFromStore) || YEAR_CONFIG.DEFAULT;
 
@@ -42,7 +39,6 @@ export default function CoverageChartDebug() {
   const echartsRef = useRef(null); // Reference ke React ECharts instance
 
   // ─── CLEANUP ECHARTS ───
-  // Dispose echarts instance saat component unmount
   useEffect(() => {
     return () => {
       try {
@@ -56,9 +52,8 @@ export default function CoverageChartDebug() {
   }, []);
 
   // ─── FETCH DATA ───
-  // Fetch LULC statistics dari tile server setiap kali tahun berubah
   useEffect(() => {
-    let isComponentMounted = true; // Track component mount status (untuk cleanup)
+    let isComponentMounted = true;
     setLoading(true);
     setError(null);
     setServerResponse(null);
@@ -68,7 +63,6 @@ export default function CoverageChartDebug() {
 
     fetch(statsUrl)
       .then(async (response) => {
-        // Parse response text → coba JSON, simpan raw text untuk debugging
         const responseText = await response.text();
         try {
           const parsedJson = JSON.parse(responseText);
@@ -80,7 +74,6 @@ export default function CoverageChartDebug() {
             text: responseText 
           };
         } catch (parseError) {
-          // JSON parse gagal, return raw text
           return { 
             ok: response.ok, 
             json: null, 
@@ -92,15 +85,12 @@ export default function CoverageChartDebug() {
       })
       .then((response) => {
         if (!isComponentMounted) return;
-        console.debug('[CoverageChart] fetch response:', response);
-        
         // Check HTTP status
         if (!response.ok) {
           setError(`Server ${response.status}: ${response.statusText} — ${response.text}`);
           setLoading(false);
           return;
         }
-        
         // Check JSON parse
         if (!response.json) {
           setError(`Invalid JSON from server. Response text: ${response.text}`);
@@ -121,27 +111,23 @@ export default function CoverageChartDebug() {
         setLoading(false);
       });
 
-    // Cleanup: mark component as unmounted saat effect cleanup
+    // Cleanup
     return () => {
       isComponentMounted = false;
     };
   }, [year]);
 
   // ─── NORMALIZE SERVER RESPONSE ───
-  // Backend bisa return berbagai format:
-  // 1. { year: N, data: [...] } 
-  // 2. { "2024": [...], "2025": [...] }
-  // 3. Array langsung [...]
-  // Normalize ke: { year: number, data: Array<[kabupaten, area]> }
+  // Handle format: {year,data}, {"2024":[...]}, array langsung
   const normalizedData = useMemo(() => {
     if (!serverResponse) return null;
 
-    // Format 1: Already normalized { year: N, data: [...] }
+    // Format 1: Already normalized
     if (serverResponse && serverResponse.year && Array.isArray(serverResponse.data)) {
       return { year: Number(serverResponse.year), data: serverResponse.data };
     }
 
-    // Format 2: Object berkey numerik => ambil value array
+    // Format 2: Object berkey numerik
     const responseKeys = Object.keys(serverResponse);
     for (const yearKey of responseKeys) {
       // Match tahun YYYY
@@ -170,8 +156,6 @@ export default function CoverageChartDebug() {
   }, [serverResponse, year]);
 
   // ─── TRANSFORM DATA FOR CHART ───
-  // Transform data ke labels (kabupaten) & values (area)
-  // Sort descending by area
   const { chartLabels, chartValues } = useMemo(() => {
     if (!normalizedData) return { chartLabels: [], chartValues: [] };
     

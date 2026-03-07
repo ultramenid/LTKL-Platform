@@ -3,7 +3,6 @@ import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
 
 // ─── DATA POPULASI PER KECAMATAN ───
-// Urutan berdasarkan jumlah populasi terbesar ke terkecil
 const DATA_POPULASI_LOKASI = [
   { name: 'Sigi Biromaru', pop: '41,200', pct: 15.0 },
   { name: 'Dolo',          pop: '28,500', pct: 10.4 },
@@ -18,7 +17,6 @@ const NILAI_LAKI_LAKI = [8.2, 8.5, 8.8, 9.1, 10.2, 11.4, 12.1, 11.8, 11.2, 10.6,
 const NILAI_PEREMPUAN = [7.9, 8.1, 8.6, 8.9,  9.8, 11.0, 12.3, 12.0, 11.5, 10.9, 10.2, 9.5, 8.4, 6.9, 5.2, 5.8];
 
 // ─── OPSI CHART PIRAMIDA PENDUDUK ───
-// Nilai laki-laki dibalik negatif agar membentuk piramida dua sisi
 const OPSI_PIRAMIDA = {
   tooltip: {
     trigger: 'axis',
@@ -68,7 +66,6 @@ const KOMPOSISI_ETNIS = [
 ];
 
 // ─── DATA TREN MIGRAN ───
-// Tahun sama dengan incomeYears agar sumbu X seragam
 const TAHUN_TREND = ['2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023'];
 
 // ─── OPSI CHART TREN MIGRAN ───
@@ -101,10 +98,7 @@ const DATA_RINGKASAN_DEMO = [
   { label: 'Population Density', value: '34/km²' },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tab Kependudukan & Keragaman
-// Menampilkan piramida usia, tren etnis, tren migran, dan bahasa di rumah
-// ─────────────────────────────────────────────────────────────────────────────
 export function PopulationTab() {
   return (
     <ProfileSection>

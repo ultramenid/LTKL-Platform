@@ -8,8 +8,7 @@ import { KABUPATENS, DEFAULT_DESCRIPTION } from "../../data/kabupatens.js";
 import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../../config/constants.js";
 import { buildSingleFilter } from "../../utils/filterBuilder.js";
 
-// Komponen untuk menampilkan list kabupaten di sidebar kiri
-// User bisa klik untuk drill ke kecamatan dalam kabupaten itu
+// List kabupaten di sidebar — klik untuk drill ke kecamatan
 export function KabupatenCard({ filterText = "" }) {
   const { map, updateBreadcrumb, selectedKab, setSelectedKab } = useMapStore();
   const [isMapReady, setIsMapReady] = useState(false);
@@ -20,26 +19,23 @@ export function KabupatenCard({ filterText = "" }) {
     else map?.on("load", () => setIsMapReady(true));
   }, [map]);
 
-  // Click kabupaten: update breadcrumb, zoom ke kabupaten, load kecamatan layer
+  // Klik kabupaten: update breadcrumb, zoom, load kecamatan layer
   const handleKabupatenClick = async (kabupatenName) => {
     if (!map) return console.warn("⚠️ Map not ready");
 
-    // Update state dengan kabupaten yang dipilih
     setSelectedKab(kabupatenName);
     updateBreadcrumb("kabupaten", kabupatenName);
-    updateBreadcrumb("kecamatan", undefined); // Reset level lebih dalam
+    updateBreadcrumb("kecamatan", undefined);
     updateBreadcrumb("desa", undefined);
 
-    // Flow: Load zoom layer → Zoom → Load raster → Load kecamatan layer
     const kabupatenFilter = buildSingleFilter('kab', kabupatenName);
     await loadLayer(map, LAYER_TYPES.KABUPATEN, SOURCE_IDS.ZOOM_KABUPATEN, LAYER_IDS.KABUPATEN_FILL, kabupatenFilter);
     await waitForSourceData(map, SOURCE_IDS.ZOOM_KABUPATEN);
     zoomToMatchingFeature(map, SOURCE_IDS.ZOOM_KABUPATEN, "kab", kabupatenName);
 
-    // Load GEE coverage untuk kabupaten ini
     await loadGEEPolygonRaster(map, { kab: kabupatenName });
 
-    // Load kecamatan boundaries di dalam kabupaten, hapus kabupaten layer lama
+    // Load kecamatan boundaries, hapus kabupaten layer lama
     await loadLayer(
       map,
       LAYER_TYPES.KECAMATAN,

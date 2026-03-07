@@ -26,10 +26,7 @@ const DATA_HERO_STATS = [
   { label: 'MEDIAN AGE',              value: '34.2',     sub: 'years'           },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Halaman profil analitik bergaya DataUSA untuk setiap kabupaten
-// Struktur: hero gelap → baris statistik → navigasi tab → konten per tab
-// ─────────────────────────────────────────────────────────────────────────────
+// Halaman profil analitik per kabupaten: hero → statistik → tab navigasi → konten
 export function ProfilePage({ kabupatenName }) {
   const [activeSection, setActiveSection] = useState('population');
 
@@ -42,9 +39,7 @@ export function ProfilePage({ kabupatenName }) {
     <div className="min-h-screen bg-white font-sans">
 
 
-      {/* ══════════════════════════════════════════════════
-          HERO — latar gelap + foto lanskap, judul terpusat
-      ══════════════════════════════════════════════════ */}
+      {/* ─── HERO — latar gelap + foto lanskap ─── */}
       <div className="relative bg-gray-900 overflow-hidden">
         {/* Latar belakang foto */}
         <div className="absolute inset-0 opacity-25"
@@ -93,8 +88,7 @@ export function ProfilePage({ kabupatenName }) {
 
       </div>
 
-      {/* Tab navigasi antar seksi — sticky agar selalu terlihat saat scroll
-          Dipindah keluar dari div hero karena overflow-hidden pada parent memblokir sticky */}
+      {/* Tab navigasi — sticky agar selalu terlihat saat scroll */}
       <div className="sticky top-0 z-30 border-t border-white/10 bg-gray-900 shadow-md">
         <div className="max-w-5xl mx-auto flex overflow-x-auto">
           {NAV_TABS.map((tabItem) => (
@@ -119,7 +113,7 @@ export function ProfilePage({ kabupatenName }) {
       {activeSection === 'civics'      && <CivicsTab      />}
       {activeSection === 'supplychain' && <SupplyChainTab />}
 
-      {/* ─── FOOTER HALAMAN ─── */}
+      {/* ─── FOOTER ─── */}
       <div className="bg-gray-900 text-white px-4 md:px-8 py-8 mt-16">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>

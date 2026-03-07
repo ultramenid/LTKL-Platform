@@ -2,10 +2,7 @@ import { useRef, useState, useEffect, useMemo } from 'react';
 import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
 import { COLORS } from '../../config/constants.js';
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Komponen Sankey interaktif bergaya Trase.earth — layout D3, render React SVG
-// Hover pada node meng-highlight SEMUA node dan link yang terhubung (trajectory)
-// ─────────────────────────────────────────────────────────────────────────────
 
 // ─── KONSTANTA LAYOUT ───
 const TINGGI_CHART       = 620;
@@ -130,8 +127,7 @@ const SANKEY_LINKS = [
   { source: 'Eksportir Lainnya',       target: 'Negara Lainnya',  value: 2100 },
 ];
 
-// ─── HELPER: PECAH TEKS PANJANG MENJADI BARIS ───
-// Diperlukan karena SVG <text> tidak mendukung word-wrap otomatis
+// ─── HELPER: PECAH TEKS PANJANG MENJADI BARIS (SVG <text> tidak support word-wrap) ───
 function pecahTeksMenjadiBarisLabel(teksNamaNode, maksKarPerBaris = 13) {
   const kataKata = teksNamaNode.split(' ');
   const barisBaris = [];
@@ -150,13 +146,8 @@ function pecahTeksMenjadiBarisLabel(teksNamaNode, maksKarPerBaris = 13) {
   return barisBaris.slice(0, 3);
 }
 
-// ─── HELPER: BFS TERARAH UNTUK MENEMUKAN NODE YANG TERHUBUNG LEWAT SATU NODE ───
-// Penelusuran dibagi dua arah agar tidak "nyebrang" ke cabang lain:
-// - Upstream: dari node ke semua leluhur (mengikuti edge terbalik)
-// - Downstream: dari node ke semua keturunan (mengikuti edge maju)
-// Menggabungkan keduanya memberi set trajectory persis seperti Trase.earth
+// ─── HELPER: BFS DUA ARAH UNTUK MENEMUKAN TRAJECTORY NODE ───
 function cariSemuaNodeTerhubung(namaNodeAwal, semuaLinkKomputasi) {
-  // Bangun adjacency list satu arah masing-masing
   const adjacencyMaju    = {};
   const adjacencyMundur  = {};
   semuaLinkKomputasi.forEach((singleLink) => {
@@ -185,27 +176,22 @@ function cariSemuaNodeTerhubung(namaNodeAwal, semuaLinkKomputasi) {
     return dikunjungi;
   };
 
-  // Gabungkan hasil penelusuran maju + mundur
+  // Gabungkan BFS maju + mundur
   const nodesHilir  = bfsTerarah(namaNodeAwal, adjacencyMaju);
   const nodesHulu   = bfsTerarah(namaNodeAwal, adjacencyMundur);
   return new Set([...nodesHilir, ...nodesHulu]);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Komponen utama
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── KOMPONEN UTAMA ───
 export function SankeySupplyChain() {
   const refKontainer = useRef(null);
   const [lebarKontainer, setLebarKontainer] = useState(800);
 
-  // State hover node — null berarti tidak ada yang di-hover (semua tampak normal)
   const [namaNodeDiHover, setNamaNodeDiHover] = useState(null);
 
-  // State hover link — menyimpan nama source + target link yang sedang di-hover
-  // Dibutuhkan karena hover di atas path link harus juga memicu highlight trajectory
+  // State hover link — hover path juga memicu highlight trajectory
   const [linkDiHover, setLinkDiHover] = useState(null);
 
-  // State filter tahun — default ke tahun terbaru dalam daftar
   const [tahunDipilih, setTahunDipilih] = useState(DAFTAR_TAHUN[DAFTAR_TAHUN.length - 1]);
 
   // State tooltip — posisi + konten teks
@@ -226,7 +212,6 @@ export function SankeySupplyChain() {
   }, []);
 
   // ─── LAYOUT D3 SANKEY ───
-  // Hitung posisi node dan jalur link setiap kali lebar kontainer berubah
   // D3 me-mutasi objek input, sehingga deep-clone dilakukan setiap kalkulasi
   const { nodeHasil, linkHasil } = useMemo(() => {
     if (lebarKontainer < 100) return { nodeHasil: [], linkHasil: [] };
@@ -248,11 +233,8 @@ export function SankeySupplyChain() {
   }, [lebarKontainer]);
 
   // ─── POSISI KOLOM UNTUK LABEL HEADER ───
-  // Hitung center-x dan x0 setiap kolom (layer) dari node hasil D3
-  // Dipakai untuk menempatkan label tepat di atas masing-masing kolom bar
   const posisiKolom = useMemo(() => {
     if (!nodeHasil.length) return [];
-    // Kelompokkan node berdasarkan layer (depth)
     const pemetaanLayer = {};
     nodeHasil.forEach((singleNode) => {
       const layer = singleNode.layer ?? singleNode.depth ?? 0;
@@ -272,17 +254,14 @@ export function SankeySupplyChain() {
   }, [nodeHasil]);
 
   // ─── TRAJECTORY BFS SAAT HOVER NODE ───
-  // Hanya aktif saat hover di atas node — hover link tidak memicu BFS
   const kumpulanNodeTerhubung = useMemo(() => {
     if (!namaNodeDiHover) return null;
     return cariSemuaNodeTerhubung(namaNodeDiHover, linkHasil);
   }, [namaNodeDiHover, linkHasil]);
 
-  // Tentukan apakah node termasuk dalam trajectory yang sedang di-highlight
   const apakahNodeDiHighlight = (namaNode) =>
     !kumpulanNodeTerhubung || kumpulanNodeTerhubung.has(namaNode);
 
-  // Tentukan apakah link termasuk dalam trajectory yang sedang di-highlight
   const apakahLinkDiHighlight = (singleLink) => {
     if (!kumpulanNodeTerhubung) return true;
     const namaSource = typeof singleLink.source === 'object' ? singleLink.source.name : singleLink.source;
@@ -292,7 +271,6 @@ export function SankeySupplyChain() {
 
   // ─── HANDLER TOOLTIP ───
   const tampilkanTooltipNode = (event, namaNode) => {
-    // Hitung total volume masuk ke node tersebut sebagai konteks
     const volumeMasuk = linkHasil
       .filter((singleLink) => {
         const namaTarget = typeof singleLink.target === 'object' ? singleLink.target.name : singleLink.target;
@@ -327,7 +305,6 @@ export function SankeySupplyChain() {
 
   const sembunyikanTooltip = () => setTooltip((sebelumnya) => ({ ...sebelumnya, visible: false }));
 
-  // Perbarui posisi tooltip saat mouse bergerak di atas elemen SVG
   const perbaruiPosisiTooltip = (event) => {
     if (tooltip.visible) {
       setTooltip((sebelumnya) => ({ ...sebelumnya, x: event.clientX, y: event.clientY }));
@@ -394,7 +371,6 @@ export function SankeySupplyChain() {
           {/* Dirender pertama agar berada di layer paling bawah SVG */}
           {posisiKolom.map((kolom, indeksKolom) => (
             <g key={`header-kolom-${kolom.layer}`}>
-              {/* Label teks kolom tepat di tengah bar */}
               <text
                 x={kolom.tengahX}
                 y={16}
@@ -423,7 +399,7 @@ export function SankeySupplyChain() {
                       stroke="#d1d5db"
                       strokeWidth={1}
                     />
-                    {/* Kepala panah di ujung kanan garis */}
+                    {/* Kepala panah */}
                     <path
                       d={`M${xGarisSampai} ${yGaris - 4} L${xGarisSampai + 7} ${yGaris} L${xGarisSampai} ${yGaris + 4}`}
                       fill="none"
@@ -442,10 +418,7 @@ export function SankeySupplyChain() {
             const namaSourceLink  = typeof singleLink.source === 'object' ? singleLink.source.name : singleLink.source;
             const namaTargetLink  = typeof singleLink.target === 'object' ? singleLink.target.name : singleLink.target;
 
-            // Tiga kondisi highlight link:
-            // 1. Hover node → link dalam trajectory berubah PRIMARY
-            // 2. Hover link langsung → hanya link ini saja yang PRIMARY
-            // 3. Idle → semua abu-abu
+            // Highlight: hover node → trajectory, hover link → hanya link itu, idle → semua abu
             const adalahLinkDiHover = linkDiHover
               && linkDiHover.source === namaSourceLink
               && linkDiHover.target === namaTargetLink;
@@ -477,8 +450,7 @@ export function SankeySupplyChain() {
 
           {/* ─── NODE (blok persegi panjang) ─── */}
           {nodeHasil.map((singleNode) => {
-            // Saat tidak ada hover: semua node abu-abu (idle)
-            // Hanya hover node yang memicu highlight trajectory — hover link tidak mengubah warna node
+            // Hover node memicu highlight trajectory — hover link tidak mengubah warna node
             const adaHover     = namaNodeDiHover !== null;
             const diHighlight  = apakahNodeDiHighlight(singleNode.name);
             // Idle: putih dengan border abu-abu; highlighted: solid PRIMARY
@@ -506,7 +478,6 @@ export function SankeySupplyChain() {
                   sembunyikanTooltip();
                 }}
               >
-                {/* Persegi panjang node */}
                 <rect
                   x={singleNode.x0}
                   y={singleNode.y0}
@@ -554,7 +525,7 @@ export function SankeySupplyChain() {
         </p>
       </div>
 
-      {/* Tooltip floating — mengikuti posisi kursor via fixed positioning */}
+      {/* Tooltip floating */}
       {tooltip.visible && (
         <div
           className="fixed z-50 pointer-events-none px-3 py-2 rounded-lg shadow-xl text-xs leading-relaxed"

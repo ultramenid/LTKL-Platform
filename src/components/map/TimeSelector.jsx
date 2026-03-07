@@ -4,15 +4,13 @@ import { useMapStore } from "../../store/mapStore.js";
 import { loadGEEPolygonRaster } from "../../store/mapLayerStore.js";
 import { YEAR_CONFIG } from "../../config/constants.js";
 
-// Komponen timeline slider untuk memilih tahun coverage data
-// Letak: bottom-left corner map
-// Fungsi: reload GEE raster ketika user ubah tahun
+// Timeline slider untuk pilih tahun coverage — bottom-left corner map
 export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, endYear = YEAR_CONFIG.MAX }) {
   const { year, setYear, breadcrumbs } = useMapStore();
   const [hovered, setHovered] = useState(null);
   const [expanded, setExpanded] = useState(false);
 
-  // Click year dot: update global year + reload GEE raster dengan tahun baru
+  // Klik year dot: update global year + reload GEE raster
   const handleChange = async (selectedYear) => {
     if (!map) {
       console.warn("⚠️ Tidak ada map instance");
@@ -63,9 +61,7 @@ export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, e
           {/* Divider */}
           <div className="w-px h-5 bg-white/10 shrink-0" />
 
-          {/* Timeline dots
-              Mobile: flex-wrap grid (max ~5 per baris) di dalam container terbatas
-              Desktop: single horizontal row dengan garis timeline */}
+          {/* Timeline dots — mobile: flex-wrap grid, desktop: single row */}
           <div className="relative">
             {/* Garis horizontal — hanya desktop (single row) */}
             <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 pointer-events-none" />

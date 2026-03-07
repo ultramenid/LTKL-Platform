@@ -110,10 +110,7 @@ const TIGA_INDUSTRI_DOMINAN = [
   { rank: 3, name: 'Trade',        workers: '31,000', share: '24.6%', color: '#f59e0b' },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tab Ekonomi & Industri
-// Menampilkan ketenagakerjaan, distribusi pekerjaan, upah, pendapatan, dan ekspor
-// ─────────────────────────────────────────────────────────────────────────────
 export function EconomyTab() {
   return (
     <ProfileSection>

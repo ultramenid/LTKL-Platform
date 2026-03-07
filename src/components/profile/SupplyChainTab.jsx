@@ -11,7 +11,6 @@ const DATA_STATISTIK_RANTAI = [
 ];
 
 // ─── DATA TUJUAN EKSPOR ───
-// Urutan berdasarkan volume terbesar ke terkecil sesuai data aktual
 const DATA_TUJUAN_EKSPOR = [
   { tujuan: 'India',         volume: '9,100k',  pct: 35.0, color: '#ef4444' },
   { tujuan: 'Tiongkok',      volume: '7,000k',  pct: 26.9, color: '#3b82f6' },
@@ -22,10 +21,7 @@ const DATA_TUJUAN_EKSPOR = [
   { tujuan: 'Lainnya',       volume: '1,400k',  pct: 5.4,  color: '#9ca3af' },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tab Rantai Pasok Komoditas
-// Menampilkan statistik ekspor, visualisasi Sankey, dan distribusi tujuan ekspor
-// ─────────────────────────────────────────────────────────────────────────────
 export function SupplyChainTab() {
   return (
     <ProfileSection>

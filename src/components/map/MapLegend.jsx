@@ -66,9 +66,7 @@ const LULC_LEGEND = [
   },
 ];
 
-// Komponen legend untuk LULC raster layer (GEE / MapBiomas Indonesia)
-// Letak: dikelompokkan bersama TimeSelector di bottom-left (lihat Map.jsx)
-// Collapsible: default collapsed (pill) → click expand, panel terbuka ke atas dengan tinggi tetap
+// Legend LULC raster layer — collapsible pill di bottom-left (dikelompokkan dengan TimeSelector)
 export default function MapLegend() {
   const [expanded, setExpanded] = useState(false);
 
@@ -85,11 +83,10 @@ export default function MapLegend() {
         </button>
       )}
 
-      {/* ── Expanded panel ── */}
-      {/* Panel terbuka ke atas (bottom-full) dengan tinggi tetap + scroll */}
+      {/* Expanded panel — terbuka ke atas (bottom-full) dengan scroll */}
       {expanded && (
         <div className="absolute bottom-full  left-0 bg-gray-900/85 backdrop-blur-md rounded-xl shadow-xl border border-white/10 w-52 h-[50vh] flex flex-col overflow-hidden">
-          {/* Header — sticky, tidak ikut scroll */}
+          {/* Header — sticky */}
           <div className="shrink-0 flex items-center justify-between px-3 pt-3 pb-2 border-b border-white/10">
             <div className="flex items-center gap-1.5">
               <Layers size={11} className="text-teal-400" />
