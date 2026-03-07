@@ -187,13 +187,13 @@ export function removeLayerAndSource(map, layerId) {
   const allLayers = map.getStyle()?.layers ?? [];
 
   // Cari source yang benar-benar dipakai layer ini
-  const layerDef = allLayers.find(l => l.id === layerId);
+  const layerDef = allLayers.find(layerItem => layerItem.id === layerId);
   let sourceId = layerDef?.source;
   
   // Jika layer tidak ditemukan, coba derive dari hover-line (bisa jadi fill sudah terhapus)
   if (!sourceId) {
     const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
-    const hoverLineDef = allLayers.find(l => l.id === hoverLineId);
+    const hoverLineDef = allLayers.find(layerItem => layerItem.id === hoverLineId);
     sourceId = hoverLineDef?.source;
   }
   
@@ -203,12 +203,12 @@ export function removeLayerAndSource(map, layerId) {
   }
 
   // Hapus SEMUA layers yang pakai source ini (fill + hover-line + layer lainnya)
-  allLayers.filter(l => l.source === sourceId).forEach(l => {
-    try { if (map.getLayer(l.id)) map.removeLayer(l.id); } catch (e) { /* skip */ }
+  allLayers.filter(layerItem => layerItem.source === sourceId).forEach(layerItem => {
+    try { if (map.getLayer(layerItem.id)) map.removeLayer(layerItem.id); } catch { /* skip */ }
   });
 
   // Setelah semua layers dihapus, baru hapus source
-  try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch (e) { /* skip */ }
+  try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch { /* skip */ }
 }
 
 // Pindahkan semua hover line layers ke atas agar terlihat di atas admin boundaries
@@ -217,10 +217,10 @@ function bringHoverLayersToTop(map) {
   const hoverLineIds = allLayers.map(layer => layer.id).filter(id => id.includes(LAYERS.HOVER_SUFFIX));
   
   // Pindahkan setiap hover line ke atas (rendering order: undefined = top)
-  hoverLineIds.forEach(id => {
+  hoverLineIds.forEach(layerItemId => {
     try {
-      map.moveLayer(id, undefined); // undefined = move to top
-    } catch (e) {
+      map.moveLayer(layerItemId, undefined);
+    } catch {
       // Layer mungkin tidak ada lagi (dihapus), skip saja
     }
   });
@@ -408,7 +408,7 @@ export const loadLayer = async (
   }
 
   // ─── ATTACH INTERACTIONS ───
-  // Attach hover + click handlers (prevent duplicate if called multiple times)
+  // Attach interaksi hover + click (cegah duplikat jika dipanggil >1 kali)
   attachLayerInteraction(map, layerId);
 
   // Pastikan hover lines ada di atas (visible)
@@ -417,27 +417,27 @@ export const loadLayer = async (
   return geoJsonData;
 };
 
-// Attach mouse hover & click interactions ke layer (hover highlight, popup nama, drilldown)
+// Attach interaksi hover & click ke layer (highlight, popup nama, drilldown)
 function attachLayerInteraction(map, layerId) {
   const { updateBreadcrumb } = useMapStore.getState();
   const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
 
-  // Prevent binding handler 2x ke layer yang sama
+  // Cegah binding handler 2x ke layer yang sama
   const internalMap = map;
   if (!internalMap._attachedLayers) internalMap._attachedLayers = new Set();
   if (internalMap._attachedLayers.has(layerId)) return;
   internalMap._attachedLayers.add(layerId);
 
-  // Get source ID dari layer ID (pattern: "kabupaten-fill" → "kabupaten-src")
+  // Ambil source ID dari layer ID (pola: "kabupaten-fill" → "kabupaten-src")
   const sourceId = layerId.replace("-fill", "-src");
-  let lastHoverFeatureId = null; // Track feature yang sedang di-hover
+  let lastHoverFeatureId = null; // Simpan feature yang sedang di-hover
 
-  // ─── MOUSE ENTER: Change cursor to pointer ───
+  // ─── MOUSE ENTER: Ubah cursor ke pointer ───
   map.on("mouseenter", layerId, () => {
     map.getCanvas().style.cursor = "pointer";
   });
 
-  // ─── MOUSE LEAVE: Reset cursor & hide popup ───
+  // ─── MOUSE LEAVE: Reset cursor & sembunyikan popup ───
   map.on("mouseleave", layerId, () => {
     map.getCanvas().style.cursor = "";
     popup.remove();
@@ -448,7 +448,7 @@ function attachLayerInteraction(map, layerId) {
     }
   });
 
-  // ─── MOUSE MOVE: Show popup & highlight feature ───
+  // ─── MOUSE MOVE: Tampilkan popup & highlight feature ───
   map.on("mousemove", layerId, (e) => {
     const hoveredFeature = e.features?.[0];
     if (!hoveredFeature || !map.getSource(sourceId)) return;
@@ -469,7 +469,7 @@ function attachLayerInteraction(map, layerId) {
       lastHoverFeatureId = hoveredFeatureId;
     }
 
-    // Display nama area di popup (prioritas: desa > kecamatan > kabupaten)
+    // Tampilkan nama area di popup (prioritas: desa > kecamatan > kabupaten)
     const areaName =
       hoveredFeature.properties?.des ??
       hoveredFeature.properties?.kec ??
@@ -481,7 +481,7 @@ function attachLayerInteraction(map, layerId) {
     }
   });
 
-  // ─── CLICK HANDLER: Drilldown to next level ───
+  // ─── CLICK HANDLER: Drill-down ke level berikutnya ───
   map.on("click", layerId, async (e) => {
     const clickedFeature = e.features?.[0];
     if (!clickedFeature?.properties) return;

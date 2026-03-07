@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Menu } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useMapStore } from "../../store/mapStore.js";
 import BreadcrumbsComponent from "./BreadCrumbs.jsx";
 import { loadGEEPolygonRaster, loadLayer } from "../../store/mapLayerStore.js";
@@ -17,12 +18,15 @@ const DEFAULT_ZOOM = MAP_CONFIG.DEFAULT_ZOOM;
 
 const Map = ({ onToggleSidebar }) => {
   // ─── REFS ───
-  const mapContainer = useRef(null); // DOM container untuk map
-  const mapRef = useRef(null); // MapLibre GL instance
+  const mapContainer = useRef(null);
+  const mapRef = useRef(null);
   
   // ─── STATE ───
-  const { breadcrumbs, resetBreadcrumbs, setMap } = useMapStore();
-  const [isMapReady, setIsMapReady] = useState(false); // Track kapan map selesai load
+  // useShallow agar re-render hanya saat nilai field ini benar-benar berubah
+  const { breadcrumbs, resetBreadcrumbs, setMap } = useMapStore(
+    useShallow((state) => ({ breadcrumbs: state.breadcrumbs, resetBreadcrumbs: state.resetBreadcrumbs, setMap: state.setMap }))
+  );
+  const [isMapReady, setIsMapReady] = useState(false);
 
   // ─── HANDLERS ───
   // Klik tombol "Home": reset map ke initial state + clear breadcrumbs
@@ -36,7 +40,7 @@ const Map = ({ onToggleSidebar }) => {
     return handleBreadcrumbDrill(mapRef.current, level, breadcrumbs, updateBreadcrumb);
   };
 
-  // ─── INITIALIZE MAP ───
+  // ─── INISIALISASI MAP ───
   // Jalankan 1x saat component mount untuk inisialisasi MapLibre GL instance
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -81,7 +85,7 @@ const Map = ({ onToggleSidebar }) => {
         if (mapRef.current) {
           mapRef.current.remove();
         }
-      } catch (e) {
+      } catch {
         // Abaikan error cleanup
       }
       mapRef.current = null;
@@ -90,7 +94,7 @@ const Map = ({ onToggleSidebar }) => {
     };
   }, [setMap]);
 
-  // ─── LOAD LAYERS BASED ON BREADCRUMB ───
+  // ─── LOAD LAYERS SESUAI BREADCRUMB ───
   // Jalankan saat: breadcrumbs berubah (dari URL sync atau manual drill) atau map ready
   // Load layer yang tepat sesuai drill level: kabupaten → kecamatan → desa
   useEffect(() => {

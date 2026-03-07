@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useMapStore } from "../../store/mapStore.js";
 import { loadGEEPolygonRaster } from "../../store/mapLayerStore.js";
 import { YEAR_CONFIG } from "../../config/constants.js";
 
 // Timeline slider untuk pilih tahun coverage — bottom-left corner map
 export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, endYear = YEAR_CONFIG.MAX }) {
-  const { year, setYear, breadcrumbs } = useMapStore();
+  // useShallow agar re-render hanya saat year/breadcrumbs benar-benar berubah
+  const { year, setYear, breadcrumbs } = useMapStore(
+    useShallow((state) => ({ year: state.year, setYear: state.setYear, breadcrumbs: state.breadcrumbs }))
+  );
   const [hovered, setHovered] = useState(null);
   const [expanded, setExpanded] = useState(false);
 

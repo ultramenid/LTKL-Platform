@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useMapStore } from "../../store/mapStore.js";
 import { loadLayer, loadGEEPolygonRaster, removeLayerAndSource } from "../../store/mapLayerStore.js";
 import { zoomToMatchingFeature, waitForSourceData } from "../../utils/mapUtils.js";
@@ -10,10 +11,13 @@ import { buildSingleFilter } from "../../utils/filterBuilder.js";
 
 // List kabupaten di sidebar — klik untuk drill ke kecamatan
 export function KabupatenCard({ filterText = "" }) {
-  const { map, updateBreadcrumb, selectedKab, setSelectedKab } = useMapStore();
+  // useShallow agar re-render hanya saat nilai field ini berubah, bukan setiap store update
+  const { map, updateBreadcrumb, selectedKab, setSelectedKab } = useMapStore(
+    useShallow((state) => ({ map: state.map, updateBreadcrumb: state.updateBreadcrumb, selectedKab: state.selectedKab, setSelectedKab: state.setSelectedKab }))
+  );
   const [isMapReady, setIsMapReady] = useState(false);
 
-  // Check apakah map sudah siap (agar bisa load layers)
+  // Cek apakah map sudah siap (agar bisa load layers)
   useEffect(() => {
     if (map?.isStyleLoaded()) setIsMapReady(true);
     else map?.on("load", () => setIsMapReady(true));
@@ -51,8 +55,8 @@ export function KabupatenCard({ filterText = "" }) {
   if (!isMapReady) {
     return (
       <div className="px-3 py-2 space-y-2 animate-pulse">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div key={index} className="flex gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
             <div className="w-11 h-11 bg-gray-200 rounded-lg shrink-0" />
             <div className="flex-1 space-y-2 pt-1">
               <div className="h-3 w-2/3 bg-gray-200 rounded" />

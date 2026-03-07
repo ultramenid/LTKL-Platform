@@ -267,3 +267,23 @@ Network tab:
 - ❌ Jangan gunakan abbreviasi: `res`, `fid`, `kec` (sebagai variabel lokal), `k`
 - ❌ Jangan blocking operation di cache-hit path (Rule B)
 - ❌ Jangan ubah format localStorage atau URL params tanpa migration function (Rule 4)
+- ❌ Jangan `useMapStore()` tanpa selector — pakai `useShallow` atau selector individu (BP-1)
+- ❌ Jangan duplikasi logic yang sudah ada di `src/utils/` — import & reuse (BP-2)
+- ❌ Jangan import konstanta lewat file perantara — langsung dari `constants.js` (BP-3)
+- ❌ Jangan tulis komentar verbose / multi-line docblock untuk hal yang jelas dari kode (BP-5)
+
+---
+
+## ⚡ Best Practices (ringkasan)
+
+Lihat `DEVELOPMENT_RULES.md` bagian **Best Practices** untuk contoh lengkap.
+
+| ID   | Topik                          | Inti                                                            |
+| ---- | ------------------------------ | --------------------------------------------------------------- |
+| BP-1 | Zustand Selective Subscription | `useShallow` untuk 2+ field, selector individu untuk 1 field    |
+| BP-2 | Reuse Utility                  | Jangan duplikasi logic — import dari `src/utils/`               |
+| BP-3 | Import Konstanta               | Langsung dari `constants.js`, bukan lewat file perantara        |
+| BP-4 | Error Handling                 | `catch { }` tanpa variabel jika error tidak diproses            |
+| BP-5 | Komentar Ringkas               | 1 baris header, section divider pendek, WHY bukan WHAT          |
+| BP-6 | MapLibre Cleanup               | Cleanup layer & listener di `useEffect` return                  |
+| BP-7 | Pisah useEffect                | Init map dan load data di effect terpisah, cegah race condition |

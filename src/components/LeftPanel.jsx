@@ -8,7 +8,7 @@ export function LeftPanel({ onClose }) {
 
   return (
     <div className="w-full h-full flex flex-col bg-white border-r border-gray-100">
-      {/* ── Header: Logo + Platform identity ── */}
+      {/* ── Header: Logo + Identitas platform ── */}
       <div className="shrink-0 px-5 py-4 border-b border-gray-100 bg-white">
         <div className="flex items-center gap-3">
           {/* Logo */}
@@ -45,7 +45,7 @@ export function LeftPanel({ onClose }) {
             type="text"
             placeholder="Cari kabupaten..."
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(event) => setSearchText(event.target.value)}
             className="w-full pl-8 pr-7 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 transition-all text-gray-700 placeholder:text-gray-400"
           />
           {searchText && (
@@ -59,12 +59,12 @@ export function LeftPanel({ onClose }) {
         </div>
       </div>
 
-      {/* ── Section label ── */}
+      {/* ── Label section ── */}
       <div className="shrink-0 px-5 pt-4 pb-2 flex items-center justify-between">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kabupaten Anggota</p>
       </div>
 
-      {/* ── Kabupaten list (scrollable) ── */}
+      {/* ── Daftar kabupaten (scrollable) ── */}
       <div className="flex-1 overflow-y-auto">
         <KabupatenCard filterText={searchText} />
       </div>

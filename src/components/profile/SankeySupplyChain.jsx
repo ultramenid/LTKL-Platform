@@ -11,8 +11,10 @@ const PADDING_ATAS_KOLOM = 36;
 const LEBAR_NODE         = 100;
 const JARAK_NODE         = 14;
 // Padding horizontal agar node pertama dan terakhir tidak mepet tepi
-const PADDING_KIRI    = 0;
-const PADDING_KANAN   = 0;
+const PADDING_KIRI      = 0;
+const PADDING_KANAN     = 0;
+// Lebar minimum chart agar 4 kolom node tetap terbaca di layar sempit — jika kontainer lebih kecil, area SVG bisa di-scroll horizontal
+const MIN_LEBAR_CHART   = 600;
 
 // ─── DAFTAR TAHUN YANG TERSEDIA UNTUK FILTER ───
 const DAFTAR_TAHUN = [2019, 2020, 2021, 2022, 2023];
@@ -203,11 +205,12 @@ export function SankeySupplyChain() {
     if (!elemenKontainer) return;
     const pengamatUkuran = new ResizeObserver((entries) => {
       const entryPertama = entries[0];
-      if (entryPertama) setLebarKontainer(entryPertama.contentRect.width);
+      // Clamp ke MIN_LEBAR_CHART agar 4 kolom Sankey tidak gepeng di layar sempit
+      if (entryPertama) setLebarKontainer(Math.max(entryPertama.contentRect.width, MIN_LEBAR_CHART));
     });
     pengamatUkuran.observe(elemenKontainer);
     // Set lebar awal tanpa menunggu event pertama
-    setLebarKontainer(elemenKontainer.offsetWidth);
+    setLebarKontainer(Math.max(elemenKontainer.offsetWidth, MIN_LEBAR_CHART));
     return () => pengamatUkuran.disconnect();
   }, []);
 
@@ -313,10 +316,10 @@ export function SankeySupplyChain() {
 
   // ─── RENDER ───
   return (
-    <div ref={refKontainer} className="w-full border border-gray-200 rounded-xl overflow-hidden">
+    <div ref={refKontainer} className="w-full border border-gray-200 rounded-xl">
 
       {/* ─── TOOLBAR ATAS: filter tahun + tombol download bergaya Trase.earth ─── */}
-      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-end gap-3">
+      <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-end gap-3 rounded-t-xl">
         {/* Filter tahun — dropdown pill */}
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] text-gray-400 font-medium">Year</span>
@@ -355,8 +358,8 @@ export function SankeySupplyChain() {
       {/* ─── LABEL KOLOM: garis panjang dengan panah antar kolom bergaya Trase.earth ─── */}
       {/* Dihapus — label kini dirender di dalam SVG sesuai posisi kolom D3 */}
 
-      {/* Area chart SVG — label kolom dirender di baris paling atas */}
-      <div className="bg-white w-full select-none">
+      {/* Area chart SVG — overflow-x-auto agar bisa scroll horizontal di layar sempit */}
+      <div className="bg-white select-none overflow-x-auto">
         <svg
           width={lebarKontainer}
           height={TINGGI_CHART}
@@ -519,7 +522,7 @@ export function SankeySupplyChain() {
       </div>
 
       {/* Footer sumber data */}
-      <div className="bg-gray-50 border-t border-gray-100 px-4 py-2">
+      <div className="bg-gray-50 border-t border-gray-100 px-4 py-2 rounded-b-xl">
         <p className="text-[10px] text-gray-400 text-right">
           Satuan: ribu ton CPO &nbsp;·&nbsp; Tahun: {tahunDipilih} &nbsp;·&nbsp; Sumber: Trase.earth
         </p>

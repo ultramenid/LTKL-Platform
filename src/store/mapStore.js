@@ -4,7 +4,7 @@ import { YEAR_CONFIG, CACHE_CONFIG } from "../config/constants.js";
 
 // Global state: breadcrumbs, tahun, map instance, cache GEE & GeoJSON, pending requests
 export const useMapStore = create((set, get) => ({
-  // ─── Breadcrumb State ───
+  // ─── State Breadcrumb ───
   breadcrumbs: {},
   selectedKab: null,
   
@@ -15,7 +15,7 @@ export const useMapStore = create((set, get) => ({
     updateUrl(state.year, state.breadcrumbs, kabupatenName);
   },
 
-  // ─── Year State ───
+  // ─── State Tahun ───
   year: YEAR_CONFIG.DEFAULT,
   setYear: (newYear) => {
     set({ year: newYear });
@@ -23,11 +23,11 @@ export const useMapStore = create((set, get) => ({
     updateUrl(newYear, state.breadcrumbs, state.selectedKab);
   },
 
-  // ─── Map Instance ───
+  // ─── Instance Map ───
   map: null,
   setMap: (mapInstance) => set({ map: mapInstance }),
   
-  // ─── Breadcrumb Management ───
+  // ─── Manajemen Breadcrumb ───
   // Replace seluruh breadcrumbs object (biasa digunakan dari URL sync)
   setBreadcrumbs: (newBreadcrumbs) => set({ breadcrumbs: newBreadcrumbs }),
 
@@ -62,7 +62,7 @@ export const useMapStore = create((set, get) => ({
       return { breadcrumbs: {}, selectedKab: null };
     }),
 
-  // ─── GEE Cache (localStorage) ───
+  // ─── Cache GEE (localStorage) ───
   // Menyimpan Google Earth Engine tile URLs; format: {query_string: tile_url}
   geeCache: (() => {
     try {
@@ -131,7 +131,7 @@ export const useMapStore = create((set, get) => ({
     return { geeCache: updatedCache };
   }),
 
-  // ─── GeoJSON Cache (localStorage) ───
+  // ─── Cache GeoJSON (localStorage) ───
   // Menyimpan GeoJSON features dari GeoServer; format: {layer_name_filter: geojson_object}
   geoJsonCache: (() => {
     try {
@@ -191,7 +191,7 @@ export const useMapStore = create((set, get) => ({
     set({ geeCache: {}, geoJsonCache: {} });
   },
 
-  // ─── Pending Requests ───
+  // ─── Pending Requests (dedup) ───
   // Track in-flight requests untuk dedup — request yang sama share satu promise
   pendingRequests: {},
   

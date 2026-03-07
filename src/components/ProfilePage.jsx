@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { KABUPATENS } from '../data/kabupatens.js';
 import { COLORS } from '../config/constants.js';
@@ -26,9 +25,19 @@ const DATA_HERO_STATS = [
   { label: 'MEDIAN AGE',              value: '34.2',     sub: 'years'           },
 ];
 
+// Daftar id tab yang valid — untuk memvalidasi nilai dari URL sebelum dipakai
+const TAB_IDS_VALID = NAV_TABS.map((tabItem) => tabItem.id);
+
 // Halaman profil analitik per kabupaten: hero → statistik → tab navigasi → konten
 export function ProfilePage({ kabupatenName }) {
-  const [activeSection, setActiveSection] = useState('population');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Baca tab dari URL; fallback ke 'population' jika tidak ada atau tidak valid
+  const tabDariUrl    = searchParams.get('tab');
+  const activeSection = TAB_IDS_VALID.includes(tabDariUrl) ? tabDariUrl : 'population';
+
+  // Simpan tab yang dipilih ke URL agar link bisa di-share
+  const pilihTab = (tabId) => setSearchParams({ tab: tabId }, { replace: true });
 
   const kabupatenRecord = KABUPATENS.find(
     (itemKabupaten) => itemKabupaten.name.toLowerCase() === kabupatenName.toLowerCase()
@@ -94,7 +103,7 @@ export function ProfilePage({ kabupatenName }) {
           {NAV_TABS.map((tabItem) => (
             <button
               key={tabItem.id}
-              onClick={() => setActiveSection(tabItem.id)}
+              onClick={() => pilihTab(tabItem.id)}
               className={`cursor-pointer px-4 md:px-8 py-3 text-sm font-semibold uppercase tracking-wider transition border-b-2 whitespace-nowrap ${
                 activeSection === tabItem.id ? 'text-white border-white' : 'text-white/40 border-transparent hover:text-white/70'
               }`}

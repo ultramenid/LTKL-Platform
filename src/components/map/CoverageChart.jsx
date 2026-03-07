@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { TILE_SERVER_URL } from '../../store/mapLayerStore.js';
 import { useMapStore } from '../../store/mapStore.js';
-import { YEAR_CONFIG } from '../../config/constants.js';
+import { normalizeServerResponse, transformDataForChart } from '../../utils/dataTransform.js';
+import { API_ENDPOINTS, YEAR_CONFIG, COLORS } from '../../config/constants.js';
 
-// Loading skeleton saat chart sedang fetch data
+// Skeleton loading saat chart sedang fetch data
 function LoadingChartSkeleton() {
   return (
     <div className="w-full h-full flex flex-col p-4 gap-3">
@@ -13,11 +13,11 @@ function LoadingChartSkeleton() {
         <div className="h-5 w-16 bg-gray-100 rounded-full animate-pulse" />
       </div>
       <div className="flex-1 flex items-end gap-2 px-2">
-        {[55, 80, 65, 90, 45, 70, 60, 85, 50].map((h, i) => (
+        {[55, 80, 65, 90, 45, 70, 60, 85, 50].map((heightPercent, index) => (
           <div
-            key={i}
+            key={index}
             className="flex-1 bg-gray-100 rounded-t animate-pulse"
-            style={{ height: `${h}%`, animationDelay: `${i * 60}ms` }}
+            style={{ height: `${heightPercent}%`, animationDelay: `${index * 60}ms` }}
           />
         ))}
       </div>
@@ -28,15 +28,15 @@ function LoadingChartSkeleton() {
 
 // Chart bar area (ha) per kabupaten dari LULC server (/lulc-stats?year=XXXX)
 export default function CoverageChartDebug() {
-  // ─── GET YEAR ───
-  const yearFromStore = useMapStore ? useMapStore((s) => s.year) : undefined;
+  // ─── AMBIL TAHUN ───
+  const yearFromStore = useMapStore((state) => state.year);
   const year = Number(yearFromStore) || YEAR_CONFIG.DEFAULT;
 
   // ─── STATE ───
-  const [serverResponse, setServerResponse] = useState(null); // Raw response dari server
-  const [error, setError] = useState(null); // Error message
-  const [loading, setLoading] = useState(true); // Loading state
-  const echartsRef = useRef(null); // Reference ke React ECharts instance
+  const [serverResponse, setServerResponse] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const echartsRef = useRef(null);
 
   // ─── CLEANUP ECHARTS ───
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function CoverageChartDebug() {
         if (echartsRef.current) {
           echartsRef.current.getEchartsInstance?.()?.dispose?.();
         }
-      } catch (e) {
+      } catch {
         // Abaikan error cleanup echarts
       }
     };
@@ -58,8 +58,7 @@ export default function CoverageChartDebug() {
     setError(null);
     setServerResponse(null);
 
-    const statsUrl = `${TILE_SERVER_URL}/lulc-stats?year=${year}`;
-    console.debug('[CoverageChart] fetching', statsUrl);
+    const statsUrl = `${API_ENDPOINTS.TILE_SERVER}/lulc-stats?year=${year}`;
 
     fetch(statsUrl)
       .then(async (response) => {
@@ -85,25 +84,23 @@ export default function CoverageChartDebug() {
       })
       .then((response) => {
         if (!isComponentMounted) return;
-        // Check HTTP status
+        // Validasi HTTP status
         if (!response.ok) {
           setError(`Server ${response.status}: ${response.statusText} — ${response.text}`);
           setLoading(false);
           return;
         }
-        // Check JSON parse
+        // Validasi JSON
         if (!response.json) {
           setError(`Invalid JSON from server. Response text: ${response.text}`);
           setLoading(false);
           return;
         }
-        
-        // Success: set response
+
         setServerResponse(response.json);
       })
       .catch((fetchError) => {
         if (!isComponentMounted) return;
-        console.error('[CoverageChart] fetch error', fetchError);
         setError(String(fetchError));
       })
       .finally(() => {
@@ -111,67 +108,20 @@ export default function CoverageChartDebug() {
         setLoading(false);
       });
 
-    // Cleanup
-    return () => {
-      isComponentMounted = false;
-    };
+    return () => { isComponentMounted = false; };
   }, [year]);
 
-  // ─── NORMALIZE SERVER RESPONSE ───
-  // Handle format: {year,data}, {"2024":[...]}, array langsung
-  const normalizedData = useMemo(() => {
-    if (!serverResponse) return null;
+  // ─── NORMALISASI RESPONSE SERVER ───
+  // Pakai utility dari dataTransform.js agar tidak duplikasi logic
+  const normalizedData = useMemo(
+    () => normalizeServerResponse(serverResponse, year),
+    [serverResponse, year]
+  );
 
-    // Format 1: Already normalized
-    if (serverResponse && serverResponse.year && Array.isArray(serverResponse.data)) {
-      return { year: Number(serverResponse.year), data: serverResponse.data };
-    }
-
-    // Format 2: Object berkey numerik
-    const responseKeys = Object.keys(serverResponse);
-    for (const yearKey of responseKeys) {
-      // Match tahun YYYY
-      if (/^\d{4}$/.test(yearKey) && Array.isArray(serverResponse[yearKey])) {
-        return { year: Number(yearKey), data: serverResponse[yearKey] };
-      }
-    }
-
-    // Format 3: Array langsung
-    if (Array.isArray(serverResponse)) {
-      return { year, data: serverResponse };
-    }
-
-    // Format 4: Cari array value pertama (last resort)
-    for (const yearKey of responseKeys) {
-      if (Array.isArray(serverResponse[yearKey])) {
-        return { 
-          year: serverResponse.year ? Number(serverResponse.year) : Number(yearKey) || year, 
-          data: serverResponse[yearKey] 
-        };
-      }
-    }
-
-    // Tidak ada format yang cocok
-    return null;
-  }, [serverResponse, year]);
-
-  // ─── TRANSFORM DATA FOR CHART ───
-  const { chartLabels, chartValues } = useMemo(() => {
-    if (!normalizedData) return { chartLabels: [], chartValues: [] };
-    
-    const transformedEntries = normalizedData.data
-      .map((entry) => {
-        const kabupatenName = String((entry && entry[0]) || '');
-        const areaHectare = Number((entry && entry[1]) || 0) || 0;
-        return { kabupatenName, areaHectare };
-      })
-      .filter((item) => item.kabupatenName) // Buang entry tanpa nama kabupaten
-      .sort((item1, item2) => item2.areaHectare - item1.areaHectare);
-    
-    return { 
-      chartLabels: transformedEntries.map((item) => item.kabupatenName), 
-      chartValues: transformedEntries.map((item) => item.areaHectare) 
-    };
+  // ─── TRANSFORMASI DATA UNTUK CHART ───
+  const { labels: chartLabels, values: chartValues } = useMemo(() => {
+    if (!normalizedData) return { labels: [], values: [] };
+    return transformDataForChart(normalizedData.data);
   }, [normalizedData]);
 
   // ─── RENDER ERROR STATES ───
@@ -186,7 +136,6 @@ export default function CoverageChartDebug() {
     </div>
   );
   if (!serverResponse || !normalizedData) {
-    console.warn('[CoverageChart] unable to normalize server response', serverResponse);
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-center">
         <p className="text-xs text-gray-400">Tidak ada data tersedia</p>
@@ -194,15 +143,15 @@ export default function CoverageChartDebug() {
     );
   }
 
-  // ─── SUMMARY STAT ───
-  const totalArea = chartValues.reduce((sum, v) => sum + v, 0);
+  // ─── RINGKASAN STATISTIK ───
+  const totalArea = chartValues.reduce((total, areaValue) => total + areaValue, 0);
   const totalAreaLabel = totalArea >= 1_000_000
     ? `${(totalArea / 1_000_000).toFixed(2)}M ha`
     : totalArea >= 1_000
     ? `${(totalArea / 1_000).toFixed(1)}K ha`
     : `${totalArea.toLocaleString()} ha`;
 
-  // ─── ECHART OPTIONS ───
+  // ─── OPSI ECHART ───
   const chartOption = {
     tooltip: {
       trigger: "axis",
@@ -210,10 +159,10 @@ export default function CoverageChartDebug() {
       backgroundColor: "#1e293b",
       borderColor: "transparent",
       textStyle: { color: "#f1f5f9", fontSize: 11 },
-      formatter: (params) => {
-        const p = params[0];
-        return `<span style="font-weight:600">${p.name}</span><br/>` +
-          `<span style="color:#5eead4">${Number(p.value).toLocaleString()} ha</span>`;
+      formatter: (paramsList) => {
+        const firstParam = paramsList[0];
+        return `<span style="font-weight:600">${firstParam.name}</span><br/>` +
+          `<span style="color:#5eead4">${Number(firstParam.value).toLocaleString()} ha</span>`;
       },
     },
     grid: { left: 12, right: 16, top: 8, bottom: 48, containLabel: true },
@@ -236,7 +185,7 @@ export default function CoverageChartDebug() {
       axisLabel: {
         fontSize: 9,
         color: "#94a3b8",
-        formatter: (v) => v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `${(v/1_000).toFixed(0)}K` : v,
+        formatter: (axisValue) => axisValue >= 1_000_000 ? `${(axisValue/1_000_000).toFixed(1)}M` : axisValue >= 1_000 ? `${(axisValue/1_000).toFixed(0)}K` : axisValue,
       },
     },
     series: [
@@ -246,7 +195,7 @@ export default function CoverageChartDebug() {
         data: chartValues,
         barMaxWidth: 36,
         itemStyle: {
-          color: "#14b8a6",
+          color: COLORS.PRIMARY,
           borderRadius: [4, 4, 0, 0],
         },
         emphasis: {
