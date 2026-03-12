@@ -320,7 +320,7 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
       visible: true,
       x: event.clientX,
       y: event.clientY,
-      content: `${nodeName}${volumeToShow > 0 ? `\n${volumeToShow.toLocaleString()} ribu ton` : ''}`,
+      content: `${nodeName}${volumeToShow > 0 ? `\n${volumeToShow.toLocaleString()} ton` : ''}`,
     });
   };
 
@@ -331,7 +331,7 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
       visible: true,
       x: event.clientX,
       y: event.clientY,
-      content: `${sourceName} → ${targetName}\n${link.value.toLocaleString()} ribu ton`,
+      content: `${sourceName} → ${targetName}\n${link.value.toLocaleString()} ton`,
     });
   };
 
@@ -551,7 +551,7 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
       {/* Footer: data source & unit info */}
       <div className="bg-gray-50 border-t border-gray-100 px-4 py-2 rounded-b-xl">
         <p className="text-[10px] text-gray-400 text-right">
-          Satuan: ribu ton CPO &nbsp;·&nbsp; Tahun: {selectedYear} &nbsp;·&nbsp; Sumber: Trase.earth
+          Satuan: ton CPO &nbsp;·&nbsp; Tahun: {selectedYear} &nbsp;·&nbsp; Sumber: Trase.earth
         </p>
       </div>
 

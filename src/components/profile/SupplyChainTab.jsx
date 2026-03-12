@@ -21,7 +21,7 @@ export function SupplyChainTab({ kabupaten }) {
   const statistics = useMemo(() => getStatistics(kabupaten, selectedYear), [kabupaten, selectedYear]);
 
   const SUPPLY_CHAIN_STATS = [
-    { label: 'Total Export Volume', value: `${statistics.totalVolume}`, unit: 'juta ton CPO' },
+    { label: 'Total Export Volume', value: `${statistics.totalVolume}`, unit: 'ribu ton CPO' },
     { label: 'Largest Mill Group',  value: statistics.largestMillGroup, unit: 'main processor' },
     { label: 'Largest Exporter',    value: statistics.largestExporter,  unit: 'by volume' },
     { label: 'Top Destination',     value: statistics.topDestination,   unit: 'primary market' },
