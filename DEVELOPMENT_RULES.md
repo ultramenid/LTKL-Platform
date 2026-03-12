@@ -13,10 +13,12 @@ Semua contributor (termasuk AI) WAJIB mengikuti rules ini sebelum menulis atau m
 
 ---
 
-## Rule 2: Indonesian Comments ✅
+## Rule 2: Indonesian Comments, English Everything Else ✅
 
-- **100% Bahasa Indonesia** untuk semua komentar di source code
-- **Section dividers** menggunakan format: `// ─── NAMA SECTION ───`
+- **Comments: 100% Bahasa Indonesia** — semua komentar (inline, block, section headers)
+- **Variables, functions, classes: 100% English** — semua nama variabel, fungsi, class harus Bahasa Inggris
+- **UI strings: Bahasa lokal saja** — hanya label & text yang ditampilkan ke user boleh Bahasa Indonesia
+- **Section dividers** menggunakan format: `// ─── SECTION NAME (DESKRIPSI BAHASA INDONESIA) ───`
 - **Jelaskan WHY, bukan WHAT** — komentar harus menjawab "kenapa ini dilakukan" bukan "apa yang dilakukan"
 
 ```js
@@ -29,18 +31,21 @@ Semua contributor (termasuk AI) WAJIB mengikuti rules ini sebelum menulis atau m
 
 ---
 
-## Rule 3: Meaningful Variable Names ✅
+## Rule 3: Meaningful Variable Names — English Only ✅
 
-- **Descriptive naming everywhere** — nama variabel harus menggambarkan isinya
-- **No abbreviations** — `res` → `response`, `fid` → `featureId`, `k` → `kabupatenRecord`
-- **Type hints dalam nama** — `isLoading`, `geeCache`, `kecamatanFilter`, `cachedTileUrl`
+- **Variables & functions harus descriptive** — nama harus menggambarkan isinya dalam Bahasa Inggris
+- **No abbreviations** — `res` → `response`, `fid` → `featureId`, `k` → `districtRecord`, `tahun` → `year`
+- **Type hints dalam nama** — `isLoading`, `geeCache`, `districtFilter`, `cachedTileUrl`
+- **Constructor parameter: Bahasa Inggris** — jika ada parameter Bahasa Indonesia di API eksternal, rename saat import
 
 ```js
 // ✅ BENAR
-KABUPATENS.find((kabupatenRecord) => kabupatenRecord.name === rawKab);
+DISTRICTS.find((districtRecord) => districtRecord.name === rawName);
+const chartHeight = 620; // Tinggi chart untuk layout
 
 // ❌ SALAH
-KABUPATENS.find((k) => k.name === rawKab);
+KABUPATENS.find((k) => k.name === rawKab); // Variabel singkat
+const TINGGI_CHART = 620; // Nama Bahasa Indonesia
 ```
 
 ---

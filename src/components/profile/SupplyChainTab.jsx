@@ -1,73 +1,119 @@
+import { useState, useMemo } from 'react';
 import { SankeySupplyChain } from './SankeySupplyChain.jsx';
 import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
+import SUPPLY_CHAIN_DATA from '../../data/supplychain-data.json';
 
-// ─── DATA KARTU STATISTIK RANTAI PASOK ───
-const DATA_STATISTIK_RANTAI = [
-  { label: 'Total Export Volume', value: '26.0 Jt', satuan: 'ton CPO (2022)' },
-  { label: 'Largest Exporter',    value: 'Wilmar',  satuan: 'Nabati Indonesia' },
-  { label: 'Top Destination',     value: 'India',   satuan: '35% of volume'   },
-  { label: 'Origin Region',       value: 'Riau',    satuan: 'main origin hub'  },
-];
+// ─── HELPER: HITUNG STATISTIK DARI SUPPLYCHAIN DATA ───
+function calculateStatistics(district, year) {
+  const districtData = SUPPLY_CHAIN_DATA.data[district];
+  if (!districtData || !districtData[year]) {
+    return {
+      totalVolume: '0',
+      largestExporter: 'N/A',
+      topDestination: 'N/A',
+      largestMillGroup: 'N/A',
+    };
+  }
 
-// ─── DATA TUJUAN EKSPOR ───
-const DATA_TUJUAN_EKSPOR = [
-  { tujuan: 'India',         volume: '9,100k',  pct: 35.0, color: '#ef4444' },
-  { tujuan: 'Tiongkok',      volume: '7,000k',  pct: 26.9, color: '#3b82f6' },
-  { tujuan: 'Pakistan',      volume: '3,100k',  pct: 11.9, color: '#f59e0b' },
-  { tujuan: 'Malaysia',      volume: '2,200k',  pct: 8.5,  color: '#22c55e' },
-  { tujuan: 'Bangladesh',    volume: '1,800k',  pct: 6.9,  color: '#8b5cf6' },
-  { tujuan: 'Netherlands',   volume: '1,400k',  pct: 5.4,  color: '#06b6d4' },
-  { tujuan: 'Lainnya',       volume: '1,400k',  pct: 5.4,  color: '#9ca3af' },
-];
+  const yearData = districtData[year];
+  const { nodes, links } = yearData;
+
+  // Total volume dari sum semua links
+  const totalVolume = links.reduce((sum, link) => sum + link.value, 0);
+
+  // Largest Exporter (layer 2): node dengan volume total terbesar
+  const exporters = nodes.filter((n) => n.kolom === 2);
+  const exporterVolumes = {};
+  links.forEach((link) => {
+    if (link.source.startsWith('2:')) {
+      exporterVolumes[link.source] = (exporterVolumes[link.source] || 0) + link.value;
+    }
+  });
+  const largestExporter = Object.entries(exporterVolumes).sort(([, a], [, b]) => b - a)[0]?.[0]?.split(':')[1] || 'N/A';
+
+  // Top Destination (layer 3): node dengan volume total terbesar
+  const destinationVolumes = {};
+  links.forEach((link) => {
+    if (link.target.startsWith('3:')) {
+      destinationVolumes[link.target] = (destinationVolumes[link.target] || 0) + link.value;
+    }
+  });
+  const topDestination = Object.entries(destinationVolumes).sort(([, a], [, b]) => b - a)[0]?.[0]?.split(':')[1] || 'N/A';
+
+  // Largest Mill Group (layer 1): node dengan volume total terbesar
+  const millVolumes = {};
+  links.forEach((link) => {
+    if (link.source.startsWith('1:')) {
+      millVolumes[link.source] = (millVolumes[link.source] || 0) + link.value;
+    }
+  });
+  const largestMillName = Object.entries(millVolumes).sort(([, a], [, b]) => b - a)[0]?.[0]?.split(':')[1] || 'N/A';
+
+  return {
+    totalVolume: (totalVolume / 1000).toFixed(1), // Convert ke juta ton dari ribu ton
+    largestExporter,
+    topDestination,
+    largestMillGroup: largestMillName,
+  };
+}
 
 // Tab Rantai Pasok Komoditas
-export function SupplyChainTab() {
+export function SupplyChainTab({ kabupaten = 'SIAK' }) {
+  const districtData = SUPPLY_CHAIN_DATA.data[kabupaten];
+  const availableYears = districtData?.tahun_tersedia || [];
+  const [selectedYear, setSelectedYear] = useState(availableYears[availableYears.length - 1] || 2022);
+
+  // Hitung statistik berdasarkan kabupaten dan tahun yang dipilih
+  const statistics = useMemo(() => {
+    return calculateStatistics(kabupaten, selectedYear);
+  }, [kabupaten, selectedYear]);
+
+  const SUPPLY_CHAIN_STATS = [
+    { label: 'Total Export Volume', value: `${statistics.totalVolume}`, unit: 'juta ton CPO' },
+    { label: 'Largest Exporter',    value: statistics.largestExporter,  unit: 'by volume' },
+    { label: 'Top Destination',     value: statistics.topDestination,   unit: 'primary market' },
+    { label: 'Largest Mill Group',  value: statistics.largestMillGroup, unit: 'main processor' },
+  ];
   return (
     <ProfileSection>
-      <SectionHeader title="Supply Chain" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <SectionHeader title="Supply Chain" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
+        </div>
+        {/* ─── YEAR SELECTOR DROPDOWN ───*/}
+        {availableYears.length > 0 && (
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded cursor-pointer hover:border-gray-400 transition focus:outline-none focus:ring-2"
+            style={{ '--tw-ring-color': COLORS.PRIMARY }}
+          >
+            {availableYears.map((year) => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+        )}
+      </div>
 
-      {/* ─── Kartu ringkasan statistik ekspor ─── */}
+      {/* ─── SUMMARY STATISTICS CARDS (volume, exporters, destinations) ───*/}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {DATA_STATISTIK_RANTAI.map((itemStat) => (
-          <div key={itemStat.label} className="bg-teal-50 border border-teal-100 p-4 rounded-lg">
-            <p className="text-[9px] text-gray-500 uppercase tracking-widest">{itemStat.label}</p>
-            <p className="text-2xl font-black text-teal-700 mt-1">{itemStat.value}</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">{itemStat.satuan}</p>
+        {SUPPLY_CHAIN_STATS.map((stat) => (
+          <div key={stat.label} className="bg-teal-50 border border-teal-100 p-4 rounded-lg">
+            <p className="text-[9px] text-gray-500 uppercase tracking-widest">{stat.label}</p>
+            <p className="text-2xl font-black text-teal-700 mt-1">{stat.value}</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">{stat.unit}</p>
           </div>
         ))}
       </div>
 
-      {/* ─── Visualisasi Sankey alur rantai pasok ─── */}
+      {/* ─── SANKEY VISUALIZATION (alur rantai pasok dengan nodes & links) ───*/}
       <div>
         <SubSectionHeader title="Supply Chain Flow" dotColor={COLORS.PRIMARY} />
-        <SankeySupplyChain />
+        <SankeySupplyChain kabupaten={kabupaten} tahunDipilih={selectedYear} />
       </div>
 
-      {/* ─── Tujuan ekspor & distribusi volume ─── */}
-      <div>
-        <SubSectionHeader title="Export Destinations" dotColor={COLORS.PRIMARY} />
-        <div className="space-y-2">
-          {DATA_TUJUAN_EKSPOR.map((itemTujuan) => (
-            <div key={itemTujuan.tujuan} className="flex items-center gap-3">
-              <div className="w-24 text-right text-xs text-gray-700 font-medium shrink-0">
-                {itemTujuan.tujuan}
-              </div>
-              <div className="flex-1 bg-gray-100 rounded h-5 overflow-hidden">
-                <div
-                  className="h-5 rounded transition-all"
-                  style={{ width: `${itemTujuan.pct}%`, backgroundColor: itemTujuan.color }}
-                />
-              </div>
-              <div className="w-20 flex justify-between text-xs text-gray-500 shrink-0">
-                <span>{itemTujuan.volume}</span>
-                <span className="font-semibold text-gray-700">{itemTujuan.pct}%</span>
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-[9px] text-gray-400 mt-3">* Volume in thousand metric tons CPO equivalent</p>
-      </div>
+     
     </ProfileSection>
   );
 }

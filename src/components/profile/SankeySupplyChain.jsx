@@ -1,381 +1,409 @@
 import { useRef, useState, useEffect, useMemo } from 'react';
-import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
+import { sankey } from 'd3-sankey';
 import { COLORS } from '../../config/constants.js';
+import SUPPLY_CHAIN_DATA from '../../data/supplychain-data.json';
 
 // Komponen Sankey interaktif bergaya Trase.earth — layout D3, render React SVG
 
-// ─── KONSTANTA LAYOUT ───
-const TINGGI_CHART       = 620;
-// Ruang di atas untuk label kolom header dalam SVG
-const PADDING_ATAS_KOLOM = 36;
-const LEBAR_NODE         = 100;
-const JARAK_NODE         = 14;
-// Padding horizontal agar node pertama dan terakhir tidak mepet tepi
-const PADDING_KIRI      = 0;
-const PADDING_KANAN     = 0;
-// Lebar minimum chart agar 4 kolom node tetap terbaca di layar sempit — jika kontainer lebih kecil, area SVG bisa di-scroll horizontal
-const MIN_LEBAR_CHART   = 600;
+// ─── LAYOUT CONSTANTS (ukuran chart, spacing, padding) ───
+const CHART_HEIGHT       = 620;  // Tinggi keseluruhan area visualisasi
+const COLUMN_PADDING_TOP = 36;   // Ruang atas untuk label header kolom
+const NODE_WIDTH         = 100;  // Lebar tiap node persegi panjang
+const NODE_SPACING       = 14;   // Jarak vertikal antar node
+const PADDING_LEFT       = 0;    // Padding kiri agar node tidak mepet tepi
+const PADDING_RIGHT      = 0;    // Padding kanan agar node tidak mepet tepi
+const MIN_CHART_WIDTH    = 600;  // Lebar minimum agar 4 kolom tetap terbaca; scrollable jika lebih kecil
 
-// ─── DAFTAR TAHUN YANG TERSEDIA UNTUK FILTER ───
-const DAFTAR_TAHUN = [2019, 2020, 2021, 2022, 2023];
-
-// ─── LABEL KOLOM HEADER ───
-const LABEL_KOLOM = [
-  'Province ',
+// ─── COLUMN HEADER LABELS (label kolom dalam chart) ───
+const COLUMN_LABELS = [
+  'Kabupaten',
   'Mill group',
   'Exporter',
-  'import',
+  'Destination',
 ];
 
 // ─── DATA STATIS: NODE RANTAI PASOK CPO INDONESIA 2022 ───
 // Setiap node memiliki `depth` untuk memaksa kolom tertentu dalam tata letak
-const SANKEY_NODES = [
-  // Level 0 — Provinsi produksi utama
-  { name: 'Riau'                   },
-  { name: 'Kalimantan Tengah'      },
-  { name: 'Sumatera Utara'         },
-  { name: 'Kalimantan Barat'       },
-  { name: 'Sumatera Selatan'       },
-  { name: 'Jambi'                  },
-  { name: 'Provinsi Lainnya'       },
-  // Level 1 — Grup pabrik pengolahan CPO
-  { name: 'Wilmar Group'           },
-  { name: 'Sinar Mas'              },
-  { name: 'Musim Mas Group'        },
-  { name: 'Astra Agro Lestari'     },
-  { name: 'PTPN III'               },
-  { name: 'Pabrik Lainnya'         },
-  // Level 2 — Perusahaan eksportir
-  { name: 'Wilmar Nabati Indonesia' },
-  { name: 'Musim Mas'              },
-  { name: 'Sinar Mas Agro'         },
-  { name: 'Multimas Nabati'        },
-  { name: 'Sumber Indah Perkasa'   },
-  { name: 'Eksportir Lainnya'      },
-  // Level 3 — Negara tujuan impor
-  { name: 'India'                  },
-  { name: 'Tiongkok'               },
-  { name: 'Pakistan'               },
-  { name: 'Bangladesh'             },
-  { name: 'Belanda'                },
-  { name: 'Amerika Serikat'        },
-  { name: 'Negara Lainnya'         },
-];
 
-// ─── DATA STATIS: LINK ALIRAN ANTAR NODE — satuan ribu ton CPO ───
-const SANKEY_LINKS = [
-  // Provinsi → Grup Pabrik
-  { source: 'Riau',               target: 'Wilmar Group',       value: 3000 },
-  { source: 'Riau',               target: 'Musim Mas Group',    value: 2000 },
-  { source: 'Riau',               target: 'Pabrik Lainnya',     value: 2000 },
-  { source: 'Kalimantan Tengah',  target: 'Sinar Mas',          value: 2000 },
-  { source: 'Kalimantan Tengah',  target: 'Astra Agro Lestari', value: 1500 },
-  { source: 'Kalimantan Tengah',  target: 'Pabrik Lainnya',     value: 1500 },
-  { source: 'Sumatera Utara',     target: 'Musim Mas Group',    value: 1500 },
-  { source: 'Sumatera Utara',     target: 'PTPN III',           value: 1500 },
-  { source: 'Sumatera Utara',     target: 'Pabrik Lainnya',     value: 1000 },
-  { source: 'Kalimantan Barat',   target: 'Wilmar Group',       value: 1500 },
-  { source: 'Kalimantan Barat',   target: 'Sinar Mas',          value: 1000 },
-  { source: 'Kalimantan Barat',   target: 'Pabrik Lainnya',     value: 1000 },
-  { source: 'Sumatera Selatan',   target: 'Sinar Mas',          value: 1000 },
-  { source: 'Sumatera Selatan',   target: 'Astra Agro Lestari', value: 1000 },
-  { source: 'Sumatera Selatan',   target: 'Pabrik Lainnya',     value:  500 },
-  { source: 'Jambi',              target: 'Musim Mas Group',    value: 1000 },
-  { source: 'Jambi',              target: 'Pabrik Lainnya',     value: 1000 },
-  { source: 'Provinsi Lainnya',   target: 'Pabrik Lainnya',     value: 1000 },
-  { source: 'Provinsi Lainnya',   target: 'PTPN III',           value:  500 },
-  { source: 'Provinsi Lainnya',   target: 'Astra Agro Lestari', value:  500 },
-  // Grup Pabrik → Eksportir
-  { source: 'Wilmar Group',       target: 'Wilmar Nabati Indonesia', value: 4000 },
-  { source: 'Wilmar Group',       target: 'Eksportir Lainnya',       value:  500 },
-  { source: 'Sinar Mas',          target: 'Sinar Mas Agro',          value: 3500 },
-  { source: 'Sinar Mas',          target: 'Eksportir Lainnya',       value:  500 },
-  { source: 'Musim Mas Group',    target: 'Musim Mas',               value: 3500 },
-  { source: 'Musim Mas Group',    target: 'Eksportir Lainnya',       value: 1000 },
-  { source: 'Astra Agro Lestari', target: 'Multimas Nabati',         value: 1500 },
-  { source: 'Astra Agro Lestari', target: 'Eksportir Lainnya',       value: 1500 },
-  { source: 'PTPN III',           target: 'Sumber Indah Perkasa',    value: 1000 },
-  { source: 'PTPN III',           target: 'Eksportir Lainnya',       value: 1000 },
-  { source: 'Pabrik Lainnya',     target: 'Wilmar Nabati Indonesia', value: 1500 },
-  { source: 'Pabrik Lainnya',     target: 'Multimas Nabati',         value:  500 },
-  { source: 'Pabrik Lainnya',     target: 'Sumber Indah Perkasa',    value: 1000 },
-  { source: 'Pabrik Lainnya',     target: 'Eksportir Lainnya',       value: 5000 },
-  // Eksportir → Negara tujuan
-  { source: 'Wilmar Nabati Indonesia', target: 'India',           value: 2000 },
-  { source: 'Wilmar Nabati Indonesia', target: 'Tiongkok',        value: 1800 },
-  { source: 'Wilmar Nabati Indonesia', target: 'Pakistan',        value:  800 },
-  { source: 'Wilmar Nabati Indonesia', target: 'Bangladesh',      value:  500 },
-  { source: 'Wilmar Nabati Indonesia', target: 'Belanda',         value:  400 },
-  { source: 'Musim Mas',               target: 'India',           value: 1400 },
-  { source: 'Musim Mas',               target: 'Tiongkok',        value: 1000 },
-  { source: 'Musim Mas',               target: 'Pakistan',        value:  600 },
-  { source: 'Musim Mas',               target: 'Bangladesh',      value:  500 },
-  { source: 'Sinar Mas Agro',          target: 'Tiongkok',        value: 1500 },
-  { source: 'Sinar Mas Agro',          target: 'India',           value: 1000 },
-  { source: 'Sinar Mas Agro',          target: 'Belanda',         value:  600 },
-  { source: 'Sinar Mas Agro',          target: 'Amerika Serikat', value:  400 },
-  { source: 'Multimas Nabati',         target: 'India',           value: 1000 },
-  { source: 'Multimas Nabati',         target: 'Bangladesh',      value:  600 },
-  { source: 'Multimas Nabati',         target: 'Pakistan',        value:  400 },
-  { source: 'Sumber Indah Perkasa',    target: 'India',           value:  800 },
-  { source: 'Sumber Indah Perkasa',    target: 'Tiongkok',        value:  700 },
-  { source: 'Sumber Indah Perkasa',    target: 'Pakistan',        value:  500 },
-  { source: 'Eksportir Lainnya',       target: 'India',           value: 2900 },
-  { source: 'Eksportir Lainnya',       target: 'Tiongkok',        value: 2000 },
-  { source: 'Eksportir Lainnya',       target: 'Pakistan',        value:  800 },
-  { source: 'Eksportir Lainnya',       target: 'Bangladesh',      value:  500 },
-  { source: 'Eksportir Lainnya',       target: 'Belanda',         value:  600 },
-  { source: 'Eksportir Lainnya',       target: 'Amerika Serikat', value:  600 },
-  { source: 'Eksportir Lainnya',       target: 'Negara Lainnya',  value: 2100 },
-];
-
-// ─── HELPER: PECAH TEKS PANJANG MENJADI BARIS (SVG <text> tidak support word-wrap) ───
-function pecahTeksMenjadiBarisLabel(teksNamaNode, maksKarPerBaris = 13) {
-  const kataKata = teksNamaNode.split(' ');
-  const barisBaris = [];
-  let barisSaatIni = '';
-  kataKata.forEach((kataSatu) => {
-    const gabungan = barisSaatIni ? `${barisSaatIni} ${kataSatu}` : kataSatu;
-    if (gabungan.length <= maksKarPerBaris) {
-      barisSaatIni = gabungan;
+// ─── HELPER: MEMECAH TEKS PANJANG MENJADI BARIS (SVG <text> tidak support word-wrap) ───
+function breakTextIntoLines(nodeText, maxCharsPerLine = 13) {
+  const words = nodeText.split(' ');
+  const lines = [];
+  let currentLine = '';
+  words.forEach((word) => {
+    const combined = currentLine ? `${currentLine} ${word}` : word;
+    if (combined.length <= maxCharsPerLine) {
+      currentLine = combined;
     } else {
-      if (barisSaatIni) barisBaris.push(barisSaatIni);
-      barisSaatIni = kataSatu;
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
     }
   });
-  if (barisSaatIni) barisBaris.push(barisSaatIni);
-  // Batasi 3 baris maksimum agar tidak meluber keluar node
-  return barisBaris.slice(0, 3);
+  if (currentLine) lines.push(currentLine);
+  // Batasi maksimal 3 baris untuk mencegah overflow di luar node
+  return lines.slice(0, 3);
 }
 
-// ─── HELPER: BFS DUA ARAH UNTUK MENEMUKAN TRAJECTORY NODE ───
-function cariSemuaNodeTerhubung(namaNodeAwal, semuaLinkKomputasi) {
-  const adjacencyMaju    = {};
-  const adjacencyMundur  = {};
-  semuaLinkKomputasi.forEach((singleLink) => {
-    const namaSource = typeof singleLink.source === 'object' ? singleLink.source.name : singleLink.source;
-    const namaTarget = typeof singleLink.target === 'object' ? singleLink.target.name : singleLink.target;
-    if (!adjacencyMaju[namaSource])   adjacencyMaju[namaSource]   = [];
-    if (!adjacencyMundur[namaTarget]) adjacencyMundur[namaTarget] = [];
-    adjacencyMaju[namaSource].push(namaTarget);
-    adjacencyMundur[namaTarget].push(namaSource);
+// ─── HELPER: BFS DUA ARAH UNTUK MENEMUKAN TRAJECTORY NODE (upstream & downstream) ───
+function findAllConnectedNodes(startNodeName, computedLinks) {
+  const forwardAdjacency = {};
+  const backwardAdjacency = {};
+  computedLinks.forEach((link) => {
+    // Ekstrak ID jika node adalah object (hasil d3-sankey resolve)
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    if (!forwardAdjacency[sourceId]) forwardAdjacency[sourceId] = [];
+    if (!backwardAdjacency[targetId]) backwardAdjacency[targetId] = [];
+    forwardAdjacency[sourceId].push(targetId);
+    backwardAdjacency[targetId].push(sourceId);
   });
 
-  // BFS searah — hanya ikuti edge ke satu arah saja
-  const bfsTerarah = (namaAwal, adjacency) => {
-    const dikunjungi = new Set([namaAwal]);
-    const antrian    = [namaAwal];
-    while (antrian.length > 0) {
-      const namaSaatIni  = antrian.shift();
-      const daftarTetangga = adjacency[namaSaatIni] || [];
-      daftarTetangga.forEach((namaTetangga) => {
-        if (!dikunjungi.has(namaTetangga)) {
-          dikunjungi.add(namaTetangga);
-          antrian.push(namaTetangga);
+  // BFS satu arah — hanya traversal ke arah tertentu
+  const directedBFS = (startId, adjacencyMap) => {
+    const visited = new Set([startId]);
+    const queue = [startId];
+    while (queue.length > 0) {
+      const currentId = queue.shift();
+      const neighbors = adjacencyMap[currentId] || [];
+      neighbors.forEach((neighborId) => {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          queue.push(neighborId);
         }
       });
     }
-    return dikunjungi;
+    return visited;
   };
 
-  // Gabungkan BFS maju + mundur
-  const nodesHilir  = bfsTerarah(namaNodeAwal, adjacencyMaju);
-  const nodesHulu   = bfsTerarah(namaNodeAwal, adjacencyMundur);
-  return new Set([...nodesHilir, ...nodesHulu]);
+  // Gabungkan hasil BFS downstream (maju) + upstream (mundur)
+  const downstreamNodes = directedBFS(startNodeName, forwardAdjacency);
+  const upstreamNodes = directedBFS(startNodeName, backwardAdjacency);
+  return new Set([...downstreamNodes, ...upstreamNodes]);
 }
 
-// ─── KOMPONEN UTAMA ───
-export function SankeySupplyChain() {
-  const refKontainer = useRef(null);
-  const [lebarKontainer, setLebarKontainer] = useState(800);
+// ─── HELPER: CUSTOM LINK PATH GENERATOR (lebar link berbeda di ujung source vs target) ───
+// sankeyLinkHorizontal bawaan d3 tidak support lebar berbeda di dua ujung, sehingga
+// setelah scaling nodes per kolom secara independen, path harus dibentuk manual
+function variableWidthLinkPath(link) {
+  const x0 = link.source.x1;
+  const x1 = link.target.x0;
+  const mx = (x0 + x1) / 2;
+  const hw0 = (link.sourceWidth ?? link.width ?? 1) / 2;
+  const hw1 = (link.targetWidth ?? link.width ?? 1) / 2;
+  return (
+    `M${x0},${link.y0 - hw0}` +
+    `C${mx},${link.y0 - hw0} ${mx},${link.y1 - hw1} ${x1},${link.y1 - hw1}` +
+    `L${x1},${link.y1 + hw1}` +
+    `C${mx},${link.y1 + hw1} ${mx},${link.y0 + hw0} ${x0},${link.y0 + hw0}` +
+    'Z'
+  );
+}
 
-  const [namaNodeDiHover, setNamaNodeDiHover] = useState(null);
+// ─── MAIN COMPONENT (visualisasi Sankey interaktif dengan hover trajectory) ───
+export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null }) {
+  const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(800);
 
-  // State hover link — hover path juga memicu highlight trajectory
-  const [linkDiHover, setLinkDiHover] = useState(null);
+  const [hoveredNodeName, setHoveredNodeName] = useState(null);
 
-  const [tahunDipilih, setTahunDipilih] = useState(DAFTAR_TAHUN[DAFTAR_TAHUN.length - 1]);
+  // State hovering link — juga memicu highlight trajectory penuh
+  const [hoveredLink, setHoveredLink] = useState(null);
 
-  // State tooltip — posisi + konten teks
-  const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, konten: '' });
-
-  // Pantau lebar kontainer secara responsif via ResizeObserver
+  // Ekstrak daftar tahun yang tersedia untuk kabupaten
+  const districtData = SUPPLY_CHAIN_DATA.data[kabupaten];
+  const availableYears = districtData?.tahun_tersedia || [];
+  
+  // Gunakan tahun dari prop jika parent mengontrol; otherwise manage internal state untuk backward compatibility
+  const [internalYear, setInternalYear] = useState(availableYears[availableYears.length - 1]);
+  const selectedYear = yearFromProp ?? internalYear;
+  
+  // Sinkronisasi tahun internal ketika kabupaten berubah (hanya jika parent tidak mengontrol)
   useEffect(() => {
-    const elemenKontainer = refKontainer.current;
-    if (!elemenKontainer) return;
-    const pengamatUkuran = new ResizeObserver((entries) => {
-      const entryPertama = entries[0];
-      // Clamp ke MIN_LEBAR_CHART agar 4 kolom Sankey tidak gepeng di layar sempit
-      if (entryPertama) setLebarKontainer(Math.max(entryPertama.contentRect.width, MIN_LEBAR_CHART));
+    if (!yearFromProp && availableYears.length > 0 && !availableYears.includes(internalYear)) {
+      setInternalYear(availableYears[availableYears.length - 1]);
+    }
+  }, [kabupaten, yearFromProp]);
+
+  // Tooltip state: position + text content untuk hover nodes & links
+  const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, content: '' });
+
+  // Monitor container width responsively via ResizeObserver dengan clamp ke MIN_CHART_WIDTH
+  useEffect(() => {
+    const containerElement = containerRef.current;
+    if (!containerElement) return;
+    const resizeObserver = new ResizeObserver((entries) => {
+      const firstEntry = entries[0];
+      // Clamp width agar 4 kolom Sankey tetap terbaca di layar sempit; jika lebih kecil menjadi scrollable
+      if (firstEntry) setContainerWidth(Math.max(firstEntry.contentRect.width, MIN_CHART_WIDTH));
     });
-    pengamatUkuran.observe(elemenKontainer);
-    // Set lebar awal tanpa menunggu event pertama
-    setLebarKontainer(Math.max(elemenKontainer.offsetWidth, MIN_LEBAR_CHART));
-    return () => pengamatUkuran.disconnect();
+    resizeObserver.observe(containerElement);
+    // Set initial width tanpa menunggu event pertama
+    setContainerWidth(Math.max(containerElement.offsetWidth, MIN_CHART_WIDTH));
+    return () => resizeObserver.disconnect();
   }, []);
 
-  // ─── LAYOUT D3 SANKEY ───
-  // D3 me-mutasi objek input, sehingga deep-clone dilakukan setiap kalkulasi
-  const { nodeHasil, linkHasil } = useMemo(() => {
-    if (lebarKontainer < 100) return { nodeHasil: [], linkHasil: [] };
+  // ─── D3 SANKEY LAYOUT (posisi nodes & links dengan scaling penuh tinggi) ───
+  // D3 sankey memodifikasi object input, sehingga deep-clone diperlukan per render
+  const { layoutNodes, layoutLinks } = useMemo(() => {
+    if (containerWidth < 100 || !districtData) return { layoutNodes: [], layoutLinks: [] };
 
-    const generatorSankey = sankey()
-      .nodeId((nodeItem) => nodeItem.name)
-      // sankeyLeft: kolom diurutkan berdasarkan kedalaman minimal dari sumber
-      .nodeAlign(sankeyLeft)
-      .nodeWidth(LEBAR_NODE)
-      .nodePadding(JARAK_NODE)
-      .extent([[PADDING_KIRI, PADDING_ATAS_KOLOM], [lebarKontainer - PADDING_KANAN, TINGGI_CHART]]);
+    // Ambil data tahun yang dipilih
+    const yearData = districtData[selectedYear];
+    if (!yearData) return { layoutNodes: [], layoutLinks: [] };
 
-    const hasilLayout = generatorSankey({
-      nodes: SANKEY_NODES.map((nodeSatu) => ({ ...nodeSatu })),
-      links: SANKEY_LINKS.map((linkSatu) => ({ ...linkSatu })),
+    // Tambahkan node kabupaten asal di kolom 0
+    const allNodes = [
+      { id: `0:${kabupaten}`, name: kabupaten, kolom: 0 },
+      ...yearData.nodes,
+    ];
+
+    // Tambahkan link dari kabupaten ke mill group (tier 1) berdasarkan total volume per mill
+    const allLinks = [...yearData.links];
+    const millNodes = yearData.nodes.filter((n) => n.kolom === 1);
+    const volumePerMill = {};
+    yearData.links.forEach((link) => {
+      if (link.source.startsWith('1:')) {
+        volumePerMill[link.source] = (volumePerMill[link.source] || 0) + link.value;
+      }
+    });
+    millNodes.forEach((millNode) => {
+      if (volumePerMill[millNode.id]) {
+        allLinks.unshift({ source: `0:${kabupaten}`, target: millNode.id, value: volumePerMill[millNode.id] });
+      }
     });
 
-    return { nodeHasil: hasilLayout.nodes, linkHasil: hasilLayout.links };
-  }, [lebarKontainer]);
+    const sankeyGenerator = sankey()
+      .nodeId((node) => node.id)
+      .nodeAlign((node) => node.kolom)
+      .nodeWidth(NODE_WIDTH)
+      .nodePadding(NODE_SPACING)
+      .extent([[PADDING_LEFT, COLUMN_PADDING_TOP], [containerWidth - PADDING_RIGHT, CHART_HEIGHT]]);
 
-  // ─── POSISI KOLOM UNTUK LABEL HEADER ───
-  const posisiKolom = useMemo(() => {
-    if (!nodeHasil.length) return [];
-    const pemetaanLayer = {};
-    nodeHasil.forEach((singleNode) => {
-      const layer = singleNode.layer ?? singleNode.depth ?? 0;
-      if (!pemetaanLayer[layer]) pemetaanLayer[layer] = [];
-      pemetaanLayer[layer].push(singleNode);
+    const layoutResult = sankeyGenerator({
+      nodes: allNodes.map((node) => ({ ...node })),
+      links: allLinks.map((link) => ({ ...link })),
     });
-    return Object.keys(pemetaanLayer)
+
+    // ─── SCALING NODES UNTUK FILL FULL HEIGHT PER KOLOM (proporsional sesuai volume) ───
+    // Groupkan nodes per kolom untuk scaling yang proporsional
+    const nodesByLayer = {};
+    layoutResult.nodes.forEach((node) => {
+      const layer = node.kolom ?? 0;
+      if (!nodesByLayer[layer]) nodesByLayer[layer] = [];
+      nodesByLayer[layer].push(node);
+    });
+
+    // Hitung tinggi available untuk scaling (total tinggi minus padding header)
+    const availableHeight = CHART_HEIGHT - COLUMN_PADDING_TOP;
+
+    // Scale nodes di setiap kolom proporsional agar mengisi full height
+    Object.values(nodesByLayer).forEach((nodesInLayer) => {
+      // Sort nodes by posisi vertikal awal (y0)
+      nodesInLayer.sort((a, b) => a.y0 - b.y0);
+      
+      // Hitung total tinggi semua nodes sebelum scaling (sebelum ekspansi)
+      const totalHeight = nodesInLayer.reduce((sum, n) => sum + (n.y1 - n.y0), 0);
+      
+      // Faktor scaling untuk mengisi tersedia height dengan proporsional
+      const scaleFactor = availableHeight / totalHeight;
+      
+      // Apply scaling: expand nodes proporsional sambil maintain relative positions
+      let yPosition = COLUMN_PADDING_TOP;
+      nodesInLayer.forEach((node) => {
+        const originalHeight = node.y1 - node.y0;
+        const scaledHeight = originalHeight * scaleFactor;
+        node.y0 = yPosition;
+        node.y1 = yPosition + scaledHeight;
+        yPosition = node.y1;
+      });
+    });
+
+    // ─── REDISTRIBUSI LINK POSITIONS SETELAH NODE SCALING ───
+    // Setelah nodes di-scale per kolom, semua y0/y1/width dari d3 menjadi stale.
+    // Hitung ulang sepenuhnya: setiap sisi link mengikuti tinggi actual node-nya.
+
+    // Hitung total volume keluar dan masuk per node
+    const totalOutflowByNode = {};
+    const totalInflowByNode = {};
+    layoutResult.links.forEach((link) => {
+      totalOutflowByNode[link.source.id] = (totalOutflowByNode[link.source.id] || 0) + link.value;
+      totalInflowByNode[link.target.id]  = (totalInflowByNode[link.target.id]  || 0) + link.value;
+    });
+
+    // Urutkan links per node agar tidak crossing — pakai posisi vertikal node lawan sebagai kunci sort
+    layoutResult.nodes.forEach((node) => {
+      node.sourceLinks.sort((a, b) => (a.target.y0 + a.target.y1) - (b.target.y0 + b.target.y1));
+      node.targetLinks.sort((a, b) => (a.source.y0 + a.source.y1) - (b.source.y0 + b.source.y1));
+    });
+
+    // Stack links dari y0 ke y1 node — proporsional tanpa clamping agar selalu cover penuh
+    layoutResult.nodes.forEach((node) => {
+      const nodeHeight    = node.y1 - node.y0;
+      const totalOutflow  = totalOutflowByNode[node.id] || 1;
+      const totalInflow   = totalInflowByNode[node.id]  || 1;
+
+      // Sisi keluar (source): stack dari atas ke bawah
+      let curY = node.y0;
+      node.sourceLinks.forEach((link) => {
+        const h = (link.value / totalOutflow) * nodeHeight;
+        link.y0          = curY + h / 2; // titik tengah untuk path generator
+        link.sourceWidth = h;
+        curY += h;
+      });
+
+      // Sisi masuk (target): stack dari atas ke bawah
+      let curTargetY = node.y0;
+      node.targetLinks.forEach((link) => {
+        const h = (link.value / totalInflow) * nodeHeight;
+        link.y1          = curTargetY + h / 2;
+        link.targetWidth = h;
+        curTargetY += h;
+      });
+    });
+
+    return { layoutNodes: layoutResult.nodes, layoutLinks: layoutResult.links };
+  }, [containerWidth, districtData, selectedYear]);
+
+  // ─── COLUMN POSITIONS UNTUK HEADER LABELS (ekstrak x coordinate per layer) ───
+  const columnPositions = useMemo(() => {
+    if (!layoutNodes.length) return [];
+    const layerMapping = {};
+    layoutNodes.forEach((node) => {
+      const layer = node.layer ?? node.depth ?? 0;
+      if (!layerMapping[layer]) layerMapping[layer] = [];
+      layerMapping[layer].push(node);
+    });
+    return Object.keys(layerMapping)
       .map(Number)
       .sort((a, b) => a - b)
       .map((layer) => {
-        const nodesLayer = pemetaanLayer[layer];
-        // Semua node dalam layer yang sama memiliki x0 dan x1 yang identik
-        const x0 = nodesLayer[0].x0;
-        const x1 = nodesLayer[0].x1;
-        return { layer, x0, x1, tengahX: (x0 + x1) / 2 };
+        const layerNodes = layerMapping[layer];
+        // Semua nodes dalam layer sama punya x0 & x1 identik
+        const x0 = layerNodes[0].x0;
+        const x1 = layerNodes[0].x1;
+        return { layer, x0, x1, centerX: (x0 + x1) / 2 };
       });
-  }, [nodeHasil]);
+  }, [layoutNodes]);
 
-  // ─── TRAJECTORY BFS SAAT HOVER NODE ───
-  const kumpulanNodeTerhubung = useMemo(() => {
-    if (!namaNodeDiHover) return null;
-    return cariSemuaNodeTerhubung(namaNodeDiHover, linkHasil);
-  }, [namaNodeDiHover, linkHasil]);
+  // ─── BFS TRAJECTORY SAAT HOVER NODE (upstream & downstream nodes) ───
+  const connectedNodesSet = useMemo(() => {
+    if (!hoveredNodeName) return null;
+    return findAllConnectedNodes(hoveredNodeName, layoutLinks);
+  }, [hoveredNodeName, layoutLinks]);
 
-  const apakahNodeDiHighlight = (namaNode) =>
-    !kumpulanNodeTerhubung || kumpulanNodeTerhubung.has(namaNode);
+  const isNodeHighlighted = (nodeId) =>
+    !connectedNodesSet || connectedNodesSet.has(nodeId);
 
-  const apakahLinkDiHighlight = (singleLink) => {
-    if (!kumpulanNodeTerhubung) return true;
-    const namaSource = typeof singleLink.source === 'object' ? singleLink.source.name : singleLink.source;
-    const namaTarget = typeof singleLink.target === 'object' ? singleLink.target.name : singleLink.target;
-    return kumpulanNodeTerhubung.has(namaSource) && kumpulanNodeTerhubung.has(namaTarget);
+  const isLinkHighlighted = (link) => {
+    if (!connectedNodesSet) return true;
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    return connectedNodesSet.has(sourceId) && connectedNodesSet.has(targetId);
   };
 
-  // ─── HANDLER TOOLTIP ───
-  const tampilkanTooltipNode = (event, namaNode) => {
-    const volumeMasuk = linkHasil
-      .filter((singleLink) => {
-        const namaTarget = typeof singleLink.target === 'object' ? singleLink.target.name : singleLink.target;
-        return namaTarget === namaNode;
+  // ─── TOOLTIP HANDLERS (node & link hover dengan volume) ───
+  const showNodeTooltip = (event, nodeId, nodeName) => {
+    const volumeIn = layoutLinks
+      .filter((link) => {
+        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+        return targetId === nodeId;
       })
-      .reduce((total, singleLink) => total + singleLink.value, 0);
-    const volumeKeluar = linkHasil
-      .filter((singleLink) => {
-        const namaSource = typeof singleLink.source === 'object' ? singleLink.source.name : singleLink.source;
-        return namaSource === namaNode;
+      .reduce((total, link) => total + link.value, 0);
+    const volumeOut = layoutLinks
+      .filter((link) => {
+        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+        return sourceId === nodeId;
       })
-      .reduce((total, singleLink) => total + singleLink.value, 0);
-    const volumeTampil = volumeMasuk > 0 ? volumeMasuk : volumeKeluar;
-    setTooltip({
-      visible:  true,
-      x:        event.clientX,
-      y:        event.clientY,
-      konten:   `${namaNode}${volumeTampil > 0 ? `\n${volumeTampil.toLocaleString()} ribu ton` : ''}`,
-    });
-  };
-
-  const tampilkanTooltipLink = (event, singleLink) => {
-    const namaSource = typeof singleLink.source === 'object' ? singleLink.source.name : singleLink.source;
-    const namaTarget = typeof singleLink.target === 'object' ? singleLink.target.name : singleLink.target;
+      .reduce((total, link) => total + link.value, 0);
+    const volumeToShow = volumeIn > 0 ? volumeIn : volumeOut;
     setTooltip({
       visible: true,
-      x:       event.clientX,
-      y:       event.clientY,
-      konten:  `${namaSource} → ${namaTarget}\n${singleLink.value.toLocaleString()} ribu ton`,
+      x: event.clientX,
+      y: event.clientY,
+      content: `${nodeName}${volumeToShow > 0 ? `\n${volumeToShow.toLocaleString()} ribu ton` : ''}`,
     });
   };
 
-  const sembunyikanTooltip = () => setTooltip((sebelumnya) => ({ ...sebelumnya, visible: false }));
+  const showLinkTooltip = (event, link) => {
+    const sourceName = typeof link.source === 'object' ? link.source.name : link.source;
+    const targetName = typeof link.target === 'object' ? link.target.name : link.target;
+    setTooltip({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      content: `${sourceName} → ${targetName}\n${link.value.toLocaleString()} ribu ton`,
+    });
+  };
 
-  const perbaruiPosisiTooltip = (event) => {
+  const hideTooltip = () => setTooltip((prev) => ({ ...prev, visible: false }));
+
+  const updateTooltipPosition = (event) => {
     if (tooltip.visible) {
-      setTooltip((sebelumnya) => ({ ...sebelumnya, x: event.clientX, y: event.clientY }));
+      setTooltip((prev) => ({ ...prev, x: event.clientX, y: event.clientY }));
     }
   };
 
-  // ─── RENDER ───
+  // ─── RENDER (interactive Sankey chart dengan toolbar) ───
   return (
-    <div ref={refKontainer} className="w-full border border-gray-200 rounded-xl">
+    <div ref={containerRef} className="w-full border border-gray-200 rounded-xl">
 
-      {/* ─── TOOLBAR ATAS: filter tahun + tombol download bergaya Trase.earth ─── */}
+      {/* ─── TOP TOOLBAR: tahun dropdown + download button (style Trase.earth) ───*/}
       <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-end gap-3 rounded-t-xl">
-        {/* Filter tahun — dropdown pill */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-gray-400 font-medium">Year</span>
-          <div className="relative">
-            <select
-              value={tahunDipilih}
-              onChange={(pilihan) => setTahunDipilih(Number(pilihan.target.value))}
-              className="appearance-none pl-3 pr-7 py-1.5 text-[12px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-md cursor-pointer hover:border-gray-400 transition focus:outline-none focus:ring-2"
-              style={{ '--tw-ring-color': COLORS.PRIMARY }}
-            >
-              {DAFTAR_TAHUN.map((tahunItem) => (
-                <option key={tahunItem} value={tahunItem}>{tahunItem}</option>
-              ))}
-            </select>
-            {/* Ikon chevron manual agar tampil konsisten lintas browser */}
-            <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" width="10" height="6" viewBox="0 0 10 6" fill="none">
-              <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+        {/* Tahun dropdown — hanya tampil jika parent tidak mengontrol tahun */}
+        {!yearFromProp && availableYears.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-gray-400 font-medium">Year</span>
+            <div className="relative">
+              <select
+                value={internalYear}
+                onChange={(choice) => setInternalYear(Number(choice.target.value))}
+                className="appearance-none pl-3 pr-7 py-1.5 text-[12px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-md cursor-pointer hover:border-gray-400 transition focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': COLORS.PRIMARY }}
+              >
+                {availableYears.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+              {/* Manual chevron icon untuk consistency lintas browser */}
+              <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" width="10" height="6" viewBox="0 0 10 6" fill="none">
+                <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Divider */}
-        <div className="w-px h-5 bg-gray-200" />
+        {/* Divider (separator) */}
+        {!yearFromProp && <div className="w-px h-5 bg-gray-200" />}
 
-        {/* Tombol Download Selection */}
+        {/* Download Button (placeholder) */}
         <button
           className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 text-[12px] font-semibold text-gray-600 bg-white border border-gray-200 rounded-md hover:border-gray-400 transition cursor-pointer"
         >
-          Download selection
+          Download Selection
           <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="text-gray-400">
             <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       </div>
 
-      {/* ─── LABEL KOLOM: garis panjang dengan panah antar kolom bergaya Trase.earth ─── */}
-      {/* Dihapus — label kini dirender di dalam SVG sesuai posisi kolom D3 */}
-
-      {/* Area chart SVG — overflow-x-auto agar bisa scroll horizontal di layar sempit */}
+      {/* ─── SVG CHART AREA (dengan dukung horizontal scroll untuk layar sempit) ───*/}
       <div className="bg-white select-none overflow-x-auto">
         <svg
-          width={lebarKontainer}
-          height={TINGGI_CHART}
-          onMouseMove={perbaruiPosisiTooltip}
+          width={containerWidth}
+          height={CHART_HEIGHT}
+          onMouseMove={updateTooltipPosition}
           onMouseLeave={() => {
-            setNamaNodeDiHover(null);
-            setLinkDiHover(null);
-            sembunyikanTooltip();
+            setHoveredNodeName(null);
+            setHoveredLink(null);
+            hideTooltip();
           }}
         >
-          {/* ─── LABEL KOLOM HEADER + GARIS PANAH ─── */}
-          {/* Dirender pertama agar berada di layer paling bawah SVG */}
-          {posisiKolom.map((kolom, indeksKolom) => (
-            <g key={`header-kolom-${kolom.layer}`}>
+          {/* ─── COLUMN HEADER LABELS + CONNECTING ARROWS ───*/}
+          {/* Dirender pertama agar di layer paling bawah SVG */}
+          {columnPositions.map((column, columnIndex) => (
+            <g key={`header-column-${column.layer}`}>
               <text
-                x={kolom.tengahX}
+                x={column.centerX}
                 y={16}
                 textAnchor="middle"
                 fontSize={10}
@@ -385,26 +413,26 @@ export function SankeySupplyChain() {
                 letterSpacing="0.08em"
                 style={{ textTransform: 'uppercase' }}
               >
-                {LABEL_KOLOM[indeksKolom]?.toUpperCase()}
+                {COLUMN_LABELS[columnIndex]?.toUpperCase()}
               </text>
-              {/* Garis horizontal + panah menuju kolom berikutnya */}
-              {indeksKolom < posisiKolom.length - 1 && (() => {
-                const xGarisMulai  = kolom.x1 + 6;
-                const xGarisSampai = posisiKolom[indeksKolom + 1].x0 - 10;
-                const yGaris       = 15;
+              {/* Horizontal line + arrow menuju kolom subsequent */}
+              {columnIndex < columnPositions.length - 1 && (() => {
+                const lineStartX = column.x1 + 6;
+                const lineEndX = columnPositions[columnIndex + 1].x0 - 10;
+                const lineY = 15;
                 return (
                   <g>
                     <line
-                      x1={xGarisMulai}
-                      y1={yGaris}
-                      x2={xGarisSampai}
-                      y2={yGaris}
+                      x1={lineStartX}
+                      y1={lineY}
+                      x2={lineEndX}
+                      y2={lineY}
                       stroke="#d1d5db"
                       strokeWidth={1}
                     />
-                    {/* Kepala panah */}
+                    {/* Arrow head */}
                     <path
-                      d={`M${xGarisSampai} ${yGaris - 4} L${xGarisSampai + 7} ${yGaris} L${xGarisSampai} ${yGaris + 4}`}
+                      d={`M${lineEndX} ${lineY - 4} L${lineEndX + 7} ${lineY} L${lineEndX} ${lineY + 4}`}
                       fill="none"
                       stroke="#d1d5db"
                       strokeWidth={1.5}
@@ -416,100 +444,99 @@ export function SankeySupplyChain() {
               })()}
             </g>
           ))}
-          {/* ─── LINK (aliran) ─── */}
-          {linkHasil.map((singleLink, indeksLink) => {
-            const namaSourceLink  = typeof singleLink.source === 'object' ? singleLink.source.name : singleLink.source;
-            const namaTargetLink  = typeof singleLink.target === 'object' ? singleLink.target.name : singleLink.target;
+          {/* ─── LINKS (aliran/connections antar nodes) ───*/}
+          {layoutLinks.map((link, linkIndex) => {
+            const sourceName = typeof link.source === 'object' ? link.source.name : link.source;
+            const targetName = typeof link.target === 'object' ? link.target.name : link.target;
 
-            // Highlight: hover node → trajectory, hover link → hanya link itu, idle → semua abu
-            const adalahLinkDiHover = linkDiHover
-              && linkDiHover.source === namaSourceLink
-              && linkDiHover.target === namaTargetLink;
-            const adalahTrajectoryNode = namaNodeDiHover !== null && apakahLinkDiHighlight(singleLink);
-            const diHighlight     = adalahLinkDiHover || adalahTrajectoryNode;
-            const adaHoverApapun  = namaNodeDiHover !== null || linkDiHover !== null;
-            const warna           = diHighlight ? COLORS.PRIMARY : '#d1d5db';
-            const opasitas        = diHighlight ? 0.75 : adaHoverApapun ? 0.26 : 0.4;
-            const lebarStroke     = Math.max(1, singleLink.width);
+            // Highlight logic: hover node → full trajectory, hover link → hanya link itu, idle → semua faded
+            const isLinkHovered = hoveredLink
+              && hoveredLink.source === sourceName
+              && hoveredLink.target === targetName;
+            const isTrajectoryLink = hoveredNodeName !== null && isLinkHighlighted(link);
+            const isHighlighted = isLinkHovered || isTrajectoryLink;
+            const anyHoverActive = hoveredNodeName !== null || hoveredLink !== null;
+            // Fill-based rendering: path tertutup sehingga lebar source ≠ lebar target dirender benar
+            const fillColor = isHighlighted ? COLORS.PRIMARY : '#d1d5db';
+            const fillOpacity = isHighlighted ? 0.75 : anyHoverActive ? 0.26 : 0.4;
             return (
               <path
-                key={`link-${indeksLink}-${namaSourceLink}-${namaTargetLink}`}
-                d={sankeyLinkHorizontal()(singleLink)}
-                fill="none"
-                stroke={warna}
-                strokeWidth={lebarStroke}
-                style={{ opacity: opasitas, cursor: 'crosshair', transition: 'stroke 0.2s, opacity 0.2s' }}
+                key={`link-${linkIndex}-${sourceName}-${targetName}`}
+                d={variableWidthLinkPath(link)}
+                fill={fillColor}
+                stroke="none"
+                style={{ fillOpacity, cursor: 'crosshair', transition: 'fill 0.2s, fill-opacity 0.2s' }}
                 onMouseEnter={(event) => {
-                  setLinkDiHover({ source: namaSourceLink, target: namaTargetLink });
-                  tampilkanTooltipLink(event, singleLink);
+                  setHoveredLink({ source: sourceName, target: targetName });
+                  showLinkTooltip(event, link);
                 }}
                 onMouseLeave={() => {
-                  setLinkDiHover(null);
-                  sembunyikanTooltip();
+                  setHoveredLink(null);
+                  hideTooltip();
                 }}
               />
             );
           })}
 
-          {/* ─── NODE (blok persegi panjang) ─── */}
-          {nodeHasil.map((singleNode) => {
-            // Hover node memicu highlight trajectory — hover link tidak mengubah warna node
-            const adaHover     = namaNodeDiHover !== null;
-            const diHighlight  = apakahNodeDiHighlight(singleNode.name);
-            // Idle: putih dengan border abu-abu; highlighted: solid PRIMARY
-            const warnaFill    = adaHover && diHighlight ? COLORS.PRIMARY : '#ffffff';
-            const warnaBorder  = adaHover && diHighlight ? COLORS.PRIMARY : '#d1d5db';
-            const warnaLabel   = adaHover && diHighlight ? '#ffffff' : '#6b7280';
-            const tinggiNode   = Math.max(4, singleNode.y1 - singleNode.y0);
-            const tengahX      = (singleNode.x0 + singleNode.x1) / 2;
-            const tengahY      = singleNode.y0 + tinggiNode / 2;
-            const barisLabel   = pecahTeksMenjadiBarisLabel(singleNode.name);
-            // Ukuran font adaptif: kurangi jika baris banyak atau node kecil
-            const ukuranFont   = tinggiNode < 30 ? 8 : barisLabel.length > 2 ? 8 : 9;
-            const jarakAntarBaris = ukuranFont + 3;
+          {/* ─── NODES (persegi panjang blocks dengan label) ───*/}
+          {layoutNodes.map((node) => {
+            // Hover node memicu highlight trajectory — hover link tidak mempengaruhi warna node
+            const hasHover = hoveredNodeName !== null;
+            const isHighlighted = isNodeHighlighted(node.id);
+            // Idle: white border; hovered & highlighted: solid PRIMARY color
+            const fillColor = hasHover && isHighlighted ? COLORS.PRIMARY : '#ffffff';
+            const borderColor = hasHover && isHighlighted ? COLORS.PRIMARY : '#d1d5db';
+            const labelColor = hasHover && isHighlighted ? '#ffffff' : '#6b7280';
+            const nodeHeight = Math.max(4, node.y1 - node.y0);
+            const centerX = (node.x0 + node.x1) / 2;
+            const centerY = node.y0 + nodeHeight / 2;
+            const textLines = breakTextIntoLines(node.name);
+            // Adaptive font size: lebih kecil jika banyak baris atau node kecil
+            const fontSize = nodeHeight < 30 ? 8 : textLines.length > 2 ? 8 : 9;
+            const lineSpacing = fontSize + 3;
 
             return (
               <g
-                key={`node-${singleNode.name}`}
+                key={`node-${node.id}`}
                 style={{ cursor: 'pointer' }}
                 onMouseEnter={(event) => {
-                  setNamaNodeDiHover(singleNode.name);
-                  tampilkanTooltipNode(event, singleNode.name);
+                  setHoveredNodeName(node.id);
+                  showNodeTooltip(event, node.id, node.name);
                 }}
                 onMouseLeave={() => {
-                  setNamaNodeDiHover(null);
-                  sembunyikanTooltip();
+                  setHoveredNodeName(null);
+                  hideTooltip();
                 }}
               >
                 <rect
-                  x={singleNode.x0}
-                  y={singleNode.y0}
-                  width={singleNode.x1 - singleNode.x0}
-                  height={tinggiNode}
-                  fill={warnaFill}
-                  stroke={warnaBorder}
+                  x={node.x0}
+                  y={node.y0}
+                  width={node.x1 - node.x0}
+                  height={nodeHeight}
+                  fill={fillColor}
+                  stroke={borderColor}
                   strokeWidth={1}
                   style={{ transition: 'fill 0.2s, stroke 0.2s' }}
                 />
-                {/* Label teks multi-baris — hanya tampil jika node cukup tinggi */}
-                {tinggiNode >= 20 && (
+                {/* Multi-line text label — hanya tampil jika node cukup tinggi */}
+                {nodeHeight >= 20 && (
                   <text textAnchor="middle" dominantBaseline="auto" pointerEvents="none">
-                    {barisLabel.map((barisTeks, indeksBaris) => {
-                      // Offset vertikal agar semua baris terpusat di tengah node
-                      const totalTinggiTeks = barisLabel.length * jarakAntarBaris - 3;
-                      const offsetY = tengahY - totalTinggiTeks / 2 + indeksBaris * jarakAntarBaris + ukuranFont;
+                    {textLines.map((line, lineIndex) => {
+                      // Vertical offset untuk center semua lines di tengah node
+                      const totalTextHeight = textLines.length * lineSpacing - 3;
+                      const offsetY = centerY - totalTextHeight / 2 + lineIndex * lineSpacing + fontSize;
                       return (
                         <tspan
-                          key={`label-${singleNode.name}-${indeksBaris}`}
-                          x={tengahX}
+                          key={`label-${node.id}-${lineIndex}`}
+                          x={centerX}
                           y={offsetY}
-                          fontSize={ukuranFont}
+                          fontSize={fontSize}
                           fontWeight={600}
                           fontFamily="inherit"
-                          fill={warnaLabel}
+                          fill={labelColor}
                           style={{ transition: 'fill 0.2s' }}
                         >
-                          {barisTeks}
+                          {line}
                         </tspan>
                       );
                     })}
@@ -521,10 +548,10 @@ export function SankeySupplyChain() {
         </svg>
       </div>
 
-      {/* Footer sumber data */}
+      {/* Footer: data source & unit info */}
       <div className="bg-gray-50 border-t border-gray-100 px-4 py-2 rounded-b-xl">
         <p className="text-[10px] text-gray-400 text-right">
-          Satuan: ribu ton CPO &nbsp;·&nbsp; Tahun: {tahunDipilih} &nbsp;·&nbsp; Sumber: Trase.earth
+          Satuan: ribu ton CPO &nbsp;·&nbsp; Tahun: {selectedYear} &nbsp;·&nbsp; Sumber: Trase.earth
         </p>
       </div>
 
@@ -545,16 +572,16 @@ export function SankeySupplyChain() {
             maxWidth:        280,
           }}
         >
-          {tooltip.konten.split('\n').map((barisTeks, indeksBaris) => (
+          {tooltip.content.split('\n').map((lineText, lineIndex) => (
             <span
-              key={indeksBaris}
+              key={lineIndex}
               style={{
                 display:    'block',
-                fontWeight: indeksBaris === 0 ? 700 : 400,
-                color:      indeksBaris === 0 ? COLORS.PRIMARY : '#cbd5e1',
+                fontWeight: lineIndex === 0 ? 700 : 400,
+                color:      lineIndex === 0 ? COLORS.PRIMARY : '#cbd5e1',
               }}
             >
-              {barisTeks}
+              {lineText}
             </span>
           ))}
         </div>
