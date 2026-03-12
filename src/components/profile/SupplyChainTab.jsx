@@ -4,76 +4,28 @@ import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
 import SUPPLY_CHAIN_DATA from '../../data/supplychain-data.json';
 
-// ─── HELPER: HITUNG STATISTIK DARI SUPPLYCHAIN DATA ───
-function calculateStatistics(district, year) {
-  const districtData = SUPPLY_CHAIN_DATA.data[district];
-  if (!districtData || !districtData[year]) {
-    return {
-      totalVolume: '0',
-      largestExporter: 'N/A',
-      topDestination: 'N/A',
-      largestMillGroup: 'N/A',
-    };
-  }
-
-  const yearData = districtData[year];
-  const { nodes, links } = yearData;
-
-  // Total volume dari sum semua links
-  const totalVolume = links.reduce((sum, link) => sum + link.value, 0);
-
-  // Largest Exporter (layer 2): node dengan volume total terbesar
-  const exporters = nodes.filter((n) => n.kolom === 2);
-  const exporterVolumes = {};
-  links.forEach((link) => {
-    if (link.source.startsWith('2:')) {
-      exporterVolumes[link.source] = (exporterVolumes[link.source] || 0) + link.value;
-    }
-  });
-  const largestExporter = Object.entries(exporterVolumes).sort(([, a], [, b]) => b - a)[0]?.[0]?.split(':')[1] || 'N/A';
-
-  // Top Destination (layer 3): node dengan volume total terbesar
-  const destinationVolumes = {};
-  links.forEach((link) => {
-    if (link.target.startsWith('3:')) {
-      destinationVolumes[link.target] = (destinationVolumes[link.target] || 0) + link.value;
-    }
-  });
-  const topDestination = Object.entries(destinationVolumes).sort(([, a], [, b]) => b - a)[0]?.[0]?.split(':')[1] || 'N/A';
-
-  // Largest Mill Group (layer 1): node dengan volume total terbesar
-  const millVolumes = {};
-  links.forEach((link) => {
-    if (link.source.startsWith('1:')) {
-      millVolumes[link.source] = (millVolumes[link.source] || 0) + link.value;
-    }
-  });
-  const largestMillName = Object.entries(millVolumes).sort(([, a], [, b]) => b - a)[0]?.[0]?.split(':')[1] || 'N/A';
-
-  return {
-    totalVolume: (totalVolume / 1000).toFixed(1), // Convert ke juta ton dari ribu ton
-    largestExporter,
-    topDestination,
-    largestMillGroup: largestMillName,
-  };
+// Summary statistik pre-computed saat build — baca langsung dari JSON tanpa kalkulasi di browser
+function getStatistics(district, year) {
+  const summary = SUPPLY_CHAIN_DATA.data[district]?.[year]?.summary;
+  if (!summary) return { totalVolume: '0', largestExporter: 'N/A', topDestination: 'N/A', largestMillGroup: 'N/A' };
+  return { ...summary, totalVolume: summary.totalVolume.toFixed(1) };
 }
 
 // Tab Rantai Pasok Komoditas
-export function SupplyChainTab({ kabupaten = 'SIAK' }) {
+export function SupplyChainTab({ kabupaten }) {
   const districtData = SUPPLY_CHAIN_DATA.data[kabupaten];
   const availableYears = districtData?.tahun_tersedia || [];
   const [selectedYear, setSelectedYear] = useState(availableYears[availableYears.length - 1] || 2022);
 
-  // Hitung statistik berdasarkan kabupaten dan tahun yang dipilih
-  const statistics = useMemo(() => {
-    return calculateStatistics(kabupaten, selectedYear);
-  }, [kabupaten, selectedYear]);
+  // Baca statistik pre-computed dari JSON — tidak ada kalkulasi ulang di browser
+  const statistics = useMemo(() => getStatistics(kabupaten, selectedYear), [kabupaten, selectedYear]);
 
   const SUPPLY_CHAIN_STATS = [
     { label: 'Total Export Volume', value: `${statistics.totalVolume}`, unit: 'juta ton CPO' },
+    { label: 'Largest Mill Group',  value: statistics.largestMillGroup, unit: 'main processor' },
     { label: 'Largest Exporter',    value: statistics.largestExporter,  unit: 'by volume' },
     { label: 'Top Destination',     value: statistics.topDestination,   unit: 'primary market' },
-    { label: 'Largest Mill Group',  value: statistics.largestMillGroup, unit: 'main processor' },
+    
   ];
   return (
     <ProfileSection>

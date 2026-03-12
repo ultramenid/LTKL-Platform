@@ -153,6 +153,52 @@ function buildSankeyData(flowList) {
   return { nodes, links };
 }
 
+// ─── FUNGSI: HITUNG SUMMARY STATISTIK (pre-compute agar tidak dihitung di browser) ───
+const EXCLUDED_MILL_IDS     = new Set();
+const EXCLUDED_EXPORTER_IDS = new Set(['2:DOMESTIC PROCESSING AND CONSUMPTION']);
+const EXCLUDED_DEST_IDS     = new Set(['3:INDONESIA']);
+
+function buildSummary(nodes, links) {
+  // Total volume: hanya exporter teridentifikasi
+  const totalVolume = links
+    .filter((link) => link.source.startsWith('2:') && !EXCLUDED_EXPORTER_IDS.has(link.source))
+    .reduce((sum, link) => sum + link.value, 0);
+
+  // Largest exporter teridentifikasi
+  const exporterVolumes = {};
+  links.forEach((link) => {
+    if (link.source.startsWith('2:') && !EXCLUDED_EXPORTER_IDS.has(link.source)) {
+      exporterVolumes[link.source] = (exporterVolumes[link.source] || 0) + link.value;
+    }
+  });
+  const largestExporter = Object.entries(exporterVolumes).sort(([, a], [, b]) => b - a)[0]?.[0]?.split(':')[1] || 'N/A';
+
+  // Top destination teridentifikasi
+  const destinationVolumes = {};
+  links.forEach((link) => {
+    if (link.target.startsWith('3:') && !EXCLUDED_DEST_IDS.has(link.target)) {
+      destinationVolumes[link.target] = (destinationVolumes[link.target] || 0) + link.value;
+    }
+  });
+  const topDestination = Object.entries(destinationVolumes).sort(([, a], [, b]) => b - a)[0]?.[0]?.split(':')[1] || 'N/A';
+
+  // Largest mill group teridentifikasi
+  const millVolumes = {};
+  links.forEach((link) => {
+    if (link.source.startsWith('1:') && !EXCLUDED_MILL_IDS.has(link.source)) {
+      millVolumes[link.source] = (millVolumes[link.source] || 0) + link.value;
+    }
+  });
+  const largestMillGroup = Object.entries(millVolumes).sort(([, a], [, b]) => b - a)[0]?.[0]?.split(':')[1] || 'N/A';
+
+  return {
+    totalVolume: parseFloat((totalVolume / 1000).toFixed(1)), // juta ton
+    largestExporter,
+    topDestination,
+    largestMillGroup,
+  };
+}
+
 // ─── SIMPAN OUTPUT KE JSON FILE ───
 const output = {
   meta: {
@@ -170,7 +216,8 @@ Object.entries(dataByDistrictYear).forEach(([district, byYear]) => {
 
   availableYears.forEach((year) => {
     const { nodes, links } = buildSankeyData(byYear[year].flows);
-    output.data[district][year.toString()] = { nodes, links };
+    const summary = buildSummary(nodes, links);
+    output.data[district][year.toString()] = { nodes, links, summary };
   });
 });
 

@@ -1,8 +1,8 @@
 {
   "meta": {
-    "komoditas": "PALM OIL",
-    "satuan": "ribu ton",
-    "kabupatens": [
+    "commodity": "PALM OIL",
+    "unit": "ribu ton",
+    "districts": [
       "ACEH TAMIANG",
       "BONE BOLANGO",
       "GORONTALO",
@@ -13,7 +13,7 @@
       "SIGI",
       "SINTANG"
     ],
-    "tahuns": [
+    "years": [
       2018,
       2019,
       2020,
@@ -357,7 +357,13 @@
             "target": "3:PAKISTAN",
             "value": 1758.13936716
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 83.9,
+          "largestExporter": "MUSIM MAS",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2019": {
         "nodes": [
@@ -678,7 +684,13 @@
             "target": "3:RUSSIAN FEDERATION",
             "value": 0.605455742
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 83.8,
+          "largestExporter": "MUSIM MAS",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2020": {
         "nodes": [
@@ -1004,7 +1016,13 @@
             "target": "3:CHINA (MAINLAND)",
             "value": 6413.5412705769995
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 71,
+          "largestExporter": "MUSIM MAS",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2021": {
         "nodes": [
@@ -1235,7 +1253,13 @@
             "target": "3:SPAIN",
             "value": 0.05633198
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 4.8,
+          "largestExporter": "MUSIM MAS",
+          "topDestination": "RUSSIAN FEDERATION",
+          "largestMillGroup": "UNKNOWN AFFILIATION"
+        }
       },
       "2022": {
         "nodes": [
@@ -1481,7 +1505,13 @@
             "target": "3:SENEGAL",
             "value": 127.855664872
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 5.1,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "tahun_tersedia": [
         2018,
@@ -1731,7 +1761,13 @@
             "target": "3:SOUTH KOREA",
             "value": 48.203831028
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 2,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "UNKNOWN COUNTRY",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2022": {
         "nodes": [
@@ -1957,7 +1993,13 @@
             "target": "3:Lainnya",
             "value": 17.36535964324
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 3.6,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "UNKNOWN COUNTRY",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "tahun_tersedia": [
         2021,
@@ -2224,7 +2266,13 @@
             "target": "3:SOUTH KOREA",
             "value": 1.0693022
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 0.1,
+          "largestExporter": "PERMATA HIJAU",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2019": {
         "nodes": [
@@ -2505,7 +2553,13 @@
             "target": "3:MALAYSIA",
             "value": 0.003629774
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 0.8,
+          "largestExporter": "ROYAL GOLDEN EAGLE",
+          "topDestination": "CHINA (MAINLAND)",
+          "largestMillGroup": "INTI AGRI RESOURCES"
+        }
       },
       "2020": {
         "nodes": [
@@ -2731,7 +2785,13 @@
             "target": "3:MALAYSIA",
             "value": 4.1461857460000004
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 0.2,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "UNKNOWN COUNTRY",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2021": {
         "nodes": [
@@ -2972,7 +3032,13 @@
             "target": "3:SOUTH KOREA",
             "value": 6.962113903
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 0.3,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "UNKNOWN COUNTRY",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2022": {
         "nodes": [
@@ -3198,7 +3264,13 @@
             "target": "3:Lainnya",
             "value": 2.5063054958000004
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 0.5,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "UNKNOWN COUNTRY",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "tahun_tersedia": [
         2018,
@@ -3493,7 +3565,13 @@
             "target": "3:UNITED STATES",
             "value": 0.574989005
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 120.5,
+          "largestExporter": "SINAR MAS",
+          "topDestination": "MALAYSIA",
+          "largestMillGroup": "SINAR MAS"
+        }
       },
       "2019": {
         "nodes": [
@@ -3764,7 +3842,13 @@
             "target": "3:MALAYSIA",
             "value": 7.006713186
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 207.8,
+          "largestExporter": "KENCANA",
+          "topDestination": "MALAYSIA",
+          "largestMillGroup": "KENCANA"
+        }
       },
       "2020": {
         "nodes": [
@@ -4005,7 +4089,13 @@
             "target": "3:CHINA (MAINLAND)",
             "value": 1360.110392972
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 123.2,
+          "largestExporter": "SINAR MAS",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2021": {
         "nodes": [
@@ -4361,7 +4451,13 @@
             "target": "2:SINAR MAS",
             "value": 2.5119641259999996
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 951.4,
+          "largestExporter": "Lainnya",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2022": {
         "nodes": [
@@ -4722,7 +4818,13 @@
             "target": "2:WILMAR",
             "value": 3511.6695939862
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 957.1,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "tahun_tersedia": [
         2018,
@@ -5117,7 +5219,13 @@
             "target": "3:CHINA (MAINLAND)",
             "value": 2651.2245316
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 289.8,
+          "largestExporter": "Lainnya",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2019": {
         "nodes": [
@@ -5488,7 +5596,13 @@
             "target": "3:EGYPT",
             "value": 25061.17963
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 490,
+          "largestExporter": "Lainnya",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2020": {
         "nodes": [
@@ -5844,7 +5958,13 @@
             "target": "2:Lainnya",
             "value": 7401.037920015004
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 495.2,
+          "largestExporter": "Lainnya",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2021": {
         "nodes": [
@@ -6160,7 +6280,13 @@
             "target": "3:MALAYSIA",
             "value": 834.5310027
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 202.7,
+          "largestExporter": "Lainnya",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2022": {
         "nodes": [
@@ -6476,7 +6602,13 @@
             "target": "3:PAKISTAN",
             "value": 2.784115934
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 218.2,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "UNKNOWN COUNTRY",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "tahun_tersedia": [
         2018,
@@ -6821,7 +6953,13 @@
             "target": "3:MALAYSIA",
             "value": 323.3860163
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 125.3,
+          "largestExporter": "SINAR MAS",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2019": {
         "nodes": [
@@ -7157,7 +7295,13 @@
             "target": "3:MALAYSIA",
             "value": 63.19544182
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 280.9,
+          "largestExporter": "SINAR MAS",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2020": {
         "nodes": [
@@ -7473,7 +7617,13 @@
             "target": "3:CHINA (MAINLAND)",
             "value": 312.80537993999997
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 239.4,
+          "largestExporter": "Lainnya",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2021": {
         "nodes": [
@@ -7854,7 +8004,13 @@
             "target": "2:SINAR MAS",
             "value": 1.7845633220000001
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 411.1,
+          "largestExporter": "Lainnya",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2022": {
         "nodes": [
@@ -8220,7 +8376,13 @@
             "target": "2:Lainnya",
             "value": 7624.889672060999
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 414.6,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "UNKNOWN COUNTRY",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "tahun_tersedia": [
         2018,
@@ -8635,7 +8797,13 @@
             "target": "3:EGYPT",
             "value": 1.8443488549999998
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 1094.9,
+          "largestExporter": "WILMAR",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "Lainnya"
+        }
       },
       "2019": {
         "nodes": [
@@ -9026,7 +9194,13 @@
             "target": "3:EGYPT",
             "value": 60006.187032
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 1129.7,
+          "largestExporter": "WILMAR",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "Lainnya"
+        }
       },
       "2020": {
         "nodes": [
@@ -9412,7 +9586,13 @@
             "target": "3:EGYPT",
             "value": 56513.800755135
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 1003.5,
+          "largestExporter": "Lainnya",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "Lainnya"
+        }
       },
       "2021": {
         "nodes": [
@@ -9758,7 +9938,13 @@
             "target": "2:MUSIM MAS",
             "value": 11.423811450999999
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 255.6,
+          "largestExporter": "ROYAL GOLDEN EAGLE",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2022": {
         "nodes": [
@@ -10104,7 +10290,13 @@
             "target": "2:MUSIM MAS",
             "value": 65.6237161148
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 237.7,
+          "largestExporter": "MUSIM MAS",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "tahun_tersedia": [
         2018,
@@ -10374,7 +10566,13 @@
             "target": "3:SOUTH KOREA",
             "value": 94.269445169
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 11.3,
+          "largestExporter": "PERMATA HIJAU",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2019": {
         "nodes": [
@@ -10655,7 +10853,13 @@
             "target": "3:MALAYSIA",
             "value": 4.779507586
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 47.4,
+          "largestExporter": "ASTRA AGRO LESTARI",
+          "topDestination": "INDIA",
+          "largestMillGroup": "ASTRA AGRO LESTARI"
+        }
       },
       "2020": {
         "nodes": [
@@ -10911,7 +11115,13 @@
             "target": "3:MALAYSIA",
             "value": 251.70046116999998
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 19.9,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "UNKNOWN COUNTRY",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2021": {
         "nodes": [
@@ -11162,7 +11372,13 @@
             "target": "3:PHILIPPINES",
             "value": 66.07538789
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 19.5,
+          "largestExporter": "ROYAL GOLDEN EAGLE",
+          "topDestination": "CHINA (MAINLAND)",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2022": {
         "nodes": [
@@ -11418,7 +11634,13 @@
             "target": "3:PHILIPPINES",
             "value": 2.995043582
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 25.9,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "UNKNOWN COUNTRY",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "tahun_tersedia": [
         2018,
@@ -11828,7 +12050,13 @@
             "target": "2:MUSIM MAS",
             "value": 8.919554698
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 560.1,
+          "largestExporter": "ROYAL GOLDEN EAGLE",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2019": {
         "nodes": [
@@ -12169,7 +12397,13 @@
             "target": "2:Lainnya",
             "value": 335.53570238
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 461.1,
+          "largestExporter": "MUSIM MAS",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2020": {
         "nodes": [
@@ -12495,7 +12729,13 @@
             "target": "2:Lainnya",
             "value": 198.45368234599997
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 390.7,
+          "largestExporter": "ROYAL GOLDEN EAGLE",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2021": {
         "nodes": [
@@ -12806,7 +13046,13 @@
             "target": "2:SINAR MAS",
             "value": 1.385586832
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 428.6,
+          "largestExporter": "Lainnya",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "2022": {
         "nodes": [
@@ -13137,7 +13383,13 @@
             "target": "3:VIETNAM",
             "value": 16211.647266897999
           }
-        ]
+        ],
+        "summary": {
+          "totalVolume": 451.8,
+          "largestExporter": "UNKNOWN",
+          "topDestination": "Lainnya",
+          "largestMillGroup": "UNKNOWN"
+        }
       },
       "tahun_tersedia": [
         2018,
