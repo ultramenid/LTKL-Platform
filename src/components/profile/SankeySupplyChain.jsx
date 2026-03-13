@@ -197,9 +197,16 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
     const availableHeight = CHART_HEIGHT - COLUMN_PADDING_TOP;
 
     // Scale nodes di setiap kolom proporsional agar mengisi full height
+    // Node "catch-all" (Lainnya, Unknown, Domestic) selalu di bawah per kolom
+    const NODES_SORT_LAST = new Set(['Lainnya', 'UNKNOWN', 'UNKNOWN AFFILIATION', 'UNKNOWN COUNTRY', 'DOMESTIC PROCESSING AND CONSUMPTION']);
     Object.values(nodesByLayer).forEach((nodesInLayer) => {
-      // Sort nodes by posisi vertikal awal (y0)
-      nodesInLayer.sort((a, b) => a.y0 - b.y0);
+      // Sort: node teridentifikasi urut by y0 d3, catch-all selalu di akhir
+      nodesInLayer.sort((a, b) => {
+        const aLast = NODES_SORT_LAST.has(a.name) ? 1 : 0;
+        const bLast = NODES_SORT_LAST.has(b.name) ? 1 : 0;
+        if (aLast !== bLast) return aLast - bLast;
+        return a.y0 - b.y0;
+      });
       
       // Hitung total tinggi semua nodes sebelum scaling (sebelum ekspansi)
       const totalHeight = nodesInLayer.reduce((sum, n) => sum + (n.y1 - n.y0), 0);
@@ -490,10 +497,12 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
             const nodeHeight = Math.max(4, node.y1 - node.y0);
             const centerX = (node.x0 + node.x1) / 2;
             const centerY = node.y0 + nodeHeight / 2;
-            const textLines = breakTextIntoLines(node.name);
-            // Adaptive font size: lebih kecil jika banyak baris atau node kecil
-            const fontSize = nodeHeight < 30 ? 8 : textLines.length > 2 ? 8 : 9;
-            const lineSpacing = fontSize + 3;
+            // Untuk node kecil, batasi 1 baris agar tidak overflow
+            const maxLines = nodeHeight < 20 ? 1 : 3;
+            const textLines = breakTextIntoLines(node.name).slice(0, maxLines);
+            // Font size mengikuti tinggi node: node sangat kecil pakai 6px, node besar pakai 9px
+            const fontSize = nodeHeight < 12 ? 6 : nodeHeight < 20 ? 7 : nodeHeight < 30 ? 8 : textLines.length > 2 ? 8 : 9;
+            const lineSpacing = fontSize + 2;
 
             return (
               <g
@@ -518,8 +527,8 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
                   strokeWidth={1}
                   style={{ transition: 'fill 0.2s, stroke 0.2s' }}
                 />
-                {/* Multi-line text label — hanya tampil jika node cukup tinggi */}
-                {nodeHeight >= 20 && (
+                {/* Tampilkan teks jika node cukup tinggi untuk memuat minimal 1 baris */}
+                {nodeHeight >= 8 && (
                   <text textAnchor="middle" dominantBaseline="auto" pointerEvents="none">
                     {textLines.map((line, lineIndex) => {
                       // Vertical offset untuk center semua lines di tengah node
