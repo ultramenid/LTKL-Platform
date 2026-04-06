@@ -1,221 +1,119 @@
 import ReactECharts from 'echarts-for-react';
 import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
-
-// ─── DATA STATISTIK KETENAGAKERJAAN ───
-const DATA_STATISTIK_KERJA = [
-  { label: 'Total Employed',      value: '126,240', sub: 'active workforce' },
-  { label: 'Unemployment Rate',   value: '3.82%',   sub: 'of labor force' },
-  { label: 'Labor Participation', value: '59.4%',   sub: 'participation rate' },
+// ─── DATA PDRB ADHK KABUPATEN SIGI 2015–2025 (Miliar Rupiah) ───
+// Gradasi oranye — 2015 paling terang, 2025 paling gelap agar tren waktu terbaca visual
+const PDRB_TAHUN_WARNA = [
+  '#fde8c8','#fcd9a8','#fbc07a','#f9a84c','#f78e22',
+  '#e27516','#c7610d','#ab4d08','#8e3a05','#712a02','#5a1e01',
 ];
 
-// ─── OPSI TREEMAP SEKTOR INDUSTRI ───
-const OPSI_TREEMAP_INDUSTRI = {
-  tooltip: { formatter: (paramItem) => `${paramItem.name}<br/>Workers: ${paramItem.value.toLocaleString()}` },
-  series: [{
-    type: 'treemap', roam: false, nodeClick: false,
-    label: { fontSize: 10 },
-    data: [
-      { name: 'Agriculture & Forestry', value: 42000, itemStyle: { color: '#22c55e' } },
-      { name: 'Manufacturing',          value: 38000, itemStyle: { color: '#3b82f6' } },
-      { name: 'Trade & Retail',         value: 31000, itemStyle: { color: '#f59e0b' } },
-      { name: 'Education',              value: 18500, itemStyle: { color: '#8b5cf6' } },
-      { name: 'Construction',           value: 16200, itemStyle: { color: '#ef4444' } },
-      { name: 'Transportation',         value: 12400, itemStyle: { color: '#06b6d4' } },
-      { name: 'Healthcare',             value: 9800,  itemStyle: { color: COLORS.PRIMARY } },
-      { name: 'Finance',                value: 7300,  itemStyle: { color: '#e11d48' } },
-      { name: 'Government',             value: 6100,  itemStyle: { color: '#64748b' } },
-      { name: 'Other',                  value: 5200,  itemStyle: { color: '#a8a29e' } },
-    ],
-  }],
-};
+const POPULATION_YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
-// ─── DATA PEKERJAAN TERATAS ───
-const DAFTAR_PEKERJAAN = [
-  'Farmers','Industrial Workers','Traders','Teachers',
-  'Construction Workers','Drivers','Office Staff','Healthcare Workers',
-  'Security Personnel','Others',
+
+const PDRB_SEKTORS = [
+  { nama: 'Pertanian, Kehutanan, dan Perikanan',                    nilai: [2394,2627,2857,2444,2767,3051,3330,3638,3974,4341,4740] },
+  { nama: 'Konstruksi',                                             nilai: [670,738,801,672,764,846,926,1013,1109,1213,1326] },
+  { nama: 'Administrasi Pemerintahan, Pertahanan & Jaminan Sosial', nilai: [460,509,555,466,529,587,643,704,770,843,921] },
+  { nama: 'Perdagangan Besar & Eceran; Reparasi Kendaraan',        nilai: [353,390,425,357,405,450,493,540,590,646,707] },
+  { nama: 'Jasa Pendidikan',                                        nilai: [323,358,392,330,375,416,456,500,547,600,656] },
+  { nama: 'Industri Pengolahan',                                    nilai: [239,263,285,244,277,306,335,367,401,439,480] },
+  { nama: 'Transportasi dan Pergudangan',                           nilai: [155,172,189,157,179,199,218,239,261,286,313] },
+  { nama: 'Jasa Keuangan dan Asuransi',                             nilai: [141,157,172,144,164,183,201,220,241,264,289] },
+  { nama: 'Jasa Kesehatan dan Kegiatan Sosial',                     nilai: [108,120,132,110,125,140,153,167,183,201,220] },
+  { nama: 'Informasi dan Komunikasi',                               nilai: [60,71,83,80,96,108,125,145,168,194,225] },
+  { nama: 'Real Estate',                                            nilai: [94,104,114,96,109,121,132,145,158,173,190] },
+  { nama: 'Pertambangan dan Penggalian',                            nilai: [80,89,98,82,94,104,115,127,139,153,168] },
+  { nama: 'Jasa Lainnya',                                           nilai: [82,91,101,84,96,106,117,128,140,154,168] },
+  { nama: 'Penyediaan Akomodasi dan Makan Minum',                   nilai: [57,64,69,57,65,73,80,87,96,105,115] },
+  { nama: 'Jasa Perusahaan',                                        nilai: [24,26,28,24,27,31,33,37,40,44,48] },
+  { nama: 'Pengadaan Listrik dan Gas',                              nilai: [12,13,15,12,14,16,17,20,21,24,26] },
+  { nama: 'Pengadaan Air, Pengelolaan Sampah & Daur Ulang',         nilai: [7,8,8,7,8,9,9,10,12,13,14] },
 ];
 
-// ─── OPSI CHART BATANG HORIZONTAL PEKERJAAN ───
-const OPSI_PEKERJAAN = {
-  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-  grid: { left: 120, right: 20, top: 10, bottom: 20 },
-  xAxis: { type: 'value', axisLabel: { fontSize: 9 } },
-  yAxis: { type: 'category', data: [...DAFTAR_PEKERJAAN].reverse(), axisLabel: { fontSize: 9 } },
-  series: [{
-    type: 'bar', barMaxWidth: 14,
-    data: [48200,41500,39800,37200,29400,24100,21600,18700,16300,14800].reverse(),
-    itemStyle: { color: COLORS.PRIMARY },
-  }],
+// Dibalik agar sektor terbesar muncul di baris atas chart (ECharts kategori mulai dari bawah)
+const PDRB_SEKTORS_REVERSED = [...PDRB_SEKTORS].reverse();
+
+const OPSI_PDRB_BAR = {
+  grid: { top: 16, right: 16, bottom: 56, left: 8, containLabel: true },
+  tooltip: {
+    trigger: 'item',
+    formatter: (param) =>
+      `<b>${param.name}</b><br/>${param.marker}${param.seriesName}: <b>Rp ${param.value.toLocaleString('id-ID')} M</b>`,
+  },
+  legend: {
+    bottom: 0,
+    data: POPULATION_YEARS.map(String),
+    itemWidth: 10,
+    itemHeight: 10,
+    textStyle: { fontSize: 9 },
+  },
+  xAxis: {
+    type: 'value',
+    axisLabel: { fontSize: 9, formatter: (nilai) => nilai >= 1000 ? (nilai / 1000).toFixed(1) + 'T' : nilai + 'M' },
+  },
+  yAxis: {
+    type: 'category',
+    data: PDRB_SEKTORS_REVERSED.map((sektor) => sektor.nama),
+    axisLabel: { fontSize: 9, width: 210, overflow: 'truncate' },
+  },
+  series: POPULATION_YEARS.map((tahun, indeksTahun) => ({
+    name: String(tahun),
+    type: 'bar',
+    stack: 'total',
+    barMaxWidth: 20,
+    data: PDRB_SEKTORS_REVERSED.map((sektor) => sektor.nilai[indeksTahun]),
+    itemStyle: { color: PDRB_TAHUN_WARNA[indeksTahun] },
+  })),
 };
 
-// ─── DATA DISTRIBUSI UPAH PER RENTANG ───
-const RENTANG_UPAH = ['<Rp1Jt','Rp1-2Jt','Rp2-3Jt','Rp3-5Jt','Rp5-7Jt','Rp7-10Jt','>Rp10Jt'];
-
-// ─── OPSI CHART BATANG BERTUMPUK DISTRIBUSI UPAH ───
-const OPSI_DISTRIBUSI_UPAH = {
-  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-  legend: { bottom: 0, itemWidth: 12, itemHeight: 10, textStyle: { fontSize: 10 } },
-  grid: { left: 50, right: 10, top: 10, bottom: 50 },
-  xAxis: { type: 'category', data: RENTANG_UPAH, axisLabel: { fontSize: 8, interval: 0 } },
-  yAxis: { type: 'value', axisLabel: { fontSize: 9 } },
-  series: [
-    { name: 'Male',   type: 'bar', stack: 'total', data: [8200,21400,28100,19800,6900,3100,1800], itemStyle: { color: '#3b82f6' }, barMaxWidth: 22 },
-    { name: 'Female', type: 'bar', stack: 'total', data: [6100,18700,24600,16200,5300,2100,1100], itemStyle: { color: '#f43f5e' }, barMaxWidth: 22 },
-  ],
-};
-
-// ─── DATA TREN PENDAPATAN TAHUNAN ───
-const TAHUN_PENDAPATAN = ['2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023'];
-
-// ─── OPSI CHART TREN PENDAPATAN ───
-const OPSI_TREN_PENDAPATAN = {
-  tooltip: { trigger: 'axis', formatter: (paramsList) => `${paramsList[0].axisValue}<br/>Rp ${(paramsList[0].value/1000000).toFixed(1)} Jt` },
-  grid: { left: 60, right: 10, top: 10, bottom: 30 },
-  xAxis: { type: 'category', data: TAHUN_PENDAPATAN, axisLabel: { fontSize: 9 } },
-  yAxis: { type: 'value', axisLabel: { fontSize: 9, formatter: (nilaiAxis) => `Rp ${nilaiAxis/1000000}Jt` } },
-  series: [{
-    type: 'line', smooth: true,
-    data: [3200000,3400000,3600000,3800000,4100000,4400000,4600000,4300000,4700000,5100000,5400000],
-    lineStyle: { color: COLORS.PRIMARY, width: 2.5 },
-    areaStyle: { color: COLORS.PRIMARY_ALPHA },
-    itemStyle: { color: COLORS.PRIMARY },
-  }],
-};
-
-// ─── OPSI TREEMAP PRODUK EKSPOR ───
-const OPSI_TREEMAP_EKSPOR = {
-  tooltip: { formatter: (paramItem) => `${paramItem.name}<br/>$${paramItem.value}M` },
-  series: [{
-    type: 'treemap', roam: false, nodeClick: false,
-    label: { fontSize: 10 },
-    data: [
-      { name: 'Minyak Sawit',    value: 42, itemStyle: { color: '#22c55e' } },
-      { name: 'Kakao',           value: 18, itemStyle: { color: '#a16207' } },
-      { name: 'Beras & Padi',    value: 15, itemStyle: { color: '#f59e0b' } },
-      { name: 'Kayu Olahan',     value: 14, itemStyle: { color: '#78350f' } },
-      { name: 'Kopi',            value: 12, itemStyle: { color: '#dc2626' } },
-      { name: 'Hasil Perikanan', value: 11, itemStyle: { color: '#0ea5e9' } },
-      { name: 'Rotan & Bambu',   value: 9,  itemStyle: { color: '#65a30d' } },
-      { name: 'Lainnya',         value: 6,  itemStyle: { color: '#9ca3af' } },
-    ],
-  }],
-};
-
-// ─── DATA TIGA INDUSTRI DOMINAN ───
-const TIGA_INDUSTRI_DOMINAN = [
-  { rank: 1, name: 'Agriculture',  workers: '42,000', share: '33.3%', color: '#22c55e' },
-  { rank: 2, name: 'Manufacturing', workers: '38,000', share: '30.1%', color: '#3b82f6' },
-  { rank: 3, name: 'Trade',        workers: '31,000', share: '24.6%', color: '#f59e0b' },
-];
 
 // Tab Ekonomi & Industri
 export function EconomyTab() {
   return (
     <ProfileSection>
       <SectionHeader title="Economy &amp; Industry" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
-
-      {/* ─── Kartu ringkasan ketenagakerjaan ─── */}
-      <div className="grid grid-cols-3 gap-4">
-        {DATA_STATISTIK_KERJA.map((itemStat) => (
-          <div key={itemStat.label} className="bg-teal-50 border border-teal-100 p-4 rounded-lg">
-            <p className="text-[9px] text-gray-500 uppercase tracking-widest">{itemStat.label}</p>
-            <p className="text-2xl font-black text-teal-700 mt-1">{itemStat.value}</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">{itemStat.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ─── Tiga industri terbesar ─── */}
+        {/* ─── SECTION: PDRB ─── */}
       <div>
-        <SubSectionHeader title="Top Industries" dotColor={COLORS.PRIMARY} />
-        <div className="grid grid-cols-3 gap-4">
-          {TIGA_INDUSTRI_DOMINAN.map((itemIndustri) => (
-            <div key={itemIndustri.name} className="flex items-start gap-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <span className="text-3xl font-black text-gray-200 leading-none">0{itemIndustri.rank}</span>
-              <div>
-                <div className="w-1.5 h-1.5 rounded-full mb-1" style={{ backgroundColor: itemIndustri.color }} />
-                <p className="font-semibold text-gray-900 text-sm">{itemIndustri.name}</p>
-                <p className="text-xs text-gray-500">{itemIndustri.workers} workers</p>
-                <p className="text-xs font-bold mt-0.5" style={{ color: itemIndustri.color }}>{itemIndustri.share}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+        <SectionHeader title="PDRB" borderColor="#f59e0b" dotColor="#f59e0b" />
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 items-start mt-6">
 
-      {/* ─── Treemap industri & pekerjaan teratas ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <p className="text-[9px] text-gray-500 uppercase mb-2">Employment by Sector</p>
-          <div className="h-60">
-            <ReactECharts option={OPSI_TREEMAP_INDUSTRI} style={{ height: '100%' }} />
+          {/* narasi */}
+          <div className="space-y-3 text-xs text-gray-600 leading-relaxed">
+            <p>
+              PDRB Kabupaten Sigi menunjukkan struktur ekonomi yang sangat bergantung pada kekayaan
+              alam dan aktivitas agraris. Pada tahun 2024, nilai PDRB Sigi diperkirakan mencapai{' '}
+              <strong className="text-gray-800">Rp 9,7 Triliun</strong>, yang dihasilkan dari
+              kontribusi 17 sektor lapangan usaha.
+            </p>
+            <p>
+              <strong className="text-gray-800">Kontribusi Dominan Sektor Pertanian:</strong>{' '}
+              Sektor Pertanian, Kehutanan, dan Perikanan merupakan tulang punggung utama ekonomi
+              Sigi dengan kontribusi dominan mencapai <strong className="text-gray-800">45%</strong>{' '}
+              hingga 48% dari total PDRB.
+            </p>
+            <p>
+              <strong className="text-gray-800">Basis Komoditas Unggulan:</strong> Sigi merupakan
+              salah satu lumbung pangan Sulawesi Tengah, dengan komoditas utama seperti padi,
+              jagung, serta tanaman perkebunan seperti kakao dan kopi.
+            </p>
+            <p>
+              <strong className="text-gray-800">Penyerap Tenaga Kerja Terbesar:</strong> Mayoritas
+              penduduk di 176 desa bekerja di sektor agraris, sehingga aktivitas ekonomi rumah
+              tangga sangat bergantung pada hasil panen. Geografis yang mendukung: wilayah seperti
+              Lembah Palolo dan Kulawi memiliki lahan subur yang mendukung produktivitas tinggi.
+            </p>
           </div>
-        </div>
-        <div>
-          <p className="text-[9px] text-gray-500 uppercase mb-2">Top Occupations</p>
-          <div className="h-60">
-            <ReactECharts option={OPSI_PEKERJAAN} style={{ height: '100%' }} />
-          </div>
-        </div>
-      </div>
 
-      {/* ─── Distribusi upah ─── */}
-      <div>
-        <SubSectionHeader title="Wages" dotColor={COLORS.PRIMARY} />
-        <div className="h-56">
-          <ReactECharts option={OPSI_DISTRIBUSI_UPAH} style={{ height: '100%' }} />
-        </div>
-      </div>
+          {/* chart horizontal bar */}
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-amber-600 mb-3">Produk Domestik Regional Bruto (ADHK)</p>
+            <ReactECharts option={OPSI_PDRB_BAR} style={{ height: 480, width: '100%' }} />
+          </div>
 
-      {/* ─── Tren pendapatan & statistik kemiskinan ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="space-y-5 col-span-1">
-          <SubSectionHeader title="Income" dotColor={COLORS.PRIMARY} />
-          <div className="space-y-4">
-            <div>
-              <p className="text-[9px] text-gray-500 uppercase">Median Income</p>
-              <p className="text-3xl font-black text-teal-600">Rp 4.5Jt</p>
-              <p className="text-xs text-gray-500">per month</p>
-            </div>
-            <div>
-              <p className="text-[9px] text-gray-500 uppercase">Gini Coefficient</p>
-              <p className="text-2xl font-black text-gray-800">0.412</p>
-            </div>
-            <div>
-              <p className="text-[9px] text-gray-500 uppercase">Poverty Rate</p>
-              <p className="text-2xl font-black text-red-500">11.7%</p>
-              <p className="text-xs text-gray-500">≈ 32,000 people</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-span-1 md:col-span-2 h-48">
-          <p className="text-[9px] text-gray-500 uppercase mb-2">Median Income Trend</p>
-          <ReactECharts option={OPSI_TREN_PENDAPATAN} style={{ height: '100%' }} />
         </div>
       </div>
-
-      {/* ─── Ekspor & komoditas unggulan ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="space-y-4">
-          <SubSectionHeader title="Trade &amp; Exports" dotColor={COLORS.PRIMARY} />
-          <div>
-            <p className="text-[9px] text-gray-500 uppercase">Total Exports</p>
-            <p className="text-3xl font-black text-teal-600">$127M</p>
-            <p className="text-xs text-gray-500">USD per year</p>
-          </div>
-          <div>
-            <p className="text-[9px] text-gray-500 uppercase">Top Commodity</p>
-            <p className="text-lg font-bold text-gray-900">Minyak Sawit</p>
-            <p className="text-xs text-gray-500">33.1% of total exports</p>
-          </div>
-        </div>
-        <div className="col-span-1 md:col-span-2 h-56">
-          <p className="text-[9px] text-gray-500 uppercase mb-2">Export Products Breakdown</p>
-          <ReactECharts option={OPSI_TREEMAP_EKSPOR} style={{ height: '100%' }} />
-        </div>
-      </div>
+      
     </ProfileSection>
   );
 }
