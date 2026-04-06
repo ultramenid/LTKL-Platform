@@ -72,7 +72,7 @@ const OPSI_PDRB_BAR = {
 export function EconomyTab() {
   return (
     <ProfileSection>
-      <SectionHeader title="Economy &amp; Industry" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
+      {/* <SectionHeader title="Economy &amp; Industry" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} /> */}
         {/* ─── SECTION: PDRB ─── */}
       <div>
         <SectionHeader title="PDRB" borderColor="#f59e0b" dotColor="#f59e0b" />
