@@ -8,6 +8,17 @@ const POPULATION_YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 
 const POPULATION_TOTAL  = [228255, 232233, 236050, 239742, 243490, 258811, 261311, 264136, 268230, 271500, 274800];
 const POPULATION_POOR   = [29810,  29540,  30120,  31430,  30680,  31250,  32740,  31290,  31180,  30850,  30500];
 const EXPENDITURE_PCAP  = [2876472, 3027840, 3178622, 3254320, 3386124, 3549236, 3643008, 3846740, 4060294, 4277200, 4493150];
+const EXPENDITURE_RT   = [745200,
+788500,
+832100,
+856400,
+895800,
+912400,
+948700,
+1012300,
+1085600,
+1156000,
+1231000];
 const HOUSEHOLD_TOTAL   = [59133, 60477, 61793, 63090, 64415, 66520, 68050, 69509, 71800, 73378, 75200];
 
 // ─── DATA PDRB ADHK KABUPATEN SIGI 2015–2025 (Miliar Rupiah) ───
@@ -163,6 +174,38 @@ const expenditureLineOption = {
   ],
 };
 
+// ─── OPSI CHART: LINE PENGELUARAN PER KAPITA ───
+const expenditureLineOption2 = {
+  grid: { top: 24, right: 48, bottom: 40, left: 48, containLabel: true },
+  tooltip: {
+    trigger: 'axis',
+    formatter: (params) =>
+      `Tahun ${params[0].axisValue}<br/>${params[0].marker} Pengeluaran: <b>Rp ${params[0].value.toLocaleString('id-ID')}/bulan</b>`,
+  },
+  xAxis: {
+    type: 'category',
+    data: POPULATION_YEARS,
+    axisLabel: { fontSize: 10 },
+    boundaryGap: false,
+  },
+  yAxis: { type: 'value', show: false },
+  series: [
+    {
+      name: 'Pengeluaran Per Kapita',
+      type: 'line',
+      data: EXPENDITURE_RT,
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 6,
+      lineStyle: { color: '#3b82f6', width: 2.5 },
+      itemStyle: { color: '#3b82f6' },
+      areaStyle: { color: 'rgba(59,130,246,0.08)' },
+      label: { show: true, fontSize: 9, color: '#374151', formatter: (p) => 'Rp ' + (p.value / 1000000).toFixed(1) + 'Jt' },
+    },
+  ],
+};
+
+
 
 // Tab Kependudukan & Keragaman
 export function PopulationTab() {
@@ -206,7 +249,7 @@ export function PopulationTab() {
           </div>
           <div>
             <p className="text-sm font-semibold text-blue-600 mb-2">Pengeluaran penduduk per kapita (Rp/Bulan)</p>
-            <ReactECharts option={expenditureLineOption} style={{ height:100, width: '100%' }} />
+            <ReactECharts option={expenditureLineOption2} style={{ height:100, width: '100%' }} />
           </div>
         </div>
 
