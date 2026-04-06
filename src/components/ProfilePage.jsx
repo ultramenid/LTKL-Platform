@@ -1,28 +1,28 @@
 import { useSearchParams, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, User } from 'lucide-react';
 import { KABUPATENS } from '../data/kabupatens.js';
 import { COLORS } from '../config/constants.js';
 import { PopulationTab }  from './profile/PopulationTab.jsx';
 import { EconomyTab }     from './profile/EconomyTab.jsx';
-import { CivicsTab }      from './profile/CivicsTab.jsx';
 import { SupplyChainTab } from './profile/SupplyChainTab.jsx';
+import { CommodityTab }   from './profile/Comodity.jsx';
 
 // ─── TAB NAVIGATION CONFIGURATION (stored at module level, not state/props dependent) ───
 // Disimpan di level modul karena tidak bergantung pada state atau props apapun
 const NAV_TABS = [
-  { id: 'population',  label: 'Population & Diversity', color: COLORS.PRIMARY      },
-  { id: 'economy',     label: 'Economy',               color: COLORS.HIGHLIGHT     },
-  { id: 'civics',      label: 'Civics',                color: COLORS.PRIMARY_TEXT  },
-  { id: 'supplychain', label: 'Supply Chain',          color: COLORS.PRIMARY_TEXT  },
+  { id: 'population',  label: 'Populasi',           color: COLORS.PRIMARY      },
+  { id: 'economy',     label: 'Ekonomi',               color: COLORS.HIGHLIGHT     },
+  { id: 'commodity',   label: 'Komoditas',             color: COLORS.HIGHLIGHT     },
+  { id: 'supplychain', label: 'Rantai Pasok',          color: COLORS.PRIMARY_TEXT  },
 ];
 
 // ─── HERO SECTION STATISTICS (ringkasan statistik di bagian hero) ───
 const HERO_STATS = [
-  { label: '1-YR POPULATION CHANGE',  value: '+2.1%',    sub: 'growth'         },
-  { label: 'MEDIAN HOUSEHOLD INCOME', value: 'Rp 4,5Jt', sub: 'per month'      },
-  { label: 'POPULATION',              value: '274,800',  sub: '2025 estimate'  },
-  { label: 'POVERTY RATE',            value: '11.7%',    sub: '30,500 people'  },
-  { label: 'MEDIAN AGE',              value: '34.2',     sub: 'years'           },
+  { label: 'PENDUDUK MISKIN 2025',  value: '30,500',    sub: 'Jiwa'         },
+  { label: 'PDRB ADHK 2025', value: 'Rp 9.300', sub: 'trilliun'      },
+  { label: 'POPULATION 2025',              value: '274,800',  sub: 'Jiwa'  },
+  { label: 'RATA-RATA PENGELUARAN 2025 (Rumah Tangga)',            value: '4,5 Juta',    sub: '/bulan'  },
+  { label: 'SEKTOR UNGGULAN',              value: 'Pertanian',     sub: '45% dari total PDRB'           },
 ];
 
 // ─── VALID TAB IDS (untuk validasi URL sebelum digunakan) ───
@@ -75,7 +75,22 @@ export function ProfilePage({ kabupatenName }) {
             )}
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight uppercase">{kabupatenName}</h1>
           </div>
-          <p className="text-white/50 text-xs mt-4 uppercase tracking-[0.2em]">Indonesia · 2025 Profile</p>
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-10">
+            {[
+              { role: 'Bupati',        name: 'Nama Bupati'        },
+              { role: 'Wakil Bupati', name: 'Nama Wakil Bupati' },
+            ].map(({ role, name }) => (
+              <div key={role} className="flex items-center gap-3 px-5 py-3 rounded-xl ">
+                <div className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                  <User size={16} className="text-white/50" />
+                </div>
+                <div className="text-left">
+                  <p className="text-white/40 text-[9px] uppercase tracking-widest font-semibold">{role}</p>
+                  <p className="text-white font-semibold text-sm mt-0.5">{name}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Summary statistics row */}
@@ -112,7 +127,7 @@ export function ProfilePage({ kabupatenName }) {
       {/* ─── CONTENT PER TAB (each component manages its own state) ───*/}
       {activeTab === 'population'  && <PopulationTab  />}
       {activeTab === 'economy'     && <EconomyTab     />}
-      {activeTab === 'civics'      && <CivicsTab      />}
+      {activeTab === 'commodity'   && <CommodityTab   />}
       {activeTab === 'supplychain' && <SupplyChainTab kabupaten={kabupatenName.toUpperCase()} />}
 
       {/* ─── FOOTER ───*/}

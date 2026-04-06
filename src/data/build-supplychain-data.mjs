@@ -154,9 +154,9 @@ function buildSankeyData(flowList) {
 }
 
 // ─── FUNGSI: HITUNG SUMMARY STATISTIK (pre-compute agar tidak dihitung di browser) ───
-const EXCLUDED_MILL_IDS     = new Set();
-const EXCLUDED_EXPORTER_IDS = new Set(['2:DOMESTIC PROCESSING AND CONSUMPTION']);
-const EXCLUDED_DEST_IDS     = new Set(['3:INDONESIA']);
+const EXCLUDED_MILL_IDS     = new Set(['1:UNKNOWN', '1:Lainnya','1:UNKNOWN AFFILIATION']);
+const EXCLUDED_EXPORTER_IDS = new Set(['2:DOMESTIC PROCESSING AND CONSUMPTION', '2:UNKNOWN', '2:Lainnya', '2:UNKNOWN AFFILIATION']);
+const EXCLUDED_DEST_IDS     = new Set(['3:UNKNOWN COUNTRY', '3:Lainnya']);
 
 function buildSummary(nodes, links) {
   // Total volume: hanya exporter teridentifikasi
