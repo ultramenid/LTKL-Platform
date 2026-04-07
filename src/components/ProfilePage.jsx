@@ -54,6 +54,7 @@ export function ProfilePage({ kabupatenName }) {
           style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&auto=format&fit=crop")', backgroundSize: 'cover', backgroundPosition: 'center' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/70 to-black/90" />
         
+        
         {/* Back to map navigation */}
         <div className="relative z-10 px-4 md:px-8 pt-5">
           <Link to="/" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm transition">
@@ -61,6 +62,7 @@ export function ProfilePage({ kabupatenName }) {
             Back to Map
           </Link>
         </div>
+        
 
         {/* Page title with district logo */}
         <div className="relative z-10 text-center py-8 md:py-10 px-4 md:px-8">
@@ -105,6 +107,39 @@ export function ProfilePage({ kabupatenName }) {
             ))}
           </div>
         </div>
+
+        {/* Ringkasan profil kabupaten */}
+        <div className="relative z-10 max-w-5xl mx-auto px-4 md:px-8 pb-8 pt-4 space-y-4 text-xs text-white/60 leading-relaxed">
+          <p>
+            Kabupaten Sigi memiliki populasi sekitar <span className="text-white/80 font-semibold">271.500 jiwa</span> dengan
+            struktur penduduk muda yang ekspansif. Perekonomiannya didominasi kuat oleh sektor pertanian,
+            kehutanan, dan perikanan yang menyumbang lebih dari <span className="text-white/80 font-semibold">45% PDRB</span>.
+            Selain itu, sektor konstruksi dan jasa pemerintahan menjadi pendukung utama pembangunan.
+            Fokus pengembangan wilayahnya bertumpu pada keberlanjutan sektor agrobisnis dan pemulihan
+            ekonomi pascabencana secara terpadu.
+          </p>
+          <div>
+            <p className="text-white/80 font-semibold mb-2">Sektor Unggulan &amp; Struktur Ekonomi</p>
+            <p className="mb-2">
+              Struktur ekonomi Kabupaten Sigi tetap stabil dengan Sektor Pertanian sebagai tulang punggung
+              utama. Berikut adalah pembagian kontribusi sektor dalam PDRB:
+            </p>
+            <ul className="space-y-1 pl-3">
+              <li className="before:content-['·'] before:mr-2">
+                <span className="text-white/75 font-medium">Sektor Primer</span> (Pertanian, Kehutanan, Perikanan):
+                Berkontribusi ~45%. Komoditas unggulan meliputi padi, kakao, dan jagung.
+              </li>
+              <li className="before:content-['·'] before:mr-2">
+                <span className="text-white/75 font-medium">Sektor Sekunder</span> (Konstruksi &amp; Industri):
+                Berkontribusi ~13%, didorong oleh rekonstruksi infrastruktur pascabencana.
+              </li>
+              <li className="before:content-['·'] before:mr-2">
+                <span className="text-white/75 font-medium">Sektor Tersier</span> (Jasa Pendidikan &amp; Pemerintahan):
+                Berkontribusi ~15%.
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* ─── TAB NAVIGATION (sticky, permanent visibility while scrolling) ───*/}
@@ -123,6 +158,10 @@ export function ProfilePage({ kabupatenName }) {
           ))}
         </div>
       </div>
+
+      
+
+      
 
       {/* ─── CONTENT PER TAB (each component manages its own state) ───*/}
       {activeTab === 'population'  && <PopulationTab  />}
