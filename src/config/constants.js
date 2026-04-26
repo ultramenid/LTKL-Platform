@@ -13,7 +13,7 @@ export const MAP_CONFIG = {
 // URL server eksternal (GeoServer untuk WFS, GEE tile server)
 export const API_ENDPOINTS = {
   GEOSERVER: 'https://aws.simontini.id/geoserver/ows',
-  TILE_SERVER: 'https://gee.simontini.id/gee',
+  TILE_SERVER: 'http://localhost:8000/gee',
 };
 
 // Nama layer dari GeoServer (LTKL:kabupaten, dll)

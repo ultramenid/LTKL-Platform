@@ -2,7 +2,7 @@ import { loadGEEPolygonRaster, loadLayer, removeLayerAndSource, abortActiveReque
 import { zoomToMatchingFeature, waitForSourceData } from "./mapUtils.js";
 import { useMapStore } from "../store/mapStore.js";
 import { LAYER_IDS, LAYER_TYPES, SOURCE_IDS } from "../config/constants.js";
-import { buildSingleFilter, buildKecamatanFilter } from "../utils/filterBuilder.js";
+import { buildSingleFilter, buildKecamatanFilter } from "./filterBuilder.js";
 
 // Daftar semua layer ID untuk cleanup saat reset
 const ALL_LAYER_IDS = [LAYER_IDS.DESA_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.KABUPATEN_FILL];

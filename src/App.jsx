@@ -1,7 +1,6 @@
 import './App.css'
 import { useEffect, useState } from 'react'
 import { Routes, Route, useParams } from 'react-router-dom'
-import { Menu } from 'lucide-react'
 import { useMapStore } from './store/mapStore'
 import { parseUrlState } from './utils/urlStateSync'
 import { LeftPanel } from './components/LeftPanel'

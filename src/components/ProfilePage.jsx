@@ -1,19 +1,24 @@
+import { useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft, User } from 'lucide-react';
 import { KABUPATENS } from '../data/kabupatens.js';
-import { COLORS } from '../config/constants.js';
+import { COLORS, YEAR_CONFIG } from '../config/constants.js';
+import { useMapStore } from '../store/mapStore.js';
+import { encodeAdministrasi, decodeAdministrasi } from '../utils/urlStateSync.js';
 import { PopulationTab }  from './profile/PopulationTab.jsx';
 import { EconomyTab }     from './profile/EconomyTab.jsx';
 import { SupplyChainTab } from './profile/SupplyChainTab.jsx';
 import { CommodityTab }   from './profile/Comodity.jsx';
+import { MapTab }         from './profile/MapTab.jsx';
 
 // ─── TAB NAVIGATION CONFIGURATION (stored at module level, not state/props dependent) ───
 // Disimpan di level modul karena tidak bergantung pada state atau props apapun
 const NAV_TABS = [
-  { id: 'population',  label: 'Populasi',           color: COLORS.PRIMARY      },
-  { id: 'economy',     label: 'Ekonomi',               color: COLORS.HIGHLIGHT     },
-  { id: 'commodity',   label: 'Komoditas',             color: COLORS.HIGHLIGHT     },
-  { id: 'supplychain', label: 'Rantai Pasok',          color: COLORS.PRIMARY_TEXT  },
+  { id: 'population',  label: 'Populasi',    color: COLORS.PRIMARY     },
+  { id: 'economy',     label: 'Ekonomi',     color: COLORS.HIGHLIGHT   },
+  { id: 'commodity',   label: 'Komoditas',   color: COLORS.HIGHLIGHT   },
+  { id: 'supplychain', label: 'Rantai Pasok', color: COLORS.PRIMARY_TEXT },
+  { id: 'map',         label: 'Peta',   color: COLORS.PRIMARY     },
 ];
 
 // ─── HERO SECTION STATISTICS (ringkasan statistik di bagian hero) ───
@@ -32,12 +37,57 @@ const VALID_TAB_IDS = NAV_TABS.map((tab) => tab.id);
 export function ProfilePage({ kabupatenName }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Baca tab dari URL; fallback ke 'population' jika tidak valid
-  const urlTab = searchParams.get('tab');
-  const activeTab = VALID_TAB_IDS.includes(urlTab) ? urlTab : 'population';
+  // ─── BACA STATE DARI URL ───────────────────────────────────────────────────
+  const urlTab          = searchParams.get('tab');
+  const activeTab       = VALID_TAB_IDS.includes(urlTab) ? urlTab : 'population';
+  const urlYear         = parseInt(searchParams.get('year')) || YEAR_CONFIG.DEFAULT;
+  const urlAdministrasi = searchParams.get('administrasi') || 'all';
 
-  // Simpan tab yang dipilih ke URL untuk link-sharing
-  const selectTab = (tabId) => setSearchParams({ tab: tabId }, { replace: true });
+  // Decode drill state SEKALI saat mount agar tidak reset posisi MapTab setiap URL update
+  const initialDrillStateRef = useRef(decodeAdministrasi(urlAdministrasi));
+
+  // ─── INISIALISASI GLOBAL YEAR & URL PARAMS ──────────────────────────────────
+  // Memastikan year, tab, dan administrasi selalu ada di URL sejak pertama dibuka
+  // sehingga link bisa langsung dibagikan tanpa harus masuk ke tab peta dulu.
+  useEffect(() => {
+    useMapStore.getState().setYear(urlYear);
+    setSearchParams((previousParams) => {
+      const updatedParams = new URLSearchParams(previousParams);
+      if (!updatedParams.has('tab')) updatedParams.set('tab', activeTab);
+      // Year dan administrasi hanya ditambahkan saat berada di tab peta
+      if (activeTab === 'map') {
+        if (!updatedParams.has('year'))         updatedParams.set('year', String(urlYear));
+        if (!updatedParams.has('administrasi')) updatedParams.set('administrasi', urlAdministrasi);
+      }
+      return updatedParams;
+    }, { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── HANDLERS ─────────────────────────────────────────────────────────────
+  // Ganti tab; year & administrasi hanya dipertahankan saat masuk tab peta
+  const selectTab = useCallback((tabId) => {
+    setSearchParams((previousParams) => {
+      const updatedParams = new URLSearchParams(previousParams);
+      updatedParams.set('tab', tabId);
+      if (tabId !== 'map') {
+        updatedParams.delete('year');
+        updatedParams.delete('administrasi');
+      }
+      return updatedParams;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  // Dipanggil MapTab saat year atau drill state berubah agar URL selalu sinkron
+  const handleMapStateChange = useCallback((selectedYear, drillBreadcrumbs) => {
+    // Simpan posisi drill terkini agar dipulihkan saat user kembali ke tab peta
+    initialDrillStateRef.current = drillBreadcrumbs;
+    setSearchParams((previousParams) => {
+      const updatedParams = new URLSearchParams(previousParams);
+      updatedParams.set('year', String(selectedYear));
+      updatedParams.set('administrasi', encodeAdministrasi(drillBreadcrumbs));
+      return updatedParams;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   const districtRecord = KABUPATENS.find(
     (district) => district.name.toLowerCase() === kabupatenName.toLowerCase()
@@ -168,6 +218,13 @@ export function ProfilePage({ kabupatenName }) {
       {activeTab === 'economy'     && <EconomyTab     />}
       {activeTab === 'commodity'   && <CommodityTab   />}
       {activeTab === 'supplychain' && <SupplyChainTab kabupaten={kabupatenName.toUpperCase()} />}
+      {activeTab === 'map' && (
+        <MapTab
+          kabupaten={kabupatenName}
+          initialDrillState={initialDrillStateRef.current}
+          onStateChange={handleMapStateChange}
+        />
+      )}
 
       {/* ─── FOOTER ───*/}
       <div className="bg-gray-900 text-white px-4 md:px-8 py-8 mt-16">

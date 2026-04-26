@@ -1,7 +1,7 @@
 import { loadGEEPolygonRaster, loadLayer, removeLayerAndSource } from "../store/mapLayerStore.js";
-import { zoomToMatchingFeature, waitForSourceData } from "../utils/mapUtils.js";
+import { zoomToMatchingFeature, waitForSourceData } from "./mapUtils.js";
 import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../config/constants.js";
-import { buildSingleFilter, buildDesaFilter } from "../utils/filterBuilder.js";
+import { buildSingleFilter, buildDesaFilter } from "./filterBuilder.js";
 
 // Load layers untuk drill-down ke level tertentu: zoom, GEE coverage, dan layer berikutnya
 export const loadLevelLayers = async (mapInstance, breadcrumbData, adminLevel) => {
@@ -58,10 +58,10 @@ export const loadDesaLevel = async (mapInstance, breadcrumbData) => {
   );
   
   await loadGEEPolygonRaster(mapInstance, { des: breadcrumbData.des });
-  
-  // Tunggu sebentar agar data benar-benar siap di map (avoid race condition)
-  await new Promise(resolveWaiting => setTimeout(resolveWaiting, 200));
-  
+
+  // Tunggu source desa benar-benar siap sebelum zoom — event-driven lebih reliable dari setTimeout
+  await waitForSourceData(mapInstance, SOURCE_IDS.DESA);
+
   zoomToMatchingFeature(mapInstance, SOURCE_IDS.DESA, "des", breadcrumbData.des);
 };
 

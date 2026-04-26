@@ -49,6 +49,8 @@ export function KabupatenCard({ filterText = "" }) {
       [LAYER_IDS.KABUPATEN_FILL]
     );
     removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
+    removeLayerAndSource(map, LAYER_IDS.DESA_FILL);
+    removeLayerAndSource(map, LAYER_IDS.KECAMATAN_FILL);
   };
 
   // Loading skeleton saat map belum siap

@@ -571,3 +571,140 @@ function attachLayerInteraction(map, layerId) {
     }
   });
 }
+
+// ─── LOAD LAYER DENGAN CUSTOM CALLBACK (untuk peta terisolasi) ───────────────
+// Sama persis dengan loadLayer dalam hal WFS fetch, GeoJSON cache, dan interaksi
+// hover/popup — satu-satunya perbedaan: klik memanggil onClickCallback(feature)
+// sehingga state tetap lokal di komponen, tidak bocor ke global Zustand store.
+// Mengembalikan { geojson, cleanup } karena peta profil me-recreate layer saat
+// drill level berubah, dan cleanup() mencegah event listener menumpuk.
+export const loadLayerWithCallback = async (
+  map,
+  layerName,
+  sourceId,
+  layerId,
+  cqlFilter,
+  onClickCallback
+) => {
+  // ─── WFS FETCH + CACHE ───────────────────────────────────────────────────────
+  // cacheKey identik dengan loadLayer agar kedua peta berbagi cache yang sama
+  const cacheKey = `geojson_${layerName}_${cqlFilter || 'all'}`;
+  const store = useMapStore.getState();
+  let geoJsonData;
+
+  try {
+    const cachedGeoJson = store.getCacheGeoJSON(cacheKey);
+    if (cachedGeoJson) {
+      geoJsonData = cachedGeoJson;
+    } else {
+      const pendingRequest = store.getPending(cacheKey);
+      if (pendingRequest) {
+        geoJsonData = await pendingRequest;
+      } else {
+        const wfsParams = new URLSearchParams({
+          service: WFS_CONFIG.SERVICE, version: WFS_CONFIG.VERSION,
+          request: WFS_CONFIG.REQUEST, typeNames: layerName,
+          outputFormat: WFS_CONFIG.OUTPUT_FORMAT,
+        });
+        if (cqlFilter) wfsParams.append('CQL_FILTER', cqlFilter);
+
+        // activeController dipakai agar abortActiveRequests() dari komponen
+        // dapat membatalkan fetch ini (sesuai Rule A — tidak buat controller baru)
+        const fetchPromise = (async () => {
+          const wfsResponse = await fetch(`${GEOSERVER_URL}?${wfsParams}`, { signal: activeController.signal });
+          return await wfsResponse.json();
+        })();
+
+        store.setPending(cacheKey, fetchPromise);
+        geoJsonData = await fetchPromise;
+        store.clearPending(cacheKey);
+        store.setCacheGeoJSON(cacheKey, geoJsonData);
+      }
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') return { geojson: null, cleanup: null };
+    console.error(`loadLayerWithCallback: gagal memuat ${layerId}:`, err);
+    return { geojson: null, cleanup: null };
+  }
+
+  if (!geoJsonData?.features?.length) return { geojson: null, cleanup: null };
+  geoJsonData.features.forEach((feature, index) => { if (feature.id === undefined) feature.id = index; });
+
+  // ─── ADD SOURCE + LAYER ──────────────────────────────────────────────────────
+  const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
+  // Hapus layer lama sebelum menambah yang baru (urutan: layer dulu, baru source)
+  [hoverLineId, layerId].forEach((layerIdToRemove) => {
+    try { if (map.getLayer(layerIdToRemove)) map.removeLayer(layerIdToRemove); } catch { /* skip */ }
+  });
+  try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch { /* skip */ }
+
+  map.addSource(sourceId, { type: 'geojson', data: geoJsonData, generateId: true });
+  map.addLayer({
+    id: layerId, type: 'fill', source: sourceId,
+    paint: {
+      'fill-color': 'transparent', 'fill-opacity': 0.5,
+      'fill-outline-color': ['case', ['boolean', ['feature-state', 'hover'], false], COLORS.HIGHLIGHT, COLORS.DEFAULT],
+    },
+  });
+  map.addLayer({
+    id: hoverLineId, type: 'line', source: sourceId,
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], COLORS.HIGHLIGHT, COLORS.TRANSPARENT],
+      'line-width': 2, 'line-opacity': 0.98,
+    },
+  });
+  bringHoverLayersToTop(map);
+
+  // ─── INTERAKSI HOVER + CLICK ─────────────────────────────────────────────────
+  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+  let lastHoveredFeatureId = null;
+
+  const clearHoverState = () => {
+    if (lastHoveredFeatureId !== null) {
+      try { map.setFeatureState({ source: sourceId, id: lastHoveredFeatureId }, { hover: false }); } catch { /* skip */ }
+      lastHoveredFeatureId = null;
+    }
+  };
+
+  const onMouseEnter = () => { map.getCanvas().style.cursor = 'pointer'; };
+  const onMouseLeave = () => { map.getCanvas().style.cursor = ''; popup.remove(); clearHoverState(); };
+
+  const onMouseMove = (e) => {
+    const hoveredFeature = e.features?.[0];
+    if (!hoveredFeature || !map.getSource(sourceId)) return;
+    const hoveredFeatureId = hoveredFeature.id;
+    if (lastHoveredFeatureId !== null && lastHoveredFeatureId !== hoveredFeatureId) clearHoverState();
+    if (hoveredFeatureId !== undefined) {
+      try { map.setFeatureState({ source: sourceId, id: hoveredFeatureId }, { hover: true }); } catch { /* skip */ }
+      lastHoveredFeatureId = hoveredFeatureId;
+    }
+    const areaName = hoveredFeature.properties?.des ?? hoveredFeature.properties?.kec ?? hoveredFeature.properties?.kab ?? 'Unknown';
+    if (areaName !== 'Unknown') popup.setLngLat(e.lngLat).setHTML(`<strong>${areaName}</strong>`).addTo(map);
+  };
+
+  const onClickHandler = (e) => {
+    const clickedFeature = e.features?.[0];
+    // Delegate ke local state — tidak menyentuh global store
+    if (clickedFeature?.properties) onClickCallback(clickedFeature);
+  };
+
+  map.on('mouseenter', layerId, onMouseEnter);
+  map.on('mouseleave', layerId, onMouseLeave);
+  map.on('mousemove',  layerId, onMouseMove);
+  map.on('click',      layerId, onClickHandler);
+
+  // cleanup dipanggil caller sebelum layer di-recreate agar listener tidak menumpuk
+  const cleanup = () => {
+    try {
+      map.off('mouseenter', layerId, onMouseEnter);
+      map.off('mouseleave', layerId, onMouseLeave);
+      map.off('mousemove',  layerId, onMouseMove);
+      map.off('click',      layerId, onClickHandler);
+    } catch { /* map mungkin sudah di-remove saat komponen unmount */ }
+    popup.remove();
+    clearHoverState();
+  };
+
+  return { geojson: geoJsonData, cleanup };
+};
