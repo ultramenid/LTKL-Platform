@@ -11,9 +11,10 @@ export const MAP_CONFIG = {
 };
 
 // URL server eksternal (GeoServer untuk WFS, GEE tile server)
+// VITE_TILE_SERVER dibaca dari .env (dev) atau .env.production (build)
 export const API_ENDPOINTS = {
   GEOSERVER: 'https://aws.simontini.id/geoserver/ows',
-  TILE_SERVER: 'http://localhost:8000/gee',
+  TILE_SERVER: import.meta.env.VITE_TILE_SERVER ?? 'http://localhost:8000/gee',
 };
 
 // Nama layer dari GeoServer (LTKL:kabupaten, dll)
