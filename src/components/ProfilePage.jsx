@@ -10,6 +10,7 @@ import { EconomyTab }     from './profile/EconomyTab.jsx';
 import { SupplyChainTab } from './profile/SupplyChainTab.jsx';
 import { CommodityTab }   from './profile/Comodity.jsx';
 import { MapTab }         from './profile/MapTab.jsx';
+import { DownloadTab }    from './profile/DownloadTab.jsx';
 
 // ─── TAB NAVIGATION CONFIGURATION (stored at module level, not state/props dependent) ───
 // Disimpan di level modul karena tidak bergantung pada state atau props apapun
@@ -18,7 +19,8 @@ const NAV_TABS = [
   { id: 'economy',     label: 'Ekonomi',     color: COLORS.HIGHLIGHT   },
   { id: 'commodity',   label: 'Komoditas',   color: COLORS.HIGHLIGHT   },
   { id: 'supplychain', label: 'Rantai Pasok', color: COLORS.PRIMARY_TEXT },
-  { id: 'map',         label: 'Peta',   color: COLORS.PRIMARY     },
+  { id: 'map',         label: 'Peta',      color: COLORS.PRIMARY   },
+  { id: 'download',    label: 'Unduhan',   color: COLORS.HIGHLIGHT },
 ];
 
 // ─── HERO SECTION STATISTICS (ringkasan statistik di bagian hero) ───
@@ -127,22 +129,7 @@ export function ProfilePage({ kabupatenName }) {
             )}
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight uppercase">{kabupatenName}</h1>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-10">
-            {[
-              { role: 'Bupati',        name: 'Nama Bupati'        },
-              { role: 'Wakil Bupati', name: 'Nama Wakil Bupati' },
-            ].map(({ role, name }) => (
-              <div key={role} className="flex items-center gap-3 px-5 py-3 rounded-xl ">
-                <div className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
-                  <User size={16} className="text-white/50" />
-                </div>
-                <div className="text-left">
-                  <p className="text-white/40 text-[9px] uppercase tracking-widest font-semibold">{role}</p>
-                  <p className="text-white font-semibold text-sm mt-0.5">{name}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          
         </div>
 
         {/* Summary statistics row */}
@@ -158,38 +145,6 @@ export function ProfilePage({ kabupatenName }) {
           </div>
         </div>
 
-        {/* Ringkasan profil kabupaten */}
-        <div className="relative z-10 max-w-5xl mx-auto px-4 md:px-8 pb-8 pt-4 space-y-4 text-xs text-white/60 leading-relaxed">
-          <p>
-            Kabupaten Sigi memiliki populasi sekitar <span className="text-white/80 font-semibold">271.500 jiwa</span> dengan
-            struktur penduduk muda yang ekspansif. Perekonomiannya didominasi kuat oleh sektor pertanian,
-            kehutanan, dan perikanan yang menyumbang lebih dari <span className="text-white/80 font-semibold">45% PDRB</span>.
-            Selain itu, sektor konstruksi dan jasa pemerintahan menjadi pendukung utama pembangunan.
-            Fokus pengembangan wilayahnya bertumpu pada keberlanjutan sektor agrobisnis dan pemulihan
-            ekonomi pascabencana secara terpadu.
-          </p>
-          <div>
-            <p className="text-white/80 font-semibold mb-2">Sektor Unggulan &amp; Struktur Ekonomi</p>
-            <p className="mb-2">
-              Struktur ekonomi Kabupaten Sigi tetap stabil dengan Sektor Pertanian sebagai tulang punggung
-              utama. Berikut adalah pembagian kontribusi sektor dalam PDRB:
-            </p>
-            <ul className="space-y-1 pl-3">
-              <li className="before:content-['·'] before:mr-2">
-                <span className="text-white/75 font-medium">Sektor Primer</span> (Pertanian, Kehutanan, Perikanan):
-                Berkontribusi ~45%. Komoditas unggulan meliputi padi, kakao, dan jagung.
-              </li>
-              <li className="before:content-['·'] before:mr-2">
-                <span className="text-white/75 font-medium">Sektor Sekunder</span> (Konstruksi &amp; Industri):
-                Berkontribusi ~13%, didorong oleh rekonstruksi infrastruktur pascabencana.
-              </li>
-              <li className="before:content-['·'] before:mr-2">
-                <span className="text-white/75 font-medium">Sektor Tersier</span> (Jasa Pendidikan &amp; Pemerintahan):
-                Berkontribusi ~15%.
-              </li>
-            </ul>
-          </div>
-        </div>
       </div>
 
       {/* ─── TAB NAVIGATION (sticky, permanent visibility while scrolling) ───*/}
@@ -225,6 +180,7 @@ export function ProfilePage({ kabupatenName }) {
           onStateChange={handleMapStateChange}
         />
       )}
+      {activeTab === 'download' && <DownloadTab />}
 
       {/* ─── FOOTER ───*/}
       <div className="bg-gray-900 text-white px-4 md:px-8 py-8 mt-16">

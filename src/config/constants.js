@@ -87,3 +87,33 @@ export const YEAR_CONFIG = {
   MIN: 1990,
   MAX: 2024,
 };
+
+export const PROFILE_DOWNLOAD_DUMMY_FILES = [
+  {
+    id: 'district-profile-pdf',
+    title: 'Profil Kabupaten (PDF)',
+    description: 'Ringkasan indikator kependudukan, ekonomi, dan wilayah dalam format PDF.',
+    category: 'document',
+    size: '2.4 MB',
+    updatedAt: '28 April 2026',
+    downloadUrl: '#',
+  },
+  {
+    id: 'lulc-statistics-csv',
+    title: 'Statistik LULC (CSV)',
+    description: 'Data tabel land use/land cover per tahun untuk kebutuhan analisis lanjutan.',
+    category: 'dataset',
+    size: '890 KB',
+    updatedAt: '28 April 2026',
+    downloadUrl: '#',
+  },
+  {
+    id: 'administrative-boundary-geojson',
+    title: 'Batas Administrasi (GeoJSON)',
+    description: 'Berkas batas kabupaten, kecamatan, dan desa untuk kebutuhan pemetaan.',
+    category: 'map',
+    size: '5.1 MB',
+    updatedAt: '28 April 2026',
+    downloadUrl: '#',
+  },
+];
