@@ -43,14 +43,14 @@ const abortController = ...; const response = ...;
 const hoveredFeatureId = ...; const clickedFeature = ...;
 ```
 
-### ❌ JANGAN tulis komentar dalam Bahasa Inggris
+### ❌ JANGAN tulis komentar dalam Bahasa Indonesia
 
 ```js
-// ❌ SALAH — English comment
-// Set loading state to true
-
-// ✅ BENAR — Indonesian, WHY bukan WHAT
+// ❌ WRONG — Indonesian comment
 // Tampilkan spinner agar user tahu fetch sedang berjalan
+
+// ✅ CORRECT — English, WHY not WHAT
+// Show spinner so user knows fetch is in progress
 ```
 
 ### ❌ JANGAN hardcode constant di luar `constants.js`
@@ -93,8 +93,8 @@ const { year, setYear } = useMapStore(
 ## Self-audit checklist sebelum setiap `edit` / `write`
 
 - [ ] Semua variable: descriptive English, zero abbreviations
-- [ ] Semua komentar: Bahasa Indonesia, menjawab WHY bukan WHAT
-- [ ] Semua constants: dari `constants.js`
+- [ ] All comments: English, answering WHY not WHAT
+- [ ] All constants: from `constants.js`
 - [ ] Tidak ada `new AbortController()` di luar `mapLayerStore.js`
 - [ ] Logic yang sudah ada: cek `utils/` dan `store/` sebelum menulis ulang
 - [ ] `useShallow` untuk 2+ fields dari Zustand

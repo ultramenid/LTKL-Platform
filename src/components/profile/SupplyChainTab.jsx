@@ -4,34 +4,48 @@ import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
 import SUPPLY_CHAIN_DATA from '../../data/supplychain-data.json';
 
-// Summary statistik pre-computed saat build — baca langsung dari JSON tanpa kalkulasi di browser
+// Pre-computed summary stats at build time — read directly from JSON without browser-side calculation
 function getStatistics(district, year) {
   const summary = SUPPLY_CHAIN_DATA.data[district]?.[year]?.summary;
-  if (!summary) return { totalVolume: '0', largestExporter: 'N/A', topDestination: 'N/A', largestMillGroup: 'N/A' };
+  if (!summary)
+    return {
+      totalVolume: '0',
+      largestExporter: 'N/A',
+      topDestination: 'N/A',
+      largestMillGroup: 'N/A',
+    };
   return { ...summary, totalVolume: summary.totalVolume.toFixed(1) };
 }
 
-// Tab Rantai Pasok Komoditas
+// Commodity Supply Chain tab
 export function SupplyChainTab({ kabupaten }) {
   const districtData = SUPPLY_CHAIN_DATA.data[kabupaten];
   const availableYears = districtData?.tahun_tersedia || [];
-  const [selectedYear, setSelectedYear] = useState(availableYears[availableYears.length - 1] || 2022);
+  const [selectedYear, setSelectedYear] = useState(
+    availableYears[availableYears.length - 1] || 2022,
+  );
 
-  // Baca statistik pre-computed dari JSON — tidak ada kalkulasi ulang di browser
-  const statistics = useMemo(() => getStatistics(kabupaten, selectedYear), [kabupaten, selectedYear]);
+  // Read pre-computed stats from JSON — no recalculation in browser
+  const statistics = useMemo(
+    () => getStatistics(kabupaten, selectedYear),
+    [kabupaten, selectedYear],
+  );
 
   const SUPPLY_CHAIN_STATS = [
     { label: 'Total Export Volume', value: `${statistics.totalVolume}`, unit: 'ribu ton CPO' },
-    { label: 'Largest Mill Group',  value: statistics.largestMillGroup, unit: 'main processor' },
-    { label: 'Largest Exporter',    value: statistics.largestExporter,  unit: 'by volume' },
-    { label: 'Top Destination',     value: statistics.topDestination,   unit: 'primary market' },
-    
+    { label: 'Largest Mill Group', value: statistics.largestMillGroup, unit: 'main processor' },
+    { label: 'Largest Exporter', value: statistics.largestExporter, unit: 'by volume' },
+    { label: 'Top Destination', value: statistics.topDestination, unit: 'primary market' },
   ];
   return (
     <ProfileSection>
       <div className="flex items-center justify-between gap-4">
         <div>
-          <SectionHeader title="Supply Chain" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
+          <SectionHeader
+            title="Supply Chain"
+            borderColor={COLORS.PRIMARY}
+            dotColor={COLORS.PRIMARY}
+          />
         </div>
         {/* ─── YEAR SELECTOR DROPDOWN ───*/}
         {availableYears.length > 0 && (
@@ -42,7 +56,9 @@ export function SupplyChainTab({ kabupaten }) {
             style={{ '--tw-ring-color': COLORS.PRIMARY }}
           >
             {availableYears.map((year) => (
-              <option key={year} value={year}>{year}</option>
+              <option key={year} value={year}>
+                {year}
+              </option>
             ))}
           </select>
         )}
@@ -64,8 +80,6 @@ export function SupplyChainTab({ kabupaten }) {
         <SubSectionHeader title="Supply Chain Flow" dotColor={COLORS.PRIMARY} />
         <SankeySupplyChain kabupaten={kabupaten} tahunDipilih={selectedYear} />
       </div>
-
-     
     </ProfileSection>
   );
 }

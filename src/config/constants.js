@@ -1,8 +1,7 @@
-// filepath: src/config/constants.js
-// Semua konstanta aplikasi dalam satu file untuk mudah di-maintain
-// Jika ada yang perlu diubah (URL, color, layer name), edit semuanya di sini
+// All application constants in one file for easy maintenance
+// If something needs changing (URL, color, layer name), edit everything here
 
-// Konfigurasi map (center, zoom, style URL)
+// Map configuration (center, zoom, style URL)
 export const MAP_CONFIG = {
   DEFAULT_CENTER: [120.216667, -1.5],
   DEFAULT_ZOOM: 4,
@@ -10,21 +9,21 @@ export const MAP_CONFIG = {
   STYLE_URL: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
 };
 
-// URL server eksternal (GeoServer untuk WFS, GEE tile server)
-// VITE_TILE_SERVER dibaca dari .env (dev) atau .env.production (build)
+// External server URLs (GeoServer for WFS, GEE tile server)
+// VITE_TILE_SERVER read from .env (dev) or .env.production (build)
 export const API_ENDPOINTS = {
   GEOSERVER: 'https://aws.simontini.id/geoserver/ows',
   TILE_SERVER: import.meta.env.VITE_TILE_SERVER ?? 'http://localhost:8000/gee',
 };
 
-// Nama layer dari GeoServer (LTKL:kabupaten, dll)
+// Layer names from GeoServer (LTKL:kabupaten, etc)
 export const LAYER_TYPES = {
   KABUPATEN: 'LTKL:kabupaten',
   KECAMATAN: 'LTKL:kecamatan',
   DESA: 'LTKL:desa',
 };
 
-// ID layer di MapLibre (untuk addLayer, getLayer, dll)
+// Layer IDs in MapLibre (for addLayer, getLayer, etc)
 export const LAYER_IDS = {
   KABUPATEN_FILL: 'kabupaten-fill',
   KECAMATAN_FILL: 'kecamatan-fill',
@@ -32,7 +31,7 @@ export const LAYER_IDS = {
   GEE_LAYER: 'gee-lulc-layer',
 };
 
-// ID source di MapLibre (untuk addSource, getSource, dll)
+// Source IDs in MapLibre (for addSource, getSource, etc)
 export const SOURCE_IDS = {
   KABUPATEN: 'kabupaten-src',
   KECAMATAN: 'kecamatan-src',
@@ -43,37 +42,37 @@ export const SOURCE_IDS = {
   GEE: 'gee-lulc',
 };
 
-// Warna untuk UI (highlight, border, background, dll)
+// UI colors (highlight, border, background, etc)
 export const COLORS = {
-  HIGHLIGHT: '#27CBFC',              // Biru terang - saat hover/selected
-  DEFAULT: 'white',                  // Putih - default border color
-  TRANSPARENT: 'rgba(0,0,0,0)',      // Transparan - untuk hidden elements
-  PRIMARY: '#14b8a6',                // Teal - primary color
-  PRIMARY_DARK: '#115e59',           // Teal gelap
-  PRIMARY_TEXT: '#0f766e',           // Teal untuk text
-  // Alpha variant — dipakai untuk area-fill di chart agar tidak terlalu dominan
-  PRIMARY_ALPHA: 'rgba(20,184,166,0.15)',  // Teal transparan untuk area fill
-  HIGHLIGHT_ALPHA: 'rgba(39,203,252,0.15)', // Biru transparan untuk area fill
+  HIGHLIGHT: '#27CBFC', // Bright blue - hover/selected state
+  DEFAULT: 'white', // White - default border color
+  TRANSPARENT: 'rgba(0,0,0,0)', // Transparent - for intentionally hidden elements
+  PRIMARY: '#14b8a6', // Teal - primary brand color
+  PRIMARY_DARK: '#115e59', // Dark teal
+  PRIMARY_TEXT: '#0f766e', // Teal for text
+  // Alpha variant — used for chart area-fill to avoid overpowering
+  PRIMARY_ALPHA: 'rgba(20,184,166,0.15)', // Transparent teal for area fill
+  HIGHLIGHT_ALPHA: 'rgba(39,203,252,0.15)', // Transparent blue for area fill
 };
 
-// Konfigurasi cache (berapa lama data disimpan, key untuk localStorage)
+// Cache configuration (TTL, localStorage keys)
 export const CACHE_CONFIG = {
-  // GEE auth token expire ~2 jam, cache 1.5 jam agar tidak serving URL kadaluarsa
+  // GEE auth token expires ~2h, cache 1.5h to avoid serving expired URLs
   GEE_TTL_MS: 1.5 * 60 * 60 * 1000,
-  // GeoJSON boundaries jarang berubah, cache 2 hari cukup efisien
+  // GeoJSON boundaries rarely change, 2-day cache is efficient enough
   GEOJSON_TTL_MS: 2 * 24 * 60 * 60 * 1000,
   STORAGE_KEY_GEE: 'mapCache_gee',
   STORAGE_KEY_GEOJSON: 'mapCache_geojson',
 };
 
-// Nama-nama level administratif (Indonesia: kabupaten, kecamatan, desa)
+// Administrative level names
 export const ADMIN_LEVELS = {
   KABUPATEN: 'kabupaten',
   KECAMATAN: 'kecamatan',
   DESA: 'desa',
 };
 
-// Parameter WFS (Web Feature Service) untuk GeoServer
+// WFS (Web Feature Service) parameters for GeoServer
 export const WFS_CONFIG = {
   SERVICE: 'WFS',
   VERSION: '2.0.0',
@@ -81,12 +80,15 @@ export const WFS_CONFIG = {
   OUTPUT_FORMAT: 'application/json',
 };
 
-// Konfigurasi tahun (default, min, max)
+// Year configuration (default, min, max)
 export const YEAR_CONFIG = {
   DEFAULT: 2024,
   MIN: 1990,
   MAX: 2024,
 };
+
+export const PROFILE_HERO_IMAGE_URL =
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&auto=format&fit=crop';
 
 export const PROFILE_DOWNLOAD_DUMMY_FILES = [
   {

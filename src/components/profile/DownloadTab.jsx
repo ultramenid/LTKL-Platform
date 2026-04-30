@@ -12,7 +12,11 @@ export function DownloadTab() {
   return (
     <ProfileSection>
       <section className="space-y-6">
-        <SectionHeader title="Unduhan Data" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
+        <SectionHeader
+          title="Unduhan Data"
+          borderColor={COLORS.PRIMARY}
+          dotColor={COLORS.PRIMARY}
+        />
 
         <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
           <p className="text-xs font-semibold text-amber-700">Mode Dummy</p>
@@ -53,14 +57,13 @@ export function DownloadTab() {
                   <span className="font-semibold text-gray-600">Ukuran:</span> {downloadFile.size}
                 </div>
                 <div>
-                  <span className="font-semibold text-gray-600">Pembaruan:</span> {downloadFile.updatedAt}
+                  <span className="font-semibold text-gray-600">Pembaruan:</span>{' '}
+                  {downloadFile.updatedAt}
                 </div>
               </div>
             </article>
           ))}
         </div>
-
-        
       </section>
     </ProfileSection>
   );

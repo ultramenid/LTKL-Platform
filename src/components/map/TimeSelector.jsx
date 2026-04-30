@@ -1,23 +1,31 @@
-import { useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { useShallow } from "zustand/react/shallow";
-import { useMapStore } from "../../store/mapStore.js";
-import { loadGEEPolygonRaster } from "../../store/mapLayerStore.js";
-import { YEAR_CONFIG } from "../../config/constants.js";
+import { useState } from 'react';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
+import { useMapStore } from '../../store/mapStore.js';
+import { loadGEEPolygonRaster } from '../../store/mapLayerStore.js';
+import { YEAR_CONFIG } from '../../config/constants.js';
 
-// Timeline slider untuk pilih tahun coverage — bottom-left corner map
-export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, endYear = YEAR_CONFIG.MAX }) {
-  // useShallow agar re-render hanya saat year/breadcrumbs benar-benar berubah
+// Timeline slider to pick coverage year — bottom-left corner of map
+export default function TimeSeriesSelector({
+  map,
+  startYear = YEAR_CONFIG.MIN,
+  endYear = YEAR_CONFIG.MAX,
+}) {
+  // useShallow so re-render only happens when year/breadcrumbs actually change
   const { year, setYear, breadcrumbs } = useMapStore(
-    useShallow((state) => ({ year: state.year, setYear: state.setYear, breadcrumbs: state.breadcrumbs }))
+    useShallow((state) => ({
+      year: state.year,
+      setYear: state.setYear,
+      breadcrumbs: state.breadcrumbs,
+    })),
   );
   const [hovered, setHovered] = useState(null);
   const [expanded, setExpanded] = useState(false);
 
-  // Klik year dot: update global year + reload GEE raster
+  // Year dot click: update global year + reload GEE raster
   const handleChange = async (selectedYear) => {
     if (!map) {
-      console.warn("⚠️ Tidak ada map instance");
+      console.warn('⚠️ Tidak ada map instance');
       return;
     }
     setYear(selectedYear);
@@ -50,14 +58,16 @@ export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, e
       {/* ── Expanded panel ── */}
       {expanded && (
         <div className="bg-gray-900/80 backdrop-blur-md rounded-xl shadow-lg border border-white/10 px-3 py-2 flex items-start lg:items-center gap-3">
-          {/* Year label — klik untuk collapse */}
+          {/* Year label — click to collapse */}
           <button
             onClick={() => setExpanded(false)}
             className="shrink-0 text-right cursor-pointer hover:opacity-70 transition-opacity"
           >
             <div className="flex items-center gap-1">
               <ChevronLeft size={12} className="text-white/30" />
-              <p className="text-[8px] text-white/40 uppercase tracking-widest font-semibold leading-none">Tahun</p>
+              <p className="text-[8px] text-white/40 uppercase tracking-widest font-semibold leading-none">
+                Tahun
+              </p>
             </div>
             <p className="text-sm font-black text-teal-400 leading-tight mt-0.5">{year}</p>
           </button>
@@ -67,7 +77,7 @@ export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, e
 
           {/* Timeline dots — mobile: flex-wrap grid, desktop: single row */}
           <div className="relative">
-            {/* Garis horizontal — hanya desktop (single row) */}
+            {/* Horizontal line — desktop only (single row) */}
             <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 pointer-events-none" />
 
             <div className="flex flex-wrap lg:flex-nowrap items-center gap-1.5 max-w-[12rem] lg:max-w-none">
@@ -87,10 +97,10 @@ export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, e
                       onMouseLeave={() => setHovered(null)}
                       className={`z-10 rounded-full cursor-pointer border transition-all duration-200 ${
                         isSelected
-                          ? "w-2.5 h-2.5 bg-teal-400 border-teal-300 shadow-md shadow-teal-500/40 scale-110"
+                          ? 'w-2.5 h-2.5 bg-teal-400 border-teal-300 shadow-md shadow-teal-500/40 scale-110'
                           : isPast
-                          ? "w-2 h-2 bg-teal-700 border-teal-600 hover:bg-teal-500"
-                          : "w-2 h-2 bg-white/20 border-white/10 hover:bg-white/40"
+                            ? 'w-2 h-2 bg-teal-700 border-teal-600 hover:bg-teal-500'
+                            : 'w-2 h-2 bg-white/20 border-white/10 hover:bg-white/40'
                       }`}
                     />
                   </div>
@@ -103,4 +113,3 @@ export default function TimeSeriesSelector({ map, startYear = YEAR_CONFIG.MIN, e
     </div>
   );
 }
-

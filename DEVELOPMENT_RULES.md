@@ -13,20 +13,20 @@ Semua contributor (termasuk AI) WAJIB mengikuti rules ini sebelum menulis atau m
 
 ---
 
-## Rule 2: Indonesian Comments, English Everything Else ✅
+## Rule 2: English Comments & Everything Else ✅
 
-- **Comments: 100% Bahasa Indonesia** — semua komentar (inline, block, section headers)
-- **Variables, functions, classes: 100% English** — semua nama variabel, fungsi, class harus Bahasa Inggris
-- **UI strings: Bahasa lokal saja** — hanya label & text yang ditampilkan ke user boleh Bahasa Indonesia
-- **Section dividers** menggunakan format: `// ─── SECTION NAME (DESKRIPSI BAHASA INDONESIA) ───`
-- **Jelaskan WHY, bukan WHAT** — komentar harus menjawab "kenapa ini dilakukan" bukan "apa yang dilakukan"
+- **Comments: 100% English** — all comments (inline, block, section headers)
+- **Variables, functions, classes: 100% English** — all variable, function, and class names in English
+- **UI strings: local language only** — only labels & text visible to user may use Indonesian
+- **Section dividers** format: `// ─── SECTION NAME ───`
+- **Explain WHY, not WHAT** — comments should explain "why this is done" not "what is being done"
 
 ```js
-// ✅ BENAR — menjelaskan WHY
-// Percaya TTL 1.5 jam karena GEE auth token expire ~2 jam, cache lebih pendek untuk aman
+// ✅ CORRECT — explains WHY
+// Trust TTL 1.5h because GEE auth token expires ~2h, shorter cache for safety margin
 
-// ❌ SALAH — hanya menjelaskan WHAT
-// Set TTL ke 1.5 jam
+// ❌ WRONG — only explains WHAT
+// Set TTL to 1.5 hours
 ```
 
 ---
@@ -198,25 +198,25 @@ try {
 }
 ```
 
-### BP-5: Komentar — Ringkas & WHY-Focused
+### BP-5: Comments — Concise & WHY-Focused
 
-- **Section dividers:** pendek, konsisten — `// ─── NAMA ───` (maks 40 karakter total)
-- **Komponen header:** 1 baris, langsung di atas `export function`
-- **Inline comment:** hanya jika logic non-obvious (WHY), jangan deskripsikan APA yang jelas dari kode
-- **Jangan:** multi-line docblock untuk helper sederhana, divider lebar `═══════...`
+- **Section dividers:** short, consistent — `// ─── NAME ───` (max 40 chars total)
+- **Component header:** 1 line, right above `export function`
+- **Inline comment:** only for non-obvious logic (WHY), don't describe WHAT is clear from code
+- **Avoid:** multi-line docblocks for simple helpers, wide dividers `═══════...`
 
 ```js
-// ✅ BENAR — 1 baris, deskriptif, ringkas
-// Tab Kependudukan & Keragaman
+// ✅ CORRECT — 1 line, descriptive, concise
+// Population & Diversity tab
 export function PopulationTab() {
 
-// ✅ BENAR — WHY, bukan WHAT
-// D3 me-mutasi objek input, sehingga deep-clone dilakukan setiap kalkulasi
+// ✅ CORRECT — WHY, not WHAT
+// D3 mutates the input object, so deep-clone is performed each calculation
 
-// ❌ SALAH — verbose multi-line untuk hal yang jelas
+// ❌ WRONG — verbose multi-line for obvious things
 // ─────────────────────────────────────────────────────────────────────
-// Tab Kependudukan & Keragaman
-// Menampilkan piramida penduduk, suku, agama, dan tren pendapatan
+// Population & Diversity tab
+// Shows population pyramid, ethnicity, religion, and income trends
 // ─────────────────────────────────────────────────────────────────────
 ```
 

@@ -1,59 +1,75 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
-import { useShallow } from "zustand/react/shallow";
-import { useMapStore } from "../../store/mapStore.js";
-import { loadLayer, loadGEEPolygonRaster, removeLayerAndSource } from "../../store/mapLayerStore.js";
-import { zoomToMatchingFeature, waitForSourceData } from "../../utils/mapUtils.js";
-import { KABUPATENS, DEFAULT_DESCRIPTION } from "../../data/kabupatens.js";
-import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from "../../config/constants.js";
-import { buildSingleFilter } from "../../utils/filterBuilder.js";
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
+import { useMapStore } from '../../store/mapStore.js';
+import {
+  loadLayer,
+  loadGEEPolygonRaster,
+  removeLayerAndSource,
+} from '../../store/mapLayerStore.js';
+import { zoomToMatchingFeature, waitForSourceData } from '../../utils/mapUtils.js';
+import { KABUPATENS, DEFAULT_DESCRIPTION } from '../../data/kabupatens.js';
+import { LAYER_TYPES, SOURCE_IDS, LAYER_IDS } from '../../config/constants.js';
+import { buildSingleFilter } from '../../utils/filterBuilder.js';
 
-// List kabupaten di sidebar — klik untuk drill ke kecamatan
-export function KabupatenCard({ filterText = "" }) {
-  // useShallow agar re-render hanya saat nilai field ini berubah, bukan setiap store update
+// Kabupaten list in sidebar — click to drill down to kecamatan level
+export function KabupatenCard({ filterText = '' }) {
+  // useShallow so re-render only happens when these field values change, not on every store update
   const { map, updateBreadcrumb, selectedKab, setSelectedKab } = useMapStore(
-    useShallow((state) => ({ map: state.map, updateBreadcrumb: state.updateBreadcrumb, selectedKab: state.selectedKab, setSelectedKab: state.setSelectedKab }))
+    useShallow((state) => ({
+      map: state.map,
+      updateBreadcrumb: state.updateBreadcrumb,
+      selectedKab: state.selectedKab,
+      setSelectedKab: state.setSelectedKab,
+    })),
   );
   const [isMapReady, setIsMapReady] = useState(false);
 
-  // Cek apakah map sudah siap (agar bisa load layers)
+  // Check map readiness so layer loading doesn't start prematurely
   useEffect(() => {
     if (map?.isStyleLoaded()) setIsMapReady(true);
-    else map?.on("load", () => setIsMapReady(true));
+    else map?.on('load', () => setIsMapReady(true));
   }, [map]);
 
-  // Klik kabupaten: update breadcrumb, zoom, load kecamatan layer
+  // Kabupaten click to sync breadcrumbs then load kecamatan level
   const handleKabupatenClick = async (kabupatenName) => {
-    if (!map) return console.warn("⚠️ Map not ready");
+    if (!map) return console.warn('⚠️ Map not ready');
 
     setSelectedKab(kabupatenName);
-    updateBreadcrumb("kabupaten", kabupatenName);
-    updateBreadcrumb("kecamatan", undefined);
-    updateBreadcrumb("desa", undefined);
+    updateBreadcrumb('kabupaten', kabupatenName);
+    updateBreadcrumb('kecamatan', undefined);
+    updateBreadcrumb('desa', undefined);
 
     const kabupatenFilter = buildSingleFilter('kab', kabupatenName);
-    await loadLayer(map, LAYER_TYPES.KABUPATEN, SOURCE_IDS.ZOOM_KABUPATEN, LAYER_IDS.KABUPATEN_FILL, kabupatenFilter);
+    await loadLayer(
+      map,
+      LAYER_TYPES.KABUPATEN,
+      SOURCE_IDS.ZOOM_KABUPATEN,
+      LAYER_IDS.KABUPATEN_FILL,
+      kabupatenFilter,
+    );
     await waitForSourceData(map, SOURCE_IDS.ZOOM_KABUPATEN);
-    zoomToMatchingFeature(map, SOURCE_IDS.ZOOM_KABUPATEN, "kab", kabupatenName);
+    zoomToMatchingFeature(map, SOURCE_IDS.ZOOM_KABUPATEN, 'kab', kabupatenName);
 
     await loadGEEPolygonRaster(map, { kab: kabupatenName });
 
-    // Load kecamatan boundaries, hapus kabupaten layer lama
+    // Load kecamatan boundaries then clean up old layers to avoid visual stacking
+    // loadLayer already removes kabupaten-fill via removeLayerIds
+    // DESA_FILL and KECAMATAN_FILL removed separately as they might still exist from previous navigation
     await loadLayer(
       map,
       LAYER_TYPES.KECAMATAN,
       SOURCE_IDS.KECAMATAN,
       LAYER_IDS.KECAMATAN_FILL,
       buildSingleFilter('kab', kabupatenName),
-      [LAYER_IDS.KABUPATEN_FILL]
+      [LAYER_IDS.KABUPATEN_FILL],
     );
-    removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
+    // Clean up remaining layer from previous drill navigation (desa)
     removeLayerAndSource(map, LAYER_IDS.DESA_FILL);
-    removeLayerAndSource(map, LAYER_IDS.KECAMATAN_FILL);
   };
 
-  // Loading skeleton saat map belum siap
+  // Show skeleton while map isn't ready so layout doesn't feel empty
   if (!isMapReady) {
     return (
       <div className="px-3 py-2 space-y-2 animate-pulse">
@@ -71,9 +87,10 @@ export function KabupatenCard({ filterText = "" }) {
     );
   }
 
-  // Filter list berdasarkan search text
+  // Filter list by search text
   const filtered = KABUPATENS.filter(
-    (kabupatenEntry) => !filterText || kabupatenEntry.name.toLowerCase().includes(filterText.toLowerCase())
+    (kabupatenEntry) =>
+      !filterText || kabupatenEntry.name.toLowerCase().includes(filterText.toLowerCase()),
   );
 
   if (filtered.length === 0) {
@@ -84,7 +101,7 @@ export function KabupatenCard({ filterText = "" }) {
     );
   }
 
-  // Render list kabupaten
+  // Render kabupaten list after data is ready
   return (
     <div className="px-3 pb-3 space-y-1.5">
       {filtered.map((kabupaten) => {
@@ -95,8 +112,8 @@ export function KabupatenCard({ filterText = "" }) {
             key={kabupaten.name}
             className={`rounded-xl overflow-hidden transition-all duration-200 border ${
               isSelected
-                ? "border-teal-200 shadow-sm shadow-teal-100/50"
-                : "border-transparent hover:border-gray-100"
+                ? 'border-teal-200 shadow-sm shadow-teal-100/50'
+                : 'border-transparent hover:border-gray-100'
             }`}
           >
             {/* ── Main card row ── */}
@@ -106,13 +123,13 @@ export function KabupatenCard({ filterText = "" }) {
                 handleKabupatenClick(kabupaten.name);
               }}
               className={`flex items-center gap-3 px-3 py-3.5 cursor-pointer select-none transition-colors ${
-                isSelected ? "bg-teal-50/60" : "hover:bg-gray-50 border-b border-gray-100"
+                isSelected ? 'bg-teal-50/60' : 'hover:bg-gray-50 border-b border-gray-100'
               }`}
             >
-              {/* Logo box */}
+              {/* Logo container */}
               <div
                 className={`w-13 h-13 shrink-0 rounded-xl border flex items-center justify-center bg-white transition-colors ${
-                  isSelected ? "border-teal-200" : "border-gray-100"
+                  isSelected ? 'border-teal-200' : 'border-gray-100'
                 }`}
               >
                 <img
@@ -126,7 +143,7 @@ export function KabupatenCard({ filterText = "" }) {
               <div className="flex-1 min-w-0">
                 <p
                   className={`text-sm font-bold truncate leading-tight ${
-                    isSelected ? "text-teal-700" : "text-gray-800"
+                    isSelected ? 'text-teal-700' : 'text-gray-800'
                   }`}
                 >
                   Kab. {kabupaten.name}
@@ -140,15 +157,15 @@ export function KabupatenCard({ filterText = "" }) {
               </div>
             </div>
 
-            {/* ── Expanded panel saat selected ── */}
+            {/* ── Detail panel when selected ── */}
             {isSelected && (
               <div className="bg-teal-50/40 border-t border-teal-100/60 px-3 py-3">
-                {/* Profile link button */}
+                {/* Button to detail profile page */}
                 <Link
                   to={`/profile/${encodeURIComponent(kabupaten.name)}`}
                   className="flex items-center justify-between w-full px-3 py-2 bg-teal-600 hover:bg-teal-500 active:bg-teal-700 text-white rounded-lg text-xs font-semibold transition-colors group"
                 >
-                  <span>Lihat Profile Lengkap</span>
+                  <span>Lihat Profil Lengkap</span>
                   <ArrowRight
                     size={13}
                     className="group-hover:translate-x-0.5 transition-transform duration-150"

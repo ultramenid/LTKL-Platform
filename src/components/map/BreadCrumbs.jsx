@@ -1,15 +1,15 @@
-import { Home, ChevronRight } from "lucide-react";
-import { useMapStore } from "../../store/mapStore.js";
+import { Home, ChevronRight } from 'lucide-react';
+import { useMapStore } from '../../store/mapStore.js';
 
-// Navigasi breadcrumb drill-down (kab → kec → desa) — overlay top-left peta
+// Breadcrumb drill-down navigation (kab → kec → desa) — overlay top-left of map
 const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
-  // Selector individu agar hanya re-render saat breadcrumbs berubah
+  // Individual selector so re-render only happens when breadcrumbs change
   const breadcrumbs = useMapStore((state) => state.breadcrumbs);
 
   const breadcrumbItems = [
-    breadcrumbs.kab && { level: "kabupaten", label: breadcrumbs.kab },
-    breadcrumbs.kec && { level: "kecamatan", label: breadcrumbs.kec },
-    breadcrumbs.des && { level: "desa",      label: breadcrumbs.des },
+    breadcrumbs.kab && { level: 'kabupaten', label: breadcrumbs.kab },
+    breadcrumbs.kec && { level: 'kecamatan', label: breadcrumbs.kec },
+    breadcrumbs.des && { level: 'desa', label: breadcrumbs.des },
   ].filter(Boolean);
 
   return (
@@ -18,7 +18,7 @@ const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
       <button
         onClick={onHome}
         className={`cursor-pointer flex items-center justify-center w-5 h-5 rounded-md transition-colors hover:text-teal-400 ${
-          breadcrumbItems.length === 0 ? "text-teal-400" : "text-white/60"
+          breadcrumbItems.length === 0 ? 'text-teal-400' : 'text-white/60'
         }`}
         title="Reset ke Indonesia"
       >
@@ -34,9 +34,7 @@ const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
             <button
               onClick={() => handleBreadcrumbs(item.level)}
               className={`cursor-pointer text-[11px] font-semibold transition-colors whitespace-nowrap ${
-                isActive
-                  ? "text-teal-400"
-                  : "text-white/80 hover:text-teal-400"
+                isActive ? 'text-teal-400' : 'text-white/80 hover:text-teal-400'
               }`}
             >
               {item.label}
@@ -49,4 +47,3 @@ const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
 };
 
 export default BreadcrumbsComponent;
-

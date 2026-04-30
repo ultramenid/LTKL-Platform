@@ -1,11 +1,11 @@
-// Utility untuk sinkronisasi state dengan URL parameters
+// Utility for syncing state with URL parameters
 // Format: ?year=2024&administrasi=kab:Sintang,kec:Ketungau+Hilir&selectedKab=Sintang
-import { YEAR_CONFIG } from "../config/constants.js";
+import { YEAR_CONFIG } from '../config/constants.js';
 
-// Encode breadcrumbs ke format administrasi parameter
+// Encode breadcrumbs into administrasi parameter format
 export const encodeAdministrasi = (breadcrumbs) => {
   if (!breadcrumbs || Object.keys(breadcrumbs).length === 0) {
-    return "all";
+    return 'all';
   }
 
   const parts = [];
@@ -13,20 +13,20 @@ export const encodeAdministrasi = (breadcrumbs) => {
   if (breadcrumbs.kec) parts.push(`kec:${encodeURIComponent(breadcrumbs.kec)}`);
   if (breadcrumbs.des) parts.push(`des:${encodeURIComponent(breadcrumbs.des)}`);
 
-  return parts.join(",");
+  return parts.join(',');
 };
 
-// Decode administrasi parameter ke breadcrumbs object
+// Decode administrasi parameter into breadcrumbs object
 export const decodeAdministrasi = (administrasiParam) => {
-  if (!administrasiParam || administrasiParam === "all") {
+  if (!administrasiParam || administrasiParam === 'all') {
     return {};
   }
 
   const breadcrumbs = {};
-  const parts = administrasiParam.split(",");
+  const parts = administrasiParam.split(',');
 
   for (const part of parts) {
-    const [key, value] = part.split(":");
+    const [key, value] = part.split(':');
     if (key && value) {
       breadcrumbs[key] = decodeURIComponent(value);
     }
@@ -35,42 +35,44 @@ export const decodeAdministrasi = (administrasiParam) => {
   return breadcrumbs;
 };
 
-// Generate URL dengan state terkini
+// Generate URL with current state
 export const generateUrl = (year = YEAR_CONFIG.DEFAULT, breadcrumbs = {}, selectedKab = null) => {
   const administrasi = encodeAdministrasi(breadcrumbs);
   const params = new URLSearchParams();
 
-  params.set("year", year);
-  params.set("administrasi", administrasi);
+  params.set('year', year);
+  params.set('administrasi', administrasi);
   if (selectedKab) {
-    params.set("selectedKab", encodeURIComponent(selectedKab));
+    params.set('selectedKab', encodeURIComponent(selectedKab));
   }
 
   return `${window.location.pathname}?${params.toString()}`;
 };
 
-// Update browser URL dengan state terkini (tanpa page reload)
+// Update browser URL with current state (without page reload)
 export const updateUrl = (year = YEAR_CONFIG.DEFAULT, breadcrumbs = {}, selectedKab = null) => {
   const newUrl = generateUrl(year, breadcrumbs, selectedKab);
-  window.history.replaceState(null, "", newUrl);
+  window.history.replaceState(null, '', newUrl);
 };
 
-// Parse URL dan return state object
+// Parse URL and return state object
 export const parseUrlState = () => {
   const params = new URLSearchParams(window.location.search);
-  
-  const year = parseInt(params.get("year")) || YEAR_CONFIG.DEFAULT;
-  const administrasiParam = params.get("administrasi") || "all";
+
+  const year = parseInt(params.get('year')) || YEAR_CONFIG.DEFAULT;
+  const administrasiParam = params.get('administrasi') || 'all';
   const breadcrumbs = decodeAdministrasi(administrasiParam);
-  const selectedKab = params.get("selectedKab") ? decodeURIComponent(params.get("selectedKab")) : null;
+  const selectedKab = params.get('selectedKab')
+    ? decodeURIComponent(params.get('selectedKab'))
+    : null;
 
   return { year, breadcrumbs, selectedKab };
 };
 
-// Initialize URL dengan default values jika kosong (hanya untuk map route)
+// Initialize URL with default values if empty (only for map route)
 export const initializeUrl = () => {
-  // Hanya initialize URL state di map route (/), bukan di profile pages
-  if (window.location.pathname !== "/") {
+  // Only initialize URL state on map route (/), not on profile pages
+  if (window.location.pathname !== '/') {
     return;
   }
 

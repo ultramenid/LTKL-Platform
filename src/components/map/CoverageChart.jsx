@@ -3,8 +3,9 @@ import ReactECharts from 'echarts-for-react';
 import { useMapStore } from '../../store/mapStore.js';
 import { normalizeServerResponse, transformDataForChart } from '../../utils/dataTransform.js';
 import { API_ENDPOINTS, YEAR_CONFIG, COLORS } from '../../config/constants.js';
+import { getActiveSignal } from '../../store/mapLayerStore.js';
 
-// Skeleton loading saat chart sedang fetch data
+// Skeleton loading so user still gets feedback while data loads
 function LoadingChartSkeleton() {
   return (
     <div className="w-full h-full flex flex-col p-4 gap-3">
@@ -26,7 +27,7 @@ function LoadingChartSkeleton() {
   );
 }
 
-// Chart bar area (ha) per kabupaten dari LULC server (/lulc-stats?year=XXXX)
+// Bar chart of area (ha) per kabupaten from LULC endpoint
 export default function CoverageChartDebug() {
   // ─── AMBIL TAHUN ───
   const yearFromStore = useMapStore((state) => state.year);
@@ -52,6 +53,8 @@ export default function CoverageChartDebug() {
   }, []);
 
   // ─── FETCH DATA ───
+  // Use signal from activeController in mapLayerStore so fetch can be cancelled
+  // when user switches year quickly or component unmounts
   useEffect(() => {
     let isComponentMounted = true;
     setLoading(true);
@@ -60,25 +63,25 @@ export default function CoverageChartDebug() {
 
     const statsUrl = `${API_ENDPOINTS.TILE_SERVER}/lulc-stats?year=${year}`;
 
-    fetch(statsUrl)
+    fetch(statsUrl, { signal: getActiveSignal() })
       .then(async (response) => {
         const responseText = await response.text();
         try {
           const parsedJson = JSON.parse(responseText);
-          return { 
-            ok: response.ok, 
-            json: parsedJson, 
-            status: response.status, 
-            statusText: response.statusText, 
-            text: responseText 
+          return {
+            ok: response.ok,
+            json: parsedJson,
+            status: response.status,
+            statusText: response.statusText,
+            text: responseText,
           };
-        } catch (parseError) {
-          return { 
-            ok: response.ok, 
-            json: null, 
-            status: response.status, 
-            statusText: response.statusText, 
-            text: responseText 
+        } catch {
+          return {
+            ok: response.ok,
+            json: null,
+            status: response.status,
+            statusText: response.statusText,
+            text: responseText,
           };
         }
       })
@@ -92,7 +95,7 @@ export default function CoverageChartDebug() {
         }
         // Validasi JSON
         if (!response.json) {
-          setError(`Invalid JSON from server. Response text: ${response.text}`);
+          setError(`Respons JSON dari server tidak valid. Isi respons: ${response.text}`);
           setLoading(false);
           return;
         }
@@ -100,6 +103,8 @@ export default function CoverageChartDebug() {
         setServerResponse(response.json);
       })
       .catch((fetchError) => {
+        // AbortError is expected when user switches year quickly — don't show as error
+        if (fetchError.name === 'AbortError') return;
         if (!isComponentMounted) return;
         setError(String(fetchError));
       })
@@ -108,14 +113,16 @@ export default function CoverageChartDebug() {
         setLoading(false);
       });
 
-    return () => { isComponentMounted = false; };
+    return () => {
+      isComponentMounted = false;
+    };
   }, [year]);
 
   // ─── NORMALISASI RESPONSE SERVER ───
-  // Pakai utility dari dataTransform.js agar tidak duplikasi logic
+  // Use utility from dataTransform.js to avoid duplicating logic
   const normalizedData = useMemo(
     () => normalizeServerResponse(serverResponse, year),
-    [serverResponse, year]
+    [serverResponse, year],
   );
 
   // ─── TRANSFORMASI DATA UNTUK CHART ───
@@ -124,17 +131,18 @@ export default function CoverageChartDebug() {
     return transformDataForChart(normalizedData.data);
   }, [normalizedData]);
 
-  // ─── RENDER ERROR STATES ───
+  // ─── RENDER SAAT ERROR ───
   if (loading) return <LoadingChartSkeleton />;
-  if (error) return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-center">
-      <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
-        <span className="text-red-400 text-sm font-bold">!</span>
+  if (error)
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-center">
+        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+          <span className="text-red-400 text-sm font-bold">!</span>
+        </div>
+        <p className="text-xs font-semibold text-gray-600">Gagal memuat data</p>
+        <p className="text-[10px] text-gray-400 leading-relaxed max-w-xs">{error}</p>
       </div>
-      <p className="text-xs font-semibold text-gray-600">Gagal memuat data</p>
-      <p className="text-[10px] text-gray-400 leading-relaxed max-w-xs">{error}</p>
-    </div>
-  );
+    );
   if (!serverResponse || !normalizedData) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-center">
@@ -145,53 +153,61 @@ export default function CoverageChartDebug() {
 
   // ─── RINGKASAN STATISTIK ───
   const totalArea = chartValues.reduce((total, areaValue) => total + areaValue, 0);
-  const totalAreaLabel = totalArea >= 1_000_000
-    ? `${(totalArea / 1_000_000).toFixed(2)}M ha`
-    : totalArea >= 1_000
-    ? `${(totalArea / 1_000).toFixed(1)}K ha`
-    : `${totalArea.toLocaleString()} ha`;
+  const totalAreaLabel =
+    totalArea >= 1_000_000
+      ? `${(totalArea / 1_000_000).toFixed(2)}M ha`
+      : totalArea >= 1_000
+        ? `${(totalArea / 1_000).toFixed(1)}K ha`
+        : `${totalArea.toLocaleString()} ha`;
 
   // ─── OPSI ECHART ───
   const chartOption = {
     tooltip: {
-      trigger: "axis",
-      axisPointer: { type: "none" },
-      backgroundColor: "#1e293b",
-      borderColor: "transparent",
-      textStyle: { color: "#f1f5f9", fontSize: 11 },
+      trigger: 'axis',
+      axisPointer: { type: 'none' },
+      backgroundColor: '#1e293b',
+      borderColor: 'transparent',
+      textStyle: { color: '#f1f5f9', fontSize: 11 },
       formatter: (paramsList) => {
         const firstParam = paramsList[0];
-        return `<span style="font-weight:600">${firstParam.name}</span><br/>` +
-          `<span style="color:#5eead4">${Number(firstParam.value).toLocaleString()} ha</span>`;
+        return (
+          `<span style="font-weight:600">${firstParam.name}</span><br/>` +
+          `<span style="color:#5eead4">${Number(firstParam.value).toLocaleString()} ha</span>`
+        );
       },
     },
     grid: { left: 12, right: 16, top: 8, bottom: 48, containLabel: true },
     xAxis: {
-      type: "category",
+      type: 'category',
       data: chartLabels,
-      axisLine: { lineStyle: { color: "#e2e8f0" } },
+      axisLine: { lineStyle: { color: '#e2e8f0' } },
       axisTick: { show: false },
       axisLabel: {
         rotate: 30,
         interval: 0,
         fontSize: 10,
-        color: "#94a3b8",
-        formatter: (label) => label.length > 10 ? label.slice(0, 9) + "…" : label,
+        color: '#94a3b8',
+        formatter: (label) => (label.length > 10 ? label.slice(0, 9) + '…' : label),
       },
     },
     yAxis: {
-      type: "value",
-      splitLine: { lineStyle: { color: "#f1f5f9", type: "dashed" } },
+      type: 'value',
+      splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
       axisLabel: {
         fontSize: 9,
-        color: "#94a3b8",
-        formatter: (axisValue) => axisValue >= 1_000_000 ? `${(axisValue/1_000_000).toFixed(1)}M` : axisValue >= 1_000 ? `${(axisValue/1_000).toFixed(0)}K` : axisValue,
+        color: '#94a3b8',
+        formatter: (axisValue) =>
+          axisValue >= 1_000_000
+            ? `${(axisValue / 1_000_000).toFixed(1)}M`
+            : axisValue >= 1_000
+              ? `${(axisValue / 1_000).toFixed(0)}K`
+              : axisValue,
       },
     },
     series: [
       {
-        name: "Area (ha)",
-        type: "bar",
+        name: 'Area (ha)',
+        type: 'bar',
         data: chartValues,
         barMaxWidth: 36,
         itemStyle: {
@@ -200,7 +216,7 @@ export default function CoverageChartDebug() {
         },
         emphasis: {
           itemStyle: {
-            color: "#2dd4bf",
+            color: '#2dd4bf',
           },
         },
       },
@@ -210,11 +226,11 @@ export default function CoverageChartDebug() {
   // ─── RENDER ───
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
-      {/* Header */}
+      {/* Judul ringkas */}
       <div className="shrink-0 flex items-center justify-between px-4 pt-3 pb-1">
         <div>
           <p className="text-xs font-bold text-gray-700 leading-tight">Area per Kabupaten</p>
-          <p className="text-[10px] text-gray-400 mt-0.5">LULC Coverage · {year}</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Cakupan LULC · {year}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="text-right">
@@ -223,7 +239,7 @@ export default function CoverageChartDebug() {
           </div>
         </div>
       </div>
-      {/* Chart */}
+      {/* Grafik */}
       <div className="flex-1 min-h-full relative overflow-hidden ">
         <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
           <ReactECharts
@@ -231,7 +247,7 @@ export default function CoverageChartDebug() {
             option={chartOption}
             style={{ height: '100%', width: '100%' }}
             onChartReady={(instance) => {
-              // Paksa resize setelah browser selesai hitung layout flex
+              // Force resize after browser finishes calculating flex layout
               requestAnimationFrame(() => instance.resize());
             }}
           />

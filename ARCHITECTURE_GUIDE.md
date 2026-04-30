@@ -78,10 +78,10 @@ Terpusat untuk semua magic numbers & strings:
 Helper untuk build CQL filters dengan clean:
 
 ```javascript
-// Sebelum (messy)
+// Before (messy)
 const filter = `kab='${kab}' AND kec='${kec}'`;
 
-// Sesudah (clear intent)
+// After (clear intent)
 const filter = buildKecamatanFilter({ kab, kec });
 ```
 

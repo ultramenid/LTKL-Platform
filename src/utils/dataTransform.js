@@ -1,17 +1,16 @@
-// filepath: src/utils/dataTransform.js
-// Helper functions untuk transform API responses ke format yang kita butuh
+// Helper functions to transform API responses into the format we need
 
-// Normalize response server ke format { year, data }
-// Handle berbagai format: {year, data}, {"2024":[...]}, atau array langsung
+// Normalize server response to { year, data } format
+// Handles multiple formats: {year, data}, {"2024":[...]}, or bare array
 export const normalizeServerResponse = (rawResponse, fallbackYear) => {
   if (!rawResponse) return null;
 
-  // Format 1: Sudah normalized { year: N, data: [...] }
+  // Format 1: Already normalized { year: N, data: [...] }
   if (rawResponse.year && Array.isArray(rawResponse.data)) {
     return { year: Number(rawResponse.year), data: rawResponse.data };
   }
 
-  // Format 2: Object dengan key tahun { "2024": [...], "2025": [...] }
+  // Format 2: Object with year keys { "2024": [...], "2025": [...] }
   const objectKeys = Object.keys(rawResponse);
   for (const yearKey of objectKeys) {
     if (/^\d{4}$/.test(yearKey) && Array.isArray(rawResponse[yearKey])) {
@@ -19,12 +18,12 @@ export const normalizeServerResponse = (rawResponse, fallbackYear) => {
     }
   }
 
-  // Format 3: Array data langsung
+  // Format 3: Bare array
   if (Array.isArray(rawResponse)) {
     return { year: fallbackYear, data: rawResponse };
   }
 
-  // Format 4: Fallback - cari array value pertama di object
+  // Format 4: Fallback — find first array value in object
   for (const yearKey of objectKeys) {
     if (Array.isArray(rawResponse[yearKey])) {
       return {
@@ -34,33 +33,33 @@ export const normalizeServerResponse = (rawResponse, fallbackYear) => {
     }
   }
 
-  // Tidak ada format yang cocok
+  // No matching format
   return null;
 };
 
-// Transform [[name, value]...] menjadi {labels, values} untuk chart
+// Transform [[name, value]...] into {labels, values} for charts
 export const transformDataForChart = (dataArray) => {
   if (!Array.isArray(dataArray) || dataArray.length === 0) {
     return { labels: [], values: [] };
   }
 
-  // Parse setiap entry jadi {name, value}, filter kosong, urutkan descending
+  // Parse each entry as {name, value}, filter empty, sort descending
   const processedData = dataArray
     .map((dataEntry) => {
       const kabupateName = String((dataEntry && dataEntry[0]) || '').trim();
       const areaValue = Number((dataEntry && dataEntry[1]) || 0) || 0;
       return { kabupateName, areaValue };
     })
-    .filter(({ kabupateName }) => kabupateName) // Buang entry tanpa nama
-    .sort((entryA, entryB) => entryB.areaValue - entryA.areaValue); // Urutkan dari terbesar
+    .filter(({ kabupateName }) => kabupateName) // Remove entries without name
+    .sort((entryA, entryB) => entryB.areaValue - entryA.areaValue); // Sort largest first
 
   return {
-    labels: processedData.map(item => item.kabupateName),
-    values: processedData.map(item => item.areaValue),
+    labels: processedData.map((item) => item.kabupateName),
+    values: processedData.map((item) => item.areaValue),
   };
 };
 
-// Cek apakah item valid sebagai data entry [name, value]
+// Check if item is valid as a data entry [name, value]
 export const isValidDataEntry = (dataItem) => {
   return (
     Array.isArray(dataItem) &&

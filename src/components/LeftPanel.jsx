@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Search, Layers, X } from "lucide-react";
-import { KabupatenCard } from "./map/KabupatesList.jsx";
+import { useState } from 'react';
+import { Search, Layers, X } from 'lucide-react';
+import { KabupatenCard } from './map/KabupatesList.jsx';
 
-// Sidebar kiri — logo, search, daftar kabupaten. Di mobile jadi overlay drawer
+// Left sidebar — logo, search, kabupaten list. On mobile it becomes an overlay drawer
 export function LeftPanel({ onClose }) {
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState('');
 
   return (
     <div className="w-full h-full flex flex-col bg-white border-r border-gray-100">
@@ -12,11 +12,11 @@ export function LeftPanel({ onClose }) {
       <div className="shrink-0 px-5 py-4 border-b border-gray-100 bg-white">
         <div className="flex items-center gap-3">
           {/* Logo */}
-          <div className="overflow-hidden shrink-0" style={{ height: "36px" }}>
+          <div className="overflow-hidden shrink-0" style={{ height: '36px' }}>
             <img
               src="/logo/ltkl.png"
               alt="LTKL"
-              style={{ height: "58px", width: "auto", objectPosition: "top left" }}
+              style={{ height: '58px', width: 'auto', objectPosition: 'top left' }}
             />
           </div>
           {/* Tutup drawer — mobile only */}
@@ -29,8 +29,12 @@ export function LeftPanel({ onClose }) {
           </button>
           {/* Teks platform — desktop only */}
           <div className="hidden lg:block flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-gray-800 leading-tight tracking-tight">Lingkar Temu</p>
-            <p className="text-[11px] font-bold text-gray-800 leading-tight tracking-tight">Kabupaten Lestari</p>
+            <p className="text-[11px] font-bold text-gray-800 leading-tight tracking-tight">
+              Lingkar Temu
+            </p>
+            <p className="text-[11px] font-bold text-gray-800 leading-tight tracking-tight">
+              Kabupaten Lestari
+            </p>
           </div>
           {/* Icon dekoratif — desktop only */}
           <div className="hidden lg:flex w-7 h-7 rounded-lg bg-teal-50 items-center justify-center shrink-0">
@@ -50,7 +54,7 @@ export function LeftPanel({ onClose }) {
           />
           {searchText && (
             <button
-              onClick={() => setSearchText("")}
+              onClick={() => setSearchText('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X size={12} />
@@ -61,7 +65,9 @@ export function LeftPanel({ onClose }) {
 
       {/* ── Label section ── */}
       <div className="shrink-0 px-5 pt-4 pb-2 flex items-center justify-between">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kabupaten Anggota</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          Kabupaten Anggota
+        </p>
       </div>
 
       {/* ── Daftar kabupaten (scrollable) ── */}
