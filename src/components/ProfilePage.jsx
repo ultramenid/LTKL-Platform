@@ -209,23 +209,97 @@ export function ProfilePage({ kabupatenName }) {
       {activeTab === 'contact' && <ContactTab />}
 
       {/* ─── FOOTER ───*/}
-      <div className="bg-gray-900 text-white px-4 md:px-8 py-8 mt-16">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <p className="font-bold text-sm">Profil Kabupaten {kabupatenName}</p>
-            <p className="text-white/50 text-xs mt-1">
-              Sumber data: BPS, Pemerintah Daerah, Indonesia Open Data
+      <footer className="bg-gray-950 text-white mt-16">
+        {/* Main footer body */}
+        <div className="max-w-5xl mx-auto px-4 md:px-8 py-12 grid grid-cols-1 md:grid-cols-[1.8fr_1fr_1fr] gap-10">
+
+          {/* Column 1: Brand */}
+          <div className="space-y-5">
+            {/* LTKL + Auriga logos side by side */}
+            <div className="flex items-start gap-4">
+              {/* LTKL — clip bottom whitespace with overflow-hidden */}
+              <div className="overflow-hidden shrink-0" style={{ height: '70px' }}>
+                <img
+                  src="/logo/ltkl.png"
+                  alt="Lingkar Temu Kabupaten Lestari"
+                  className="w-auto brightness-0 invert"
+                  style={{ height: '60px' }}
+                />
+              </div>
+              <div className="w-px h-8 bg-white/20 shrink-0" />
+              {/* Auriga Nusantara */}
+              <img
+                src="https://auriga.or.id/assets/logoauriga.png"
+                alt="Auriga Nusantara"
+                className="h-12 w-auto object-contain brightness-0 invert opacity-100 shrink-0"
+              />
+            </div>
+            <p className="text-sm text-white/50 leading-relaxed max-w-xs">
+              Platform data dan kolaborasi multipihak untuk mendukung pembangunan
+              kabupaten yang lestari, berkeadilan, dan berkelanjutan.
             </p>
           </div>
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-white/60 hover:text-white text-sm transition"
-          >
-            <ArrowLeft size={16} />
-            Kembali ke Peta
-          </Link>
+
+          {/* Column 2: Quick navigation */}
+          <div className="space-y-4">
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Navigasi</p>
+            <ul className="space-y-2.5">
+              {['Berita & Acara', 'Profil', 'Peta Gotong Royong', 'Produk Unggulan', 'Laporan / Pustaka', 'Data', 'Kontak'].map((item) => (
+                <li key={item}>
+                  <span className="text-sm text-white/50 hover:text-white/90 transition-colors cursor-pointer">
+                    {item}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 3: District info */}
+          <div className="space-y-4">
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Kabupaten</p>
+            <div className="flex items-center gap-3">
+              {districtRecord?.logoUrl && (
+                <img
+                  src={districtRecord.logoUrl}
+                  alt={kabupatenName}
+                  className="w-10 h-10 object-contain opacity-80"
+                />
+              )}
+              <div>
+                <p className="text-sm font-bold text-white/80">{kabupatenName}</p>
+                <p className="text-[10px] text-white/40">Anggota LTKL</p>
+              </div>
+            </div>
+            <ul className="space-y-2.5 mt-2">
+              {[
+                { label: 'Sekretariat MSF', value: 'Sigi Biromaru' },
+                { label: 'Kontak', value: 'sekretariat.msf@sigikab.go.id' },
+              ].map((item) => (
+                <li key={item.label}>
+                  <p className="text-[10px] text-white/30 uppercase tracking-widest">{item.label}</p>
+                  <p className="text-xs text-white/55 mt-0.5 break-all">{item.value}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
+
+        {/* Bottom bar */}
+        <div className="border-t border-white/10">
+          <div className="max-w-5xl mx-auto px-4 md:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-[11px] text-white/30">
+              © {new Date().getFullYear()} LTKL · Auriga Nusantara. Sumber data: BPS, Pemerintah Daerah, Indonesia Open Data.
+            </p>
+            <Link
+              to="/"
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-white/40 hover:text-white/80 transition-colors"
+            >
+              <ArrowLeft size={12} />
+              Kembali ke Peta
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

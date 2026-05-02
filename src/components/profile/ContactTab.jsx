@@ -1,11 +1,15 @@
-import { MapPin, Mail, Phone, MessageCircle, Instagram, Facebook, Youtube, Twitter } from 'lucide-react';
-import { COLORS } from '../../config/constants.js';
+import { useEffect, useRef } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { MapPin, Mail, Phone, MessageCircle, Instagram, Facebook, Youtube, Twitter, ExternalLink } from 'lucide-react';
+import { COLORS, MAP_CONFIG } from '../../config/constants.js';
 import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
 
 // Contact details — placeholder, replace with real secretariat data per kabupaten
 const CONTACT_DETAILS = {
-  address:
-    'Jl. Dewi Sartika No. 47, Sigi Biromaru, Kabupaten Sigi, Sulawesi Tengah 94364',
+  address: 'Jl. Dewi Sartika No. 47, Sigi Biromaru, Kabupaten Sigi, Sulawesi Tengah 94364',
+  // Approximate coordinates for Sigi Biromaru — update with precise pin from Google Maps
+  coordinates: [119.8503, -1.0667],
   email: 'sekretariat.msf@sigikab.go.id',
   phone: '+62 451 123456',
   whatsapp: '+62 811 9999 888',
@@ -70,9 +74,68 @@ const SOCIAL_MEDIA = [
   },
 ];
 
-// Contact tab — secretariat address, direct contacts, and social media
+// Small interactive map showing the secretariat pin
+function SecretariatMap({ coordinates, label }) {
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+
+    const mapInstance = new maplibregl.Map({
+      container: containerRef.current,
+      style: MAP_CONFIG.STYLE_URL,
+      center: coordinates,
+      zoom: 4,
+      attributionControl: false,
+      // Normal scroll → page scroll; Ctrl/Cmd + scroll → map zoom
+      cooperativeGestures: true,
+    });
+
+    mapInstance.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      'bottom-right',
+    );
+
+    // Teal marker matching the app brand color
+    const markerElement = document.createElement('div');
+    markerElement.style.cssText = `
+      width: 14px; height: 14px;
+      background: #14b8a6;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+      cursor: pointer;
+    `;
+
+    new maplibregl.Marker({ element: markerElement })
+      .setLngLat(coordinates)
+      .setPopup(
+        new maplibregl.Popup({ offset: 30, closeButton: false })
+          .setHTML(
+            `<div style="font-size:12px;font-weight:700;color:#0f766e;padding:2px 0">${label}</div>`,
+          ),
+      )
+      .addTo(mapInstance);
+
+    mapRef.current = mapInstance;
+
+    return () => {
+      try {
+        if (mapRef.current) mapRef.current.remove();
+      } catch {
+        /* skip */
+      }
+      mapRef.current = null;
+    };
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <div ref={containerRef} className="w-full h-full" />;
+}
+
+// Contact tab — secretariat map, direct contacts, and social media
 export function ContactTab() {
-  const googleMapsSearchUrl = `https://www.google.com/maps/search/${encodeURIComponent(
+  const googleMapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(
     CONTACT_DETAILS.address,
   )}`;
 
@@ -81,23 +144,20 @@ export function ContactTab() {
       <SectionHeader title="Kontak" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
 
       <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr] gap-8 items-start">
-        {/* Map placeholder — replace inner content with a real Google Maps iframe */}
-        <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm h-80 md:h-96 bg-gray-50 flex flex-col items-center justify-center gap-4 text-center px-6">
-          <div className="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center">
-            <MapPin size={28} className="text-teal-500" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-gray-700 mb-1">Lokasi Sekretariat</p>
-            <p className="text-xs text-gray-500 leading-relaxed max-w-xs">
-              {CONTACT_DETAILS.address}
-            </p>
-          </div>
+        {/* Interactive MapLibre map */}
+        <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm h-80 md:h-96 relative">
+          <SecretariatMap
+            coordinates={CONTACT_DETAILS.coordinates}
+            label="Sekretariat MSF"
+          />
+          {/* "Open in Google Maps" button overlaid at bottom */}
           <a
-            href={googleMapsSearchUrl}
+            href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold rounded-lg transition-colors"
+            className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm hover:bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 transition-colors shadow-sm"
           >
+            <ExternalLink size={11} />
             Buka di Google Maps
           </a>
         </div>
@@ -113,9 +173,7 @@ export function ContactTab() {
               <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center shrink-0 mt-0.5">
                 <MapPin size={14} className="text-teal-600" />
               </div>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {CONTACT_DETAILS.address}
-              </p>
+              <p className="text-sm text-gray-700 leading-relaxed">{CONTACT_DETAILS.address}</p>
             </div>
           </div>
 
