@@ -34,7 +34,7 @@ export function KabupatenCard({ filterText = '' }) {
 
   // Kabupaten click to sync breadcrumbs then load kecamatan level
   const handleKabupatenClick = async (kabupatenName) => {
-    if (!map) return console.warn('⚠️ Map not ready');
+    if (!map) return console.warn('Map not ready');
 
     setSelectedKab(kabupatenName);
     updateBreadcrumb('kabupaten', kabupatenName);

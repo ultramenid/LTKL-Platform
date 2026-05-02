@@ -1,26 +1,28 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { ArrowLeft, User } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { KABUPATENS } from '../data/kabupatens.js';
 import { COLORS, PROFILE_HERO_IMAGE_URL, YEAR_CONFIG } from '../config/constants.js';
 import { useMapStore } from '../store/mapStore.js';
 import { encodeAdministrasi, decodeAdministrasi } from '../utils/urlStateSync.js';
-import { PopulationTab } from './profile/PopulationTab.jsx';
-import { EconomyTab } from './profile/EconomyTab.jsx';
-import { SupplyChainTab } from './profile/SupplyChainTab.jsx';
-import { CommodityTab } from './profile/Comodity.jsx';
+import { NewsTab } from './profile/NewsTab.jsx';
+import { KabupatenProfileTab } from './profile/KabupatenProfileTab.jsx';
 import { MapTab } from './profile/MapTab.jsx';
+import { ProdukUnggulanTab } from './profile/ProdukUnggulanTab.jsx';
+import { ReportsTab } from './profile/ReportsTab.jsx';
 import { DownloadTab } from './profile/DownloadTab.jsx';
+import { ContactTab } from './profile/ContactTab.jsx';
 
 // ─── TAB NAVIGATION (stored at module level) ───
 // Stored at module level so tab references are stable and don't trigger component re-render
 const NAV_TABS = [
-  { id: 'population', label: 'Populasi', color: COLORS.PRIMARY },
-  { id: 'economy', label: 'Ekonomi', color: COLORS.HIGHLIGHT },
-  { id: 'commodity', label: 'Komoditas', color: COLORS.HIGHLIGHT },
-  { id: 'supplychain', label: 'Rantai Pasok', color: COLORS.PRIMARY_TEXT },
-  { id: 'map', label: 'Peta', color: COLORS.PRIMARY },
-  { id: 'download', label: 'Unduhan', color: COLORS.HIGHLIGHT },
+  { id: 'news', label: 'Berita & Acara' },
+  { id: 'profile', label: 'Profil' },
+  { id: 'map', label: 'Peta Gotong Royong' },
+  { id: 'products', label: 'Produk Unggulan' },
+  { id: 'reports', label: 'Laporan / Pustaka' },
+  { id: 'data', label: 'Data' },
+  { id: 'contact', label: 'Kontak' },
 ];
 
 // ─── HERO STATISTICS (summary at top of page) ───
@@ -41,7 +43,7 @@ export function ProfilePage({ kabupatenName }) {
 
   // ─── READ STATE FROM URL ───────────────────────────────────────────────────
   const urlTab = searchParams.get('tab');
-  const activeTab = VALID_TAB_IDS.includes(urlTab) ? urlTab : 'population';
+  const activeTab = VALID_TAB_IDS.includes(urlTab) ? urlTab : 'news';
   const urlYear = parseInt(searchParams.get('year')) || YEAR_CONFIG.DEFAULT;
   const urlAdministrasi = searchParams.get('administrasi') || 'all';
 
@@ -174,12 +176,12 @@ export function ProfilePage({ kabupatenName }) {
 
       {/* ─── TAB NAVIGATION (sticky so always visible while scrolling) ───*/}
       <div className="sticky top-0 z-30 border-t border-white/10 bg-gray-900 shadow-md">
-        <div className="max-w-5xl mx-auto flex overflow-x-auto">
+        <div className="max-w-5xl mx-auto flex overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
           {NAV_TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => selectTab(tab.id)}
-              className={`cursor-pointer px-4 md:px-8 py-3 text-sm font-semibold uppercase tracking-wider transition border-b-2 whitespace-nowrap ${
+              className={`cursor-pointer flex-1 min-w-max py-3 px-4 text-sm font-semibold uppercase tracking-wider transition border-b-2 text-center whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'text-white border-white'
                   : 'text-white/40 border-transparent hover:text-white/70'
@@ -192,10 +194,8 @@ export function ProfilePage({ kabupatenName }) {
       </div>
 
       {/* ─── TAB CONTENT (each component manages its own state) ───*/}
-      {activeTab === 'population' && <PopulationTab />}
-      {activeTab === 'economy' && <EconomyTab />}
-      {activeTab === 'commodity' && <CommodityTab />}
-      {activeTab === 'supplychain' && <SupplyChainTab kabupaten={kabupatenName.toUpperCase()} />}
+      {activeTab === 'news' && <NewsTab />}
+      {activeTab === 'profile' && <KabupatenProfileTab kabupaten={kabupatenName} />}
       {activeTab === 'map' && (
         <MapTab
           kabupaten={kabupatenName}
@@ -203,7 +203,10 @@ export function ProfilePage({ kabupatenName }) {
           onStateChange={handleMapStateChange}
         />
       )}
-      {activeTab === 'download' && <DownloadTab />}
+      {activeTab === 'products' && <ProdukUnggulanTab kabupaten={kabupatenName} />}
+      {activeTab === 'reports' && <ReportsTab />}
+      {activeTab === 'data' && <DownloadTab />}
+      {activeTab === 'contact' && <ContactTab />}
 
       {/* ─── FOOTER ───*/}
       <div className="bg-gray-900 text-white px-4 md:px-8 py-8 mt-16">

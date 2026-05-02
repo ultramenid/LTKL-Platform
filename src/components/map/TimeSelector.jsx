@@ -25,7 +25,7 @@ export default function TimeSeriesSelector({
   // Year dot click: update global year + reload GEE raster
   const handleChange = async (selectedYear) => {
     if (!map) {
-      console.warn('⚠️ Tidak ada map instance');
+      console.warn('Map instance not available');
       return;
     }
     setYear(selectedYear);

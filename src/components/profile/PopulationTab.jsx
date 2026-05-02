@@ -180,7 +180,7 @@ export function PopulationTab() {
       <SectionHeader title="Kependudukan" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 items-start">
-        {/* ─── KOLOM KIRI: NARASI ───*/}
+        {/* ─── LEFT COLUMN: NARRATIVE ───*/}
         <div className="space-y-4 text-xs text-gray-600 leading-relaxed">
           <p>
             Jumlah penduduk Kabupaten Sigi mencapai{' '}
@@ -204,7 +204,7 @@ export function PopulationTab() {
           </p>
         </div>
 
-        {/* ─── KOLOM KANAN: DUA CHART ───*/}
+        {/* ─── RIGHT COLUMN: CHARTS ───*/}
         <div className="space-y-6 min-w-0">
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">
@@ -221,11 +221,11 @@ export function PopulationTab() {
           </div>
         </div>
       </div>
-      {/* ─── SECTION: RUMAH TANGGA ─── */}
+      {/* ─── SECTION: HOUSEHOLDS ─── */}
       <div>
         <SectionHeader title="Rumah Tangga" borderColor="#4ade80" dotColor="#4ade80" />
         <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 items-start mt-6">
-          {/* narasi */}
+          {/* Narrative */}
           <div className="space-y-4 text-xs text-gray-600 leading-relaxed">
             <p>
               Jumlah rumah tangga di Kabupaten Sigi terus bertumbuh seiring meningkatnya pasangan
@@ -242,7 +242,7 @@ export function PopulationTab() {
             </p>
           </div>
 
-          {/* dua chart */}
+          {/* Two charts */}
           <div className="space-y-6 min-w-0">
             <div>
               <p className="text-sm font-semibold mb-2" style={{ color: '#16a34a' }}>

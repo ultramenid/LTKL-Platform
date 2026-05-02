@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { CalendarDays, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
-import CoverageChartDebug from '../map/CoverageChart.jsx';
+import CoverageChart from '../map/CoverageChart.jsx';
 import MapLegend from '../map/MapLegend.jsx';
 import { useMapStore } from '../../store/mapStore.js';
 import {
@@ -166,6 +166,17 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     useShallow((state) => ({ year: state.year, setYear: state.setYear })),
   );
 
+  // Ref to let the year-change effect read localBreadcrumbs without adding it to deps
+  // (adding localBreadcrumbs to the year effect would make WFS layers reload on drill)
+  const localBreadcrumbsRef = useRef(localBreadcrumbs);
+  useEffect(() => {
+    localBreadcrumbsRef.current = localBreadcrumbs;
+  }, [localBreadcrumbs]);
+
+  // Tracks the year seen on previous render; null on first mount so the year effect
+  // skips the initial run (the layer effect already loads GEE on first mount)
+  const previousYearRef = useRef(null);
+
   // ─── MAP INIT ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -316,7 +327,27 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     return () => {
       isEffectActive = false;
     };
-  }, [isMapReady, localBreadcrumbs, kabupaten, year]);
+  }, [isMapReady, localBreadcrumbs, kabupaten]);
+
+  // ─── RELOAD GEE ON YEAR CHANGE (without reloading WFS layers) ───
+  // Separated from the layer effect so kecamatan/desa boundaries don't reload when
+  // only the raster year changes — WFS data is year-independent.
+  useEffect(() => {
+    if (!isMapReady || !mapRef.current) return;
+
+    // Skip the initial run: the layer effect above already loads GEE on first mount.
+    // Using null sentinel avoids the stale-closure problem of isFirstRender booleans.
+    if (previousYearRef.current === null) {
+      previousYearRef.current = year;
+      return;
+    }
+    if (previousYearRef.current === year) return;
+    previousYearRef.current = year;
+
+    const { kec, des } = localBreadcrumbsRef.current;
+    const geeFilter = des ? { des } : kec ? { kec } : { kab: kabupaten };
+    loadGEEPolygonRaster(mapRef.current, geeFilter);
+  }, [year, isMapReady]); // kabupaten read from closure (stable prop, never changes mid-mount)
 
   // ─── SYNC TO URL ────────────────────────────────────────────────────────────
   // Send state to parent so URL always records the active position and stays shareable.
@@ -397,7 +428,7 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
           Collection 4 via GEE tile server.
         </p>
         <div className="h-72 rounded-xl border border-gray-100 shadow-sm overflow-hidden bg-white">
-          <CoverageChartDebug />
+          <CoverageChart />
         </div>
       </div>
     </ProfileSection>

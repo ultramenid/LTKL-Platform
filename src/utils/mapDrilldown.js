@@ -133,6 +133,15 @@ export async function handleBreadcrumbDrill(
       LAYER_IDS.DESA_FILL,
       desaFilter,
     );
-    removeLayerAndSource(mapInstance, LAYER_IDS.DESA_FILL);
+
+    // loadLayer above removed DESA_FILL from ZOOM_DESA when it recreated the layer;
+    // clean up the now-orphaned zoom source so it doesn't linger in map style
+    try {
+      if (mapInstance.getSource(SOURCE_IDS.ZOOM_DESA)) {
+        mapInstance.removeSource(SOURCE_IDS.ZOOM_DESA);
+      }
+    } catch {
+      /* skip if already removed */
+    }
   }
 }

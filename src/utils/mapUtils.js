@@ -73,16 +73,8 @@ export const zoomToCollection = (mapInstance, geojsonCollection, paddingPixels =
     }
   });
 
-  // Force resize first so container dimensions are calculated by browser
-  // before fitBounds is called (important for maps inside scrollable layouts)
-  try {
-    mapInstance.resize();
-  } catch {
-    /* skip */
-  }
-
-  // resize() called first so browser recalculates container dimensions
-  // before fitBounds; without this, maps inside scrollable layouts may mis-calculate zoom
+  // Resize first so browser recalculates container dimensions before fitBounds;
+  // without this, maps inside scrollable layouts may miscalculate zoom
   try {
     mapInstance.resize();
   } catch {

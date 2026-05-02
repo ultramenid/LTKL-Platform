@@ -78,7 +78,7 @@ export function SupplyChainTab({ kabupaten }) {
       {/* ─── SANKEY VISUALIZATION (alur rantai pasok dengan nodes & links) ───*/}
       <div>
         <SubSectionHeader title="Supply Chain Flow" dotColor={COLORS.PRIMARY} />
-        <SankeySupplyChain kabupaten={kabupaten} tahunDipilih={selectedYear} />
+        <SankeySupplyChain kabupaten={kabupaten} year={selectedYear} />
       </div>
     </ProfileSection>
   );

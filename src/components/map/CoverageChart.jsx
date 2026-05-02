@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import { useMapStore } from '../../store/mapStore.js';
 import { normalizeServerResponse, transformDataForChart } from '../../utils/dataTransform.js';
 import { API_ENDPOINTS, YEAR_CONFIG, COLORS } from '../../config/constants.js';
-import { getActiveSignal } from '../../store/mapLayerStore.js';
+import { getStatsSignal, abortStatsRequests } from '../../store/mapLayerStore.js';
 
 // Skeleton loading so user still gets feedback while data loads
 function LoadingChartSkeleton() {
@@ -28,8 +28,8 @@ function LoadingChartSkeleton() {
 }
 
 // Bar chart of area (ha) per kabupaten from LULC endpoint
-export default function CoverageChartDebug() {
-  // ─── AMBIL TAHUN ───
+export default function CoverageChart() {
+  // ─── YEAR ───
   const yearFromStore = useMapStore((state) => state.year);
   const year = Number(yearFromStore) || YEAR_CONFIG.DEFAULT;
 
@@ -47,14 +47,14 @@ export default function CoverageChartDebug() {
           echartsRef.current.getEchartsInstance?.()?.dispose?.();
         }
       } catch {
-        // Abaikan error cleanup echarts
+        // ignore echarts cleanup errors on unmount
       }
     };
   }, []);
 
   // ─── FETCH DATA ───
-  // Use signal from activeController in mapLayerStore so fetch can be cancelled
-  // when user switches year quickly or component unmounts
+  // Uses statsController (separate from map layer controller) so map navigation
+  // never aborts this fetch — only year change or component unmount cancels it
   useEffect(() => {
     let isComponentMounted = true;
     setLoading(true);
@@ -63,7 +63,7 @@ export default function CoverageChartDebug() {
 
     const statsUrl = `${API_ENDPOINTS.TILE_SERVER}/lulc-stats?year=${year}`;
 
-    fetch(statsUrl, { signal: getActiveSignal() })
+    fetch(statsUrl, { signal: getStatsSignal() })
       .then(async (response) => {
         const responseText = await response.text();
         try {
@@ -115,23 +115,26 @@ export default function CoverageChartDebug() {
 
     return () => {
       isComponentMounted = false;
+      // Abort in-flight fetch and create a fresh signal for the next run;
+      // cleanup-based abort ensures map navigation never cancels this fetch
+      abortStatsRequests();
     };
   }, [year]);
 
-  // ─── NORMALISASI RESPONSE SERVER ───
+  // ─── NORMALIZE SERVER RESPONSE ───
   // Use utility from dataTransform.js to avoid duplicating logic
   const normalizedData = useMemo(
     () => normalizeServerResponse(serverResponse, year),
     [serverResponse, year],
   );
 
-  // ─── TRANSFORMASI DATA UNTUK CHART ───
+  // ─── TRANSFORM DATA FOR CHART ───
   const { labels: chartLabels, values: chartValues } = useMemo(() => {
     if (!normalizedData) return { labels: [], values: [] };
     return transformDataForChart(normalizedData.data);
   }, [normalizedData]);
 
-  // ─── RENDER SAAT ERROR ───
+  // ─── EARLY RETURNS (loading / error / empty) ───
   if (loading) return <LoadingChartSkeleton />;
   if (error)
     return (
@@ -151,7 +154,7 @@ export default function CoverageChartDebug() {
     );
   }
 
-  // ─── RINGKASAN STATISTIK ───
+  // ─── STATISTICS SUMMARY ───
   const totalArea = chartValues.reduce((total, areaValue) => total + areaValue, 0);
   const totalAreaLabel =
     totalArea >= 1_000_000
@@ -160,7 +163,7 @@ export default function CoverageChartDebug() {
         ? `${(totalArea / 1_000).toFixed(1)}K ha`
         : `${totalArea.toLocaleString()} ha`;
 
-  // ─── OPSI ECHART ───
+  // ─── CHART OPTIONS ───
   const chartOption = {
     tooltip: {
       trigger: 'axis',

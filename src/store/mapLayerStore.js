@@ -39,6 +39,10 @@ const LAYERS = {
 // Replaced (abort + new) every time abortActiveRequests() is called
 let activeController = new AbortController();
 
+// Separate controller for stats/chart fetches so map navigation (abortActiveRequests)
+// never cancels in-flight chart data — stats are independent of layer lifecycle
+let statsController = new AbortController();
+
 // Cancel all in-flight requests (GeoServer + GEE tile server)
 // Also clear pending request dedup so new requests can start fresh
 export function abortActiveRequests() {
@@ -48,9 +52,21 @@ export function abortActiveRequests() {
   useMapStore.getState().clearAllPending();
 }
 
-// Return the current activeController's signal for other components to use
+// Return the current activeController's signal for map layer fetches
 export function getActiveSignal() {
   return activeController.signal;
+}
+
+// Cancel any in-flight stats/chart fetch (called before each new stats fetch)
+// Kept separate from activeController so map navigation doesn't abort chart data
+export function abortStatsRequests() {
+  statsController.abort();
+  statsController = new AbortController();
+}
+
+// Return the current stats signal for CoverageChart and similar data fetches
+export function getStatsSignal() {
+  return statsController.signal;
 }
 
 // Load GEE LULC raster — cache-first + image probe validation, dedup pending requests

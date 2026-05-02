@@ -95,7 +95,7 @@ function variableWidthLinkPath(link) {
 }
 
 // ─── MAIN COMPONENT (interactive Sankey with hover trajectory) ───
-export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null }) {
+export function SankeySupplyChain({ kabupaten, year: yearFromProp = null }) {
   const containerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(800);
 
@@ -117,7 +117,7 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
     if (!yearFromProp && availableYears.length > 0 && !availableYears.includes(internalYear)) {
       setInternalYear(availableYears[availableYears.length - 1]);
     }
-  }, [kabupaten, yearFromProp]);
+  }, [kabupaten, yearFromProp, availableYears, internalYear]);
 
   // Tooltip state: position + text content for hovered node and link
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, content: '' });
@@ -357,16 +357,16 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
   // ─── RENDER (interactive Sankey chart with toolbar) ───
   return (
     <div ref={containerRef} className="w-full border border-gray-200 rounded-xl">
-      {/* ─── TOOLBAR ATAS: dropdown tahun + tombol unduh (gaya Trase.earth) ───*/}
+      {/* ─── TOP TOOLBAR: year dropdown + download button (Trase.earth style) ───*/}
       <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-end gap-3 rounded-t-xl">
-        {/* Tahun dropdown — hanya tampil jika parent tidak mengontrol tahun */}
+        {/* Year dropdown — only shown when parent doesn't control year */}
         {!yearFromProp && availableYears.length > 0 && (
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] text-gray-400 font-medium">Tahun</span>
             <div className="relative">
               <select
                 value={internalYear}
-                onChange={(choice) => setInternalYear(Number(choice.target.value))}
+                onChange={(event) => setInternalYear(Number(event.target.value))}
                 className="appearance-none pl-3 pr-7 py-1.5 text-[12px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-md cursor-pointer hover:border-gray-400 transition focus:outline-none focus:ring-2"
                 style={{ '--tw-ring-color': COLORS.PRIMARY }}
               >
@@ -376,7 +376,7 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
                   </option>
                 ))}
               </select>
-              {/* Ikon chevron manual agar tampilan konsisten lintas browser */}
+              {/* Manual chevron icon for consistent cross-browser appearance */}
               <svg
                 className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
                 width="10"
@@ -396,10 +396,10 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
           </div>
         )}
 
-        {/* Pemisah visual */}
+        {/* Visual divider */}
         {!yearFromProp && <div className="w-px h-5 bg-gray-200" />}
 
-        {/* Tombol unduh (dummy) */}
+        {/* Download button (dummy) */}
         <button className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 text-[12px] font-semibold text-gray-600 bg-white border border-gray-200 rounded-md hover:border-gray-400 transition cursor-pointer">
           Unduh Pilihan
           <svg width="10" height="6" viewBox="0 0 10 6" fill="none" className="text-gray-400">
@@ -414,7 +414,7 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
         </button>
       </div>
 
-      {/* ─── AREA GRAFIK SVG (mendukung scroll horizontal untuk layar sempit) ───*/}
+      {/* ─── SVG CHART AREA (horizontal scroll for narrow screens) ───*/}
       <div className="bg-white select-none overflow-x-auto">
         <svg
           width={containerWidth}
@@ -426,8 +426,8 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
             hideTooltip();
           }}
         >
-          {/* ─── LABEL HEADER KOLOM + PANAH PENGHUBUNG ───*/}
-          {/* Dirender pertama agar di layer paling bawah SVG */}
+          {/* ─── COLUMN HEADER LABELS + CONNECTOR ARROWS ───*/}
+          {/* Rendered first so it stays at the bottom SVG layer */}
           {columnPositions.map((column, columnIndex) => (
             <g key={`header-column-${column.layer}`}>
               <text
@@ -473,7 +473,7 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
                 })()}
             </g>
           ))}
-          {/* ─── LINKS (aliran antar node) ───*/}
+          {/* ─── LINKS (flow between nodes) ───*/}
           {layoutLinks.map((link, linkIndex) => {
             const sourceName = typeof link.source === 'object' ? link.source.name : link.source;
             const targetName = typeof link.target === 'object' ? link.target.name : link.target;
@@ -510,7 +510,7 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
             );
           })}
 
-          {/* ─── NODES (balok persegi panjang dengan label) ───*/}
+          {/* ─── NODES (rectangular blocks with labels) ───*/}
           {layoutNodes.map((node) => {
             // Hover node triggers trajectory highlight — hover link doesn't change node colors
             const hasHover = hoveredNodeName !== null;
@@ -561,7 +561,7 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
                   strokeWidth={1}
                   style={{ transition: 'fill 0.2s, stroke 0.2s' }}
                 />
-                {/* Tampilkan teks jika node cukup tinggi untuk memuat minimal 1 baris */}
+                {/* Show text only if node is tall enough for at least one line */}
                 {nodeHeight >= 8 && (
                   <text textAnchor="middle" dominantBaseline="auto" pointerEvents="none">
                     {textLines.map((line, lineIndex) => {
@@ -592,14 +592,14 @@ export function SankeySupplyChain({ kabupaten, tahunDipilih: yearFromProp = null
         </svg>
       </div>
 
-      {/* Footer: informasi sumber data dan satuan */}
+      {/* Footer: data source and unit information */}
       <div className="bg-gray-50 border-t border-gray-100 px-4 py-2 rounded-b-xl">
         <p className="text-[10px] text-gray-400 text-right">
           Satuan: ton CPO &nbsp;·&nbsp; Tahun: {selectedYear} &nbsp;·&nbsp; Sumber: Trase.earth
         </p>
       </div>
 
-      {/* Tooltip melayang */}
+      {/* Floating tooltip */}
       {tooltip.visible && (
         <div
           className="fixed z-50 pointer-events-none px-3 py-2 rounded-lg shadow-xl text-xs leading-relaxed"

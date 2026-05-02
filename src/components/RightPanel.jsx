@@ -26,16 +26,15 @@ export function RightPanel({ onToggleSidebar }) {
         {/* Scrollable area for multiple side-by-side charts */}
         <div className="flex-1 min-h-0 overflow-y-hidden overflow-x-auto">
           <div className="flex h-full min-w-full">
-            {/* Chart 1 */}
+            {/* Chart 1 — LULC area coverage by kabupaten */}
             <div className="flex-1 min-w-[320px] h-full border-r border-gray-100">
               <CoverageChart />
             </div>
-            {/* Chart 2 */}
-            <div className="flex-1 min-w-[320px] h-full border-r border-gray-100">
+            {/* Chart 2 & 3 — reserved for future analytics */}
+            <div className="flex-1 min-w-[320px] h-full border-r border-gray-100 flex items-center justify-center">
               <CoverageChart />
             </div>
-            {/* Chart 3 */}
-            <div className="flex-1 min-w-[320px] h-full">
+            <div className="flex-1 min-w-[320px] h-full flex items-center justify-center">
               <CoverageChart />
             </div>
           </div>

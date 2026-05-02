@@ -89,22 +89,18 @@ export const useMapStore = create((set, get) => ({
   setCacheGEE: (cacheKey, tileUrl) =>
     set((state) => {
       const expirationTime = Date.now() + CACHE_CONFIG.GEE_TTL_MS;
-      const updatedCache = { ...state.geeCache };
-
-      const storageFormat = {};
-      for (const [key, value] of Object.entries(updatedCache)) {
-        storageFormat[key] = { value, expiresAt: expirationTime };
-      }
-      storageFormat[cacheKey] = { value: tileUrl, expiresAt: expirationTime };
-
+      // Read existing storage first so old entries keep their original expiresAt;
+      // rebuilding from state.geeCache would reset every entry's TTL to now
       try {
-        localStorage.setItem(CACHE_CONFIG.STORAGE_KEY_GEE, JSON.stringify(storageFormat));
+        const storedJson = localStorage.getItem(CACHE_CONFIG.STORAGE_KEY_GEE);
+        const existingStorage = storedJson ? JSON.parse(storedJson) : {};
+        existingStorage[cacheKey] = { value: tileUrl, expiresAt: expirationTime };
+        localStorage.setItem(CACHE_CONFIG.STORAGE_KEY_GEE, JSON.stringify(existingStorage));
       } catch {
         // Silently ignore localStorage errors (quota exceeded, etc)
       }
 
-      updatedCache[cacheKey] = tileUrl;
-      return { geeCache: updatedCache };
+      return { geeCache: { ...state.geeCache, [cacheKey]: tileUrl } };
     }),
 
   getCacheGEE: (cacheKey) => {
@@ -160,22 +156,18 @@ export const useMapStore = create((set, get) => ({
   setCacheGeoJSON: (cacheKey, geoJsonData) =>
     set((state) => {
       const expirationTime = Date.now() + CACHE_CONFIG.GEOJSON_TTL_MS;
-      const updatedCache = { ...state.geoJsonCache };
-
-      const storageFormat = {};
-      for (const [key, value] of Object.entries(updatedCache)) {
-        storageFormat[key] = { value, expiresAt: expirationTime };
-      }
-      storageFormat[cacheKey] = { value: geoJsonData, expiresAt: expirationTime };
-
+      // Read existing storage first so old entries keep their original expiresAt;
+      // rebuilding from state.geoJsonCache would reset every entry's TTL to now
       try {
-        localStorage.setItem(CACHE_CONFIG.STORAGE_KEY_GEOJSON, JSON.stringify(storageFormat));
+        const storedJson = localStorage.getItem(CACHE_CONFIG.STORAGE_KEY_GEOJSON);
+        const existingStorage = storedJson ? JSON.parse(storedJson) : {};
+        existingStorage[cacheKey] = { value: geoJsonData, expiresAt: expirationTime };
+        localStorage.setItem(CACHE_CONFIG.STORAGE_KEY_GEOJSON, JSON.stringify(existingStorage));
       } catch {
         // Silently ignore localStorage errors (quota exceeded, etc)
       }
 
-      updatedCache[cacheKey] = geoJsonData;
-      return { geoJsonCache: updatedCache };
+      return { geoJsonCache: { ...state.geoJsonCache, [cacheKey]: geoJsonData } };
     }),
 
   getCacheGeoJSON: (cacheKey) => {
