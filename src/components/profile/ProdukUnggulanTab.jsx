@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { PopulationTab } from './PopulationTab.jsx';
 import { EconomyTab } from './EconomyTab.jsx';
-import { CommodityTab } from './Comodity.jsx';
+import { CommodityTab } from './Commodity.jsx';
 import { SupplyChainTab } from './SupplyChainTab.jsx';
 
 const PRODUCT_SUB_TABS = [

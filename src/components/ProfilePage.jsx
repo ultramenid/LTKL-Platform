@@ -12,6 +12,7 @@ import { ProdukUnggulanTab } from './profile/ProdukUnggulanTab.jsx';
 import { ReportsTab } from './profile/ReportsTab.jsx';
 import { DownloadTab } from './profile/DownloadTab.jsx';
 import { ContactTab } from './profile/ContactTab.jsx';
+import { ErrorBoundary } from './ErrorBoundary.jsx';
 
 // ─── TAB NAVIGATION (stored at module level) ───
 // Stored at module level so tab references are stable and don't trigger component re-render
@@ -194,19 +195,21 @@ export function ProfilePage({ kabupatenName }) {
       </div>
 
       {/* ─── TAB CONTENT (each component manages its own state) ───*/}
-      {activeTab === 'news' && <NewsTab />}
-      {activeTab === 'profile' && <KabupatenProfileTab kabupaten={kabupatenName} />}
-      {activeTab === 'map' && (
-        <MapTab
-          kabupaten={kabupatenName}
-          initialDrillState={initialDrillStateRef.current}
-          onStateChange={handleMapStateChange}
-        />
-      )}
-      {activeTab === 'products' && <ProdukUnggulanTab kabupaten={kabupatenName} />}
-      {activeTab === 'reports' && <ReportsTab />}
-      {activeTab === 'data' && <DownloadTab />}
-      {activeTab === 'contact' && <ContactTab />}
+      <ErrorBoundary label="Konten tab">
+        {activeTab === 'news' && <NewsTab />}
+        {activeTab === 'profile' && <KabupatenProfileTab kabupaten={kabupatenName} />}
+        {activeTab === 'map' && (
+          <MapTab
+            kabupaten={kabupatenName}
+            initialDrillState={initialDrillStateRef.current}
+            onStateChange={handleMapStateChange}
+          />
+        )}
+        {activeTab === 'products' && <ProdukUnggulanTab kabupaten={kabupatenName} />}
+        {activeTab === 'reports' && <ReportsTab />}
+        {activeTab === 'data' && <DownloadTab />}
+        {activeTab === 'contact' && <ContactTab />}
+      </ErrorBoundary>
 
       {/* ─── FOOTER ───*/}
       <footer className="bg-gray-950 text-white mt-16">

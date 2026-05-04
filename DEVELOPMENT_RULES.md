@@ -88,6 +88,149 @@ const TINGGI_CHART = 620; // Nama Bahasa Indonesia
 
 ---
 
+## Rule 7: Error Boundaries — Isolasi Component Crash 🛡️
+
+**Aplikasi ini memiliki banyak komponen independen** (map, charts, lists, profile tabs). Tanpa error boundaries, satu component crash akan menghancurkan seluruh halaman.
+
+### Mengapa penting?
+
+```jsx
+// ❌ SALAH — tanpa boundary, satu component error = seluruh app crash
+<ProfilePage>
+  <Tabs>
+    {activeTab === 'news' && <NewsTab />}         ← typo → crash seluruh ProfilePage
+    {activeTab === 'profile' && <KabupatenProfileTab />} ← null ref → crash
+    {activeTab === 'map' && <MapTab />}           ← MapLibre init gagal → crash
+  </Tabs>
+</ProfilePage>
+```
+
+```jsx
+// ✅ BENAR — boundary isolasi setiap bagian kritis
+<div className="h-screen flex">
+  <ErrorBoundary label="Sidebar">
+    <LeftPanel />          ← crash di sini tidak affect map
+  </ErrorBoundary>
+  <ErrorBoundary label="Peta dan Analitik">
+    <RightPanel />
+  </ErrorBoundary>
+</div>
+
+<div className="min-h-screen bg-white">
+  <ErrorBoundary label="Konten tab">
+    <ActiveTabComponent />
+  </ErrorBoundary>
+</div>
+```
+
+### Aturan implementasi
+
+| Kapan pakai | Contoh |
+|------------|--------|
+| **Setiap route level** | `<ErrorBoundary label="Aplikasi">` di `App.jsx` |
+| **Container besar berisi beberapa komponen independen** | Map view: sidebar + right panel dibungkus separate boundaries |
+| **Bagian halaman yang bisa diakses terpisah** | Tab content di `/profile/:kabupatenName` |
+| **Bagian dengan external service dependency** | MapLibre map initialization, ECharts rendering |
+
+### Yang TIDAK ditangkap ErrorBoundary
+
+ErrorBoundary hanya menangkap errors dari **render phase**. Ini bukan replacement untuk:
+
+- Async error handling → gunakan try/catch + loading/error state per-component
+- Event handler errors → handle di dalam callback
+- Promise rejection → `.catch()` atau try/catch di async function
+
+Jadi ErrorBoundary adalah **safety net terakhir**, bukan primary strategy.
+
+### Pattern umum yang salah
+
+❌ Meletakkan satu ErrorBoundary di paling atas (`App.jsx`) saja.
+Ini melindungi seluruh app tapi memberikan error message yang terlalu umum. User kehilangan konteks di mana error terjadi.
+
+✅ Memisahkan boundaries per area fungsional yang mandiri. Ini memberi error message spesifik dan user bisa tetap mengakses area lain.
+
+---
+
+## Rule 8: No Logic Duplication — Ekstrak Menjadi Shared Helper 🔁
+
+**Jika ada blok kode yang sama muncul di 2+ tempat, itu harus diekstrak menjadi shared function.** Tidak ada "mungkin suatu hari beda" — copy-paste logic adalah bug yang menunggu terjadi.
+
+### Apa yang termasuk duplicated logic?
+
+| Pola duplikasi | Contoh di codebase kita |
+|---------------|------------------------|
+| **Cache-first fetch pattern** | `loadLayer()` dan `loadLayerWithCallback()` keduanya punya WFS fetch + cache check + pending dedup |
+| **Layer creation logic** | Fill layer + hover line paint specs identik di 2 tempat |
+| **Mouse interaction handlers** | Mouse enter/leave/move logic sama persis |
+| **Feature ID assignment** | `features.forEach((f) => { if (!f.id) f.id = i })` di 2 tempat |
+| **URL building with params** | Multiple places build URLSearchParams identically |
+| **Chart data transformation** | Normalize response format → chart-ready array |
+
+### Cara mengekstrak — step by step
+
+**Step 1:** Identifikasi blok yang duplikat (bukan cuma nama variabel, tapi struktur logic)
+
+**Step 2:** Extract jadi function named clearly about WHAT it does
+
+**Step 3:** Replace both callers to use the extracted function
+
+**Step 4:** Verify behavior is identical — no regression
+
+### Contoh nyata dari refactoring `mapLayerStore.js`
+
+**BEFORE (819 baris, 2 fungsi saling duplikat):**
+```js
+export const loadLayer = async (...) => {
+  // ~80 baris: fetchGeoJSON, ensureFeatureIds, renderFillAndHoverLayers, attachInteractions
+};
+
+export const loadLayerWithCallback = async (...) => {
+  // ~250 baris: fetchGeoJSON (duplikat), ensureFeatureIds (duplikat), 
+  //              renderFillAndHoverLayers (duplikat), attachInteractions (duplikat)
+};
+```
+
+**AFTER (667 baris, shared helpers):**
+```js
+async function fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter) {
+  // Satu implementation: cache-first + WFS fetch + pending dedup
+}
+
+function renderAndSetupLayers(map, geoJsonData, sourceId, layerId) {
+  // Satu implementation: source update/create + fill + hover line
+}
+
+function attachInteractions(map, layerId, onClickHandler) {
+  // Satu implementation: mouse events + click delegation
+}
+
+export const loadLayer = async (...) => {
+  // ~15 baris: orchestrate helpers + drill-down click handler
+};
+
+export const loadLayerWithCallback = async (...) => {
+  // ~10 baris: orchestrate helpers + local-state click handler
+};
+```
+
+Hasil: **-152 baris (-19%)**, zero behavioral change.
+
+### Checklist sebelum commit perubahan
+
+- [ ] Ada 2+ tempat menulis pattern/structure logic yang sama?
+- [ ] Bisa ditulis sekali sebagai shared helper/function?
+- [ ] Semua caller sekarang pakai helper tersebut?
+- [ ] Test bahwa behavior tetap sama setelah refactoring?
+
+### Pengecualian
+
+Tidak perlu ekstrak jika:
+- **Hanya 1 tempat** — belum duplikat, tunggu tempat kedua muncul
+- **Logic berbeda secara fundamental** — meskipun mirip, kalau ada perbedaan branch/edge case, ekstraksi malah membuat code harder to understand
+- **Performance critical path** — kadang inline version lebih perform (tapi ini rare)
+
+---
+
 ## Tambahan (dari development history)
 
 ### Rule A: Gunakan `activeController` yang ada

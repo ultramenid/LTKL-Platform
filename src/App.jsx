@@ -6,6 +6,7 @@ import { parseUrlState } from './utils/urlStateSync';
 import { LeftPanel } from './components/LeftPanel';
 import { RightPanel } from './components/RightPanel';
 import { ProfilePage } from './components/ProfilePage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function MapView() {
   // Restore state from URL query params when entering map view
@@ -40,7 +41,9 @@ function MapView() {
 
       {/* Right panel: full width on mobile, 78% on desktop */}
       <div className="flex-1 min-w-0">
-        <RightPanel onToggleSidebar={() => setIsSidebarOpen((previous) => !previous)} />
+        <ErrorBoundary label="Peta dan Analitik">
+          <RightPanel onToggleSidebar={() => setIsSidebarOpen((previous) => !previous)} />
+        </ErrorBoundary>
       </div>
     </div>
   );
@@ -54,13 +57,15 @@ function ProfilePageWrapper() {
 
 function App() {
   return (
-    <Routes>
-      {/* Map view: default route */}
-      <Route path="/" element={<MapView />} />
+    <ErrorBoundary label="Aplikasi">
+      <Routes>
+        {/* Map view: default route */}
+        <Route path="/" element={<MapView />} />
 
-      {/* Profile page: /profile/NamaKabupaten */}
-      <Route path="/profile/:kabupatenName" element={<ProfilePageWrapper />} />
-    </Routes>
+        {/* Profile page: /profile/NamaKabupaten */}
+        <Route path="/profile/:kabupatenName" element={<ProfilePageWrapper />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }
 

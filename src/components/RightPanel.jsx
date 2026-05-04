@@ -1,5 +1,6 @@
 import CoverageChart from './map/CoverageChart.jsx';
 import Map from './map/Map.jsx';
+import { ErrorBoundary } from './ErrorBoundary.jsx';
 
 // Main panel — map (65%) + chart (35%)
 export function RightPanel({ onToggleSidebar }) {
@@ -7,7 +8,9 @@ export function RightPanel({ onToggleSidebar }) {
     <div className="flex-1 h-screen flex flex-col">
       {/* Map area (65% height) */}
       <div className="relative bg-gray-100 h-[65%] transition-all duration-300 ease-in-out overflow-hidden">
-        <Map onToggleSidebar={onToggleSidebar} />
+        <ErrorBoundary label="Peta">
+          <Map onToggleSidebar={onToggleSidebar} />
+        </ErrorBoundary>
       </div>
 
       {/* Chart area (35%) — horizontally scrollable */}
@@ -28,14 +31,20 @@ export function RightPanel({ onToggleSidebar }) {
           <div className="flex h-full min-w-full">
             {/* Chart 1 — LULC area coverage by kabupaten */}
             <div className="flex-1 min-w-[320px] h-full border-r border-gray-100">
-              <CoverageChart />
+              <ErrorBoundary label="Grafik Tutupan Lahan">
+                <CoverageChart />
+              </ErrorBoundary>
             </div>
             {/* Chart 2 & 3 — reserved for future analytics */}
             <div className="flex-1 min-w-[320px] h-full border-r border-gray-100 flex items-center justify-center">
-              <CoverageChart />
+              <ErrorBoundary label="Grafik Analitik">
+                <CoverageChart />
+              </ErrorBoundary>
             </div>
             <div className="flex-1 min-w-[320px] h-full flex items-center justify-center">
-              <CoverageChart />
+              <ErrorBoundary label="Grafik Analitik">
+                <CoverageChart />
+              </ErrorBoundary>
             </div>
           </div>
         </div>

@@ -43,6 +43,264 @@ let activeController = new AbortController();
 // never cancels in-flight chart data — stats are independent of layer lifecycle
 let statsController = new AbortController();
 
+// ─── SHARED HELPERS (extracted from loadLayer & loadLayerWithCallback) ──
+// These eliminate duplicated WFS fetch, layer creation, and interaction binding logic.
+// Both public functions now delegate to these helpers, differing only in click behavior.
+
+/**
+ * Fetch GeoJSON from GeoServer WFS with cache-first strategy and request deduplication.
+ * Returns validated GeoJSON object or null on abort/error.
+ * Uses activeController signal so abortActiveRequests() can cancel in-flight fetches (Rule A).
+ */
+async function fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter) {
+  const store = useMapStore.getState();
+  const cacheKey = `geojson_${layerName}_${cqlFilter || 'all'}`;
+
+  // Return cached data immediately if available
+  const cachedGeoJson = store.getCacheGeoJSON(cacheKey);
+  if (cachedGeoJson) return cachedGeoJson;
+
+  // Await existing pending request if one is already in-flight (dedup)
+  const pendingRequest = store.getPending(cacheKey);
+  if (pendingRequest) return await pendingRequest;
+
+  // Build WFS query params
+  const wfsParams = new URLSearchParams({
+    service: WFS_CONFIG.SERVICE,
+    version: WFS_CONFIG.VERSION,
+    request: WFS_CONFIG.REQUEST,
+    typeNames: layerName,
+    outputFormat: WFS_CONFIG.OUTPUT_FORMAT,
+  });
+  if (cqlFilter) wfsParams.append('CQL_FILTER', cqlFilter);
+
+  const geoserverUrl = `${GEOSERVER_URL}?${wfsParams.toString()}`;
+
+  // Create and track the fetch promise for deduplication
+  const fetchPromise = (async () => {
+    const response = await fetch(geoserverUrl, { signal: activeController.signal });
+    return await response.json();
+  })();
+
+  store.setPending(cacheKey, fetchPromise);
+  let geoJsonData;
+  try {
+    geoJsonData = await fetchPromise;
+  } finally {
+    store.clearPending(cacheKey);
+  }
+
+  // Validate and cache the result
+  if (geoJsonData?.features) {
+    store.setCacheGeoJSON(cacheKey, geoJsonData);
+  }
+  return geoJsonData;
+}
+
+/**
+ * Ensure MapLibre source and layers exist for a given GeoJSON dataset.
+ *
+ * Strategy:
+ * - If source already exists: update its data, recreate missing layers
+ * - If source doesn't exist: remove stale layers/sources, create from scratch
+ *
+ * Always creates a fill layer (transparent with conditional highlight) and a hover line layer
+ * that sits on top for thick hover outlines.
+ */
+function renderAndSetupLayers(map, geoJsonData, sourceId, layerId) {
+  const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
+
+  // Ensure every feature has an id — required for MapLibre feature-state (hover highlighting)
+  geoJsonData.features.forEach((feature, index) => {
+    if (feature.id === undefined) feature.id = index;
+  });
+
+  if (map.getSource(sourceId)) {
+    // Source exists — just update data
+    map.getSource(sourceId).setData(geoJsonData);
+
+    // Recreate fill layer if it was removed but source remains
+    if (!map.getLayer(layerId)) {
+      map.addLayer({
+        id: layerId,
+        type: 'fill',
+        source: sourceId,
+        paint: {
+          'fill-color': 'transparent',
+          'fill-opacity': 0.5,
+          'fill-outline-color': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false],
+            COLORS.HIGHLIGHT,
+            COLORS.DEFAULT,
+          ],
+        },
+      });
+    }
+
+    // Ensure hover line layer exists
+    if (!map.getLayer(hoverLineId)) {
+      map.addLayer({
+        id: hoverLineId,
+        type: 'line',
+        source: sourceId,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false],
+            COLORS.HIGHLIGHT,
+            COLORS.TRANSPARENT,
+          ],
+          'line-width': 2,
+          'line-opacity': 0.98,
+        },
+      });
+    } else {
+      // Update hover line properties in case they changed
+      const hoverLine = map.getLayer(hoverLineId);
+      if (hoverLine) {
+        map.setPaintProperty(hoverLineId, 'line-width', 2);
+        map.setPaintProperty(hoverLineId, 'line-opacity', 0.98);
+        map.setPaintProperty(hoverLineId, 'line-color', [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          COLORS.HIGHLIGHT,
+          COLORS.TRANSPARENT,
+        ]);
+      }
+    }
+  } else {
+    // Source doesn't exist — remove stale layers then create from scratch
+    try {
+      if (map.getLayer(`${layerId}${LAYERS.HOVER_SUFFIX}`))
+        map.removeLayer(`${layerId}${LAYERS.HOVER_SUFFIX}`);
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+    } catch {
+      /* skip */
+    }
+
+    map.addSource(sourceId, { type: 'geojson', data: geoJsonData, generateId: true });
+
+    // Create fill layer
+    map.addLayer({
+      id: layerId,
+      type: 'fill',
+      source: sourceId,
+      paint: {
+        'fill-color': 'transparent',
+        'fill-opacity': 0.5,
+        'fill-outline-color': [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          COLORS.HIGHLIGHT,
+          COLORS.DEFAULT,
+        ],
+      },
+    });
+
+    // Create hover line layer (above fill layer for thick highlight on hover)
+    map.addLayer({
+      id: hoverLineId,
+      type: 'line',
+      source: sourceId,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          COLORS.HIGHLIGHT,
+          COLORS.TRANSPARENT,
+        ],
+        'line-width': 2,
+        'line-opacity': 0.98,
+      },
+    });
+  }
+
+  bringHoverLayersToTop(map);
+}
+
+/**
+ * Attach hover (cursor, popup, highlight) + click interactions to a layer.
+ * Mouseenter/mouseleave/mousemove are shared across all callers.
+ * Click behavior is delegated to onClickHandler so caller controls navigation.
+ *
+ * @param {maplibregl.Map} map       - MapLibre map instance
+ * @param {string}         layerId   - Fill layer ID (e.g. 'kabupaten-fill')
+ * @param {Function}       onClickHandler - Called with clicked event; decides next action
+ * @returns {Function} cleanup       - Remove all event listeners and popup
+ */
+function attachInteractions(map, layerId, onClickHandler) {
+  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+  const sourceId = layerId.replace('-fill', '-src');
+  let lastHoverFeatureId = null;
+
+  const clearHoverState = () => {
+    if (lastHoverFeatureId !== null && map.getSource(sourceId)) {
+      map.setFeatureState({ source: sourceId, id: lastHoverFeatureId }, { hover: false });
+      lastHoverFeatureId = null;
+    }
+  };
+
+  const onMouseEnter = () => {
+    map.getCanvas().style.cursor = 'pointer';
+  };
+
+  const onMouseLeave = () => {
+    map.getCanvas().style.cursor = '';
+    popup.remove();
+    clearHoverState();
+  };
+
+  const onMouseMove = (e) => {
+    const hoveredFeature = e.features?.[0];
+    if (!hoveredFeature || !map.getSource(sourceId)) return;
+
+    const hoveredFeatureId = hoveredFeature.id;
+    if (lastHoverFeatureId !== null && lastHoverFeatureId !== hoveredFeatureId) clearHoverState();
+    if (hoveredFeatureId !== undefined && map.getSource(sourceId)) {
+      map.setFeatureState({ source: sourceId, id: hoveredFeatureId }, { hover: true });
+      lastHoverFeatureId = hoveredFeatureId;
+    }
+
+    // Show area name in popup (priority: desa > kecamatan > kabupaten)
+    const areaName =
+      hoveredFeature.properties?.des ??
+      hoveredFeature.properties?.kec ??
+      hoveredFeature.properties?.kab ??
+      'Unknown';
+    if (areaName && areaName !== 'Unknown') {
+      popup.setLngLat(e.lngLat).setHTML(`<strong>${areaName}</strong>`).addTo(map);
+    }
+  };
+
+  // Bind mouse events once per mount
+  map.on('mouseenter', layerId, onMouseEnter);
+  map.on('mouseleave', layerId, onMouseLeave);
+  map.on('mousemove', layerId, onMouseMove);
+
+  // Delegate click to handler — caller decides drill-down vs local state
+  map.on('click', layerId, async (e) => {
+    const clickedFeature = e.features?.[0];
+    if (!clickedFeature?.properties) return;
+    onClickHandler(e);
+  });
+
+  // Return cleanup function for caller to invoke before recreation
+  return () => {
+    try {
+      map.off('mouseenter', layerId, onMouseEnter);
+      map.off('mouseleave', layerId, onMouseLeave);
+      map.off('mousemove', layerId, onMouseMove);
+      map.off('click', layerId);
+    } catch {
+      /* map may have been removed during unmount */
+    }
+    popup.remove();
+  };
+}
+
 // Cancel all in-flight requests (GeoServer + GEE tile server)
 // Also clear pending request dedup so new requests can start fresh
 export function abortActiveRequests() {
@@ -279,8 +537,8 @@ function bringHoverLayersToTop(map) {
   });
 }
 
-// Load GeoJSON layer from GeoServer (cache-first, dedup pending requests)
-// removeLayerIds: layers to remove before loading
+// Load GeoJSON layer from GeoServer (cache-first, dedup pending requests).
+// Click triggers global drill-down via updateBreadcrumb (main map behavior).
 export const loadLayer = async (
   map,
   layerName,
@@ -289,353 +547,101 @@ export const loadLayer = async (
   cqlFilter,
   removeLayerIds = [],
 ) => {
-  // ─── CLEAN UP OLD LAYER ───
-  // removeLayerAndSource handles hover-line + fill layer simultaneously
+  // Clean up old layers before loading
   removeLayerIds.forEach((id) => removeLayerAndSource(map, id));
 
-  // ─── CHECK CACHE ───
-  const cacheKey = `geojson_${layerName}_${cqlFilter || 'all'}`;
-  const store = useMapStore.getState();
-
-  let geoJsonData;
-
-  try {
-    const cachedGeoJson = store.getCacheGeoJSON(cacheKey);
-    if (cachedGeoJson) {
-      geoJsonData = cachedGeoJson;
-    } else {
-      // Dedup: wait for same pending request if one exists
-      const pendingRequest = store.getPending(cacheKey);
-      if (pendingRequest) {
-        geoJsonData = await pendingRequest;
-      } else {
-        // ─── FETCH FROM GEOSERVER ───
-        const wfsParams = new URLSearchParams({
-          service: WFS_CONFIG.SERVICE,
-          version: WFS_CONFIG.VERSION,
-          request: WFS_CONFIG.REQUEST,
-          typeNames: layerName,
-          outputFormat: WFS_CONFIG.OUTPUT_FORMAT,
-        });
-        if (cqlFilter) wfsParams.append('CQL_FILTER', cqlFilter);
-
-        const geoserverUrl = `${GEOSERVER_URL}?${wfsParams.toString()}`;
-
-        const fetchPromise = (async () => {
-          const response = await fetch(geoserverUrl, {
-            signal: activeController.signal,
-          });
-          return await response.json();
-        })();
-
-        store.setPending(cacheKey, fetchPromise);
-        geoJsonData = await fetchPromise;
-        store.clearPending(cacheKey);
-        store.setCacheGeoJSON(cacheKey, geoJsonData);
-      }
-    }
-  } catch (err) {
-    if (err.name === 'AbortError') return; // Cancelled on Home click, not an error
-    console.error(`Failed to load layer ${layerId}:`, err);
-    return;
-  }
-
-  // Guard: if geoJsonData is empty/null, exit
-  if (!geoJsonData || !Array.isArray(geoJsonData.features)) {
+  // Fetch GeoJSON with shared cache-first + dedup logic
+  const geoJsonData = await fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter);
+  if (!geoJsonData?.features) {
     console.warn(`No GeoJSON features loaded for ${layerId}`);
     return;
   }
 
-  // ─── ENSURE FEATURE IDS ───
-  // Every feature must have an id for feature-state (hover highlighting) to work consistently
-  geoJsonData.features.forEach((feature, index) => {
-    if (feature.id === undefined) feature.id = index;
+  // Render fill + hover line layers using shared logic
+  renderAndSetupLayers(map, geoJsonData, sourceId, layerId);
+
+  // Attach interactions with drill-down behavior (delegates to updateBreadcrumb)
+  attachInteractions(map, layerId, (e) => {
+    handleGlobalDrillDown(e, map);
   });
-
-  // ─── ADD/UPDATE SOURCE & LAYER ───
-  if (map.getSource(sourceId)) {
-    // Source already exists: just update data
-    map.getSource(sourceId).setData(geoJsonData);
-
-    // If fill layer was removed but source still exists, recreate the layer
-    if (!map.getLayer(layerId)) {
-      map.addLayer({
-        id: layerId,
-        type: 'fill',
-        source: sourceId,
-        paint: {
-          'fill-color': 'transparent',
-          'fill-opacity': 0.5,
-          'fill-outline-color': [
-            'case',
-            ['boolean', ['feature-state', 'hover'], false],
-            COLORS.HIGHLIGHT,
-            COLORS.DEFAULT,
-          ],
-        },
-      });
-    }
-
-    // Ensure hover line layer exists (create or update)
-    const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
-    if (!map.getLayer(hoverLineId)) {
-      map.addLayer({
-        id: hoverLineId,
-        type: 'line',
-        source: sourceId,
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': [
-            'case',
-            ['boolean', ['feature-state', 'hover'], false],
-            COLORS.HIGHLIGHT,
-            COLORS.TRANSPARENT,
-          ],
-          'line-width': 2,
-          'line-opacity': 0.98,
-        },
-      });
-    } else {
-      // Update hover line properties
-      const existingHoverLine = map.getLayer(hoverLineId);
-      if (existingHoverLine) {
-        map.setPaintProperty(hoverLineId, 'line-width', 2);
-        map.setPaintProperty(hoverLineId, 'line-opacity', 0.98);
-        map.setPaintProperty(hoverLineId, 'line-color', [
-          'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          COLORS.HIGHLIGHT,
-          COLORS.TRANSPARENT,
-        ]);
-      }
-    }
-  } else {
-    // Source doesn't exist: create source + layers from scratch
-    // Remove old layers first if they still exist (can happen when source is removed but layers aren't)
-    if (map.getLayer(`${layerId}${LAYERS.HOVER_SUFFIX}`))
-      map.removeLayer(`${layerId}${LAYERS.HOVER_SUFFIX}`);
-    if (map.getLayer(layerId)) map.removeLayer(layerId);
-
-    map.addSource(sourceId, { type: 'geojson', data: geoJsonData, generateId: true });
-
-    // Create fill layer
-    map.addLayer({
-      id: layerId,
-      type: 'fill',
-      source: sourceId,
-      paint: {
-        'fill-color': 'transparent',
-        'fill-opacity': 0.5,
-        'fill-outline-color': [
-          'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          COLORS.HIGHLIGHT,
-          COLORS.DEFAULT,
-        ],
-      },
-    });
-
-    // Create hover line layer (above fill layer for thick highlight on hover)
-    const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
-    if (!map.getLayer(hoverLineId)) {
-      map.addLayer({
-        id: hoverLineId,
-        type: 'line',
-        source: sourceId,
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': [
-            'case',
-            ['boolean', ['feature-state', 'hover'], false],
-            COLORS.HIGHLIGHT,
-            COLORS.TRANSPARENT,
-          ],
-          'line-width': 2,
-          'line-opacity': 0.98,
-        },
-      });
-    }
-  }
-
-  // ─── ATTACH INTERACTIONS ───
-  // Attach hover + click interactions (prevent duplicates if called >1 time)
-  attachLayerInteraction(map, layerId);
-
-  // Ensure hover lines are on top (visible)
-  bringHoverLayersToTop(map);
 
   return geoJsonData;
 };
 
-// Attach hover & click interactions to a layer (highlight, popup name, drilldown)
-function attachLayerInteraction(map, layerId) {
+// Global drill-down logic — called when user clicks a feature on the main map.
+// Updates breadcrumbs, loads child layers, and manages layer removal chain.
+async function handleGlobalDrillDown(event, map) {
   const { updateBreadcrumb } = useMapStore.getState();
-  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+  const clickedFeature = event.features?.[0];
+  if (!clickedFeature?.properties) return;
 
-  // Prevent binding handlers twice to the same layer
-  const internalMap = map;
-  if (!internalMap._attachedLayers) internalMap._attachedLayers = new Set();
-  if (internalMap._attachedLayers.has(layerId)) return;
-  internalMap._attachedLayers.add(layerId);
+  const { kab, kec, des } = clickedFeature.properties;
 
-  // Derive source ID from layer ID (pattern: 'kabupaten-fill' → 'kabupaten-src')
-  const sourceId = layerId.replace('-fill', '-src');
-  let lastHoverFeatureId = null; // Track currently hovered feature
+  // === DESA LEVEL (deepest) ===
+  if (des) {
+    updateBreadcrumb('kabupaten', kab);
+    updateBreadcrumb('kecamatan', kec);
+    updateBreadcrumb('desa', des);
+    useMapStore.getState().setSelectedKab(resolveKabName(kab));
+    zoomToFeature(map, clickedFeature);
+    await loadGEEPolygonRaster(map, { des });
+    [LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.KABUPATEN_FILL].forEach((id) =>
+      removeLayerAndSource(map, id),
+    );
+    removeLayerAndSource(map, LAYER_IDS.DESA_FILL);
+    await loadLayer(
+      map,
+      LAYER_TYPES.DESA,
+      SOURCE_IDS.DESA,
+      LAYER_IDS.DESA_FILL,
+      buildDesaFilter({ kab, kec, des }),
+    );
+    return;
+  }
 
-  // ─── MOUSE ENTER: Change cursor to pointer ───
-  map.on('mouseenter', layerId, () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
+  // === KECAMATAN LEVEL (mid-level) ===
+  if (kec) {
+    updateBreadcrumb('kabupaten', kab);
+    updateBreadcrumb('kecamatan', kec);
+    updateBreadcrumb('desa', undefined);
+    useMapStore.getState().setSelectedKab(resolveKabName(kab));
+    zoomToFeature(map, clickedFeature);
+    await loadGEEPolygonRaster(map, { kec });
+    removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
+    await loadLayer(
+      map,
+      LAYER_TYPES.DESA,
+      SOURCE_IDS.DESA,
+      LAYER_IDS.DESA_FILL,
+      buildKecamatanFilter({ kab, kec }),
+      [LAYER_IDS.KECAMATAN_FILL],
+    );
+    return;
+  }
 
-  // ─── MOUSE LEAVE: Reset cursor & hide popup ───
-  map.on('mouseleave', layerId, () => {
-    map.getCanvas().style.cursor = '';
-    popup.remove();
-    // Clear hover state from previous feature
-    if (lastHoverFeatureId !== null && map.getSource(sourceId)) {
-      map.setFeatureState({ source: sourceId, id: lastHoverFeatureId }, { hover: false });
-      lastHoverFeatureId = null;
-    }
-  });
-
-  // ─── MOUSE MOVE: Show popup & highlight feature ───
-  map.on('mousemove', layerId, (e) => {
-    const hoveredFeature = e.features?.[0];
-    if (!hoveredFeature || !map.getSource(sourceId)) return;
-
-    const hoveredFeatureId = hoveredFeature.id;
-
-    // Clear hover state from previous feature
-    if (lastHoverFeatureId !== null && lastHoverFeatureId !== hoveredFeatureId) {
-      if (map.getSource(sourceId)) {
-        map.setFeatureState({ source: sourceId, id: lastHoverFeatureId }, { hover: false });
-      }
-      lastHoverFeatureId = null;
-    }
-
-    // Set hover state on new feature
-    if (hoveredFeatureId !== undefined && map.getSource(sourceId)) {
-      map.setFeatureState({ source: sourceId, id: hoveredFeatureId }, { hover: true });
-      lastHoverFeatureId = hoveredFeatureId;
-    }
-
-    // Show area name in popup (priority: desa > kecamatan > kabupaten)
-    const areaName =
-      hoveredFeature.properties?.des ??
-      hoveredFeature.properties?.kec ??
-      hoveredFeature.properties?.kab ??
-      'Unknown';
-
-    if (areaName && areaName !== 'Unknown') {
-      popup.setLngLat(e.lngLat).setHTML(`<strong>${areaName}</strong>`).addTo(map);
-    }
-  });
-
-  // ─── CLICK HANDLER: Drill-down to next level ───
-  map.on('click', layerId, async (e) => {
-    const clickedFeature = e.features?.[0];
-    if (!clickedFeature?.properties) return;
-
-    const { kab, kec, des } = clickedFeature.properties;
-
-    // === DESA LEVEL (deepest) ===
-    if (des) {
-      updateBreadcrumb('kabupaten', kab);
-      updateBreadcrumb('kecamatan', kec);
-      updateBreadcrumb('desa', des);
-      useMapStore.getState().setSelectedKab(resolveKabName(kab));
-
-      // Zoom to selected desa boundary
-      zoomToFeature(map, clickedFeature);
-
-      // Load GEE coverage for this desa
-      await loadGEEPolygonRaster(map, { des });
-
-      // Remove parent boundaries (kecamatan & kabupaten no longer needed)
-      [LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.KABUPATEN_FILL].forEach((id) =>
-        removeLayerAndSource(map, id),
-      );
-
-      // Remove old desa layer and reload with 3-level filter
-      removeLayerAndSource(map, LAYER_IDS.DESA_FILL);
-      await loadLayer(
-        map,
-        LAYER_TYPES.DESA,
-        SOURCE_IDS.DESA,
-        LAYER_IDS.DESA_FILL,
-        buildDesaFilter({ kab, kec, des }),
-      );
-
-      return;
-    }
-
-    // === KECAMATAN LEVEL (mid-level) ===
-    if (kec) {
-      updateBreadcrumb('kabupaten', kab);
-      updateBreadcrumb('kecamatan', kec);
-      updateBreadcrumb('desa', undefined); // Reset desa when navigating to new kecamatan
-      useMapStore.getState().setSelectedKab(resolveKabName(kab));
-
-      // Zoom to selected kecamatan boundary
-      zoomToFeature(map, clickedFeature);
-
-      // Load GEE coverage for this kecamatan
-      await loadGEEPolygonRaster(map, { kec });
-
-      // Remove kabupaten layer (not needed when drilled to kecamatan)
-      removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
-
-      // Load desa boundaries within this kecamatan
-      await loadLayer(
-        map,
-        LAYER_TYPES.DESA,
-        SOURCE_IDS.DESA,
-        LAYER_IDS.DESA_FILL,
-        buildKecamatanFilter({ kab, kec }),
-        [LAYER_IDS.KECAMATAN_FILL],
-      );
-
-      return;
-    }
-
-    // === KABUPATEN LEVEL (top-level) ===
-    if (kab) {
-      updateBreadcrumb('kabupaten', kab);
-      updateBreadcrumb('kecamatan', undefined);
-      updateBreadcrumb('desa', undefined);
-      useMapStore.getState().setSelectedKab(resolveKabName(kab));
-
-      // Zoom to selected kabupaten boundary
-      zoomToFeature(map, clickedFeature);
-
-      // Load GEE coverage for this kabupaten
-      await loadGEEPolygonRaster(map, { kab });
-
-      // Load kecamatan boundaries within this kabupaten (replace kabupaten layer)
-      await loadLayer(
-        map,
-        LAYER_TYPES.KECAMATAN,
-        SOURCE_IDS.KECAMATAN,
-        LAYER_IDS.KECAMATAN_FILL,
-        buildSingleFilter('kab', kab),
-        [LAYER_IDS.KABUPATEN_FILL],
-      );
-    }
-  });
+  // === KABUPATEN LEVEL (top-level) ===
+  if (kab) {
+    updateBreadcrumb('kabupaten', kab);
+    updateBreadcrumb('kecamatan', undefined);
+    updateBreadcrumb('desa', undefined);
+    useMapStore.getState().setSelectedKab(resolveKabName(kab));
+    zoomToFeature(map, clickedFeature);
+    await loadGEEPolygonRaster(map, { kab });
+    await loadLayer(
+      map,
+      LAYER_TYPES.KECAMATAN,
+      SOURCE_IDS.KECAMATAN,
+      LAYER_IDS.KECAMATAN_FILL,
+      buildSingleFilter('kab', kab),
+      [LAYER_IDS.KABUPATEN_FILL],
+    );
+  }
 }
 
-// ─── LOAD LAYER WITH CUSTOM CALLBACK (for isolated maps) ───────────────
-// Same as loadLayer regarding WFS fetch, GeoJSON cache, and hover/popup interactions.
-// The only difference: click calls onClickCallback(feature) so state stays local
-// to the component, not leaking to the global Zustand store.
-// Returns { geojson, cleanup } because profile map recreates layers
-// when drill level changes, and cleanup() prevents event listener buildup.
+// Load GeoJSON layer from GeoServer with custom onClick callback.
+// Unlike loadLayer(), click behavior stays local to the component (does not leak
+// to the global Zustand breadcrumb store). Returns { geojson, cleanup } for
+// profile maps that recreate layers when drill level changes.
 export const loadLayerWithCallback = async (
   map,
   layerName,
@@ -644,176 +650,18 @@ export const loadLayerWithCallback = async (
   cqlFilter,
   onClickCallback,
 ) => {
-  // ─── WFS FETCH + CACHE ───────────────────────────────────────────────────────
-  // cacheKey is identical to loadLayer so both maps share the same cache
-  const cacheKey = `geojson_${layerName}_${cqlFilter || 'all'}`;
-  const store = useMapStore.getState();
-  let geoJsonData;
+  // Fetch GeoJSON using shared cache-first + dedup logic
+  const geoJsonData = await fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter);
+  if (!geoJsonData?.features) return { geojson: null, cleanup: null };
 
-  try {
-    const cachedGeoJson = store.getCacheGeoJSON(cacheKey);
-    if (cachedGeoJson) {
-      geoJsonData = cachedGeoJson;
-    } else {
-      const pendingRequest = store.getPending(cacheKey);
-      if (pendingRequest) {
-        geoJsonData = await pendingRequest;
-      } else {
-        const wfsParams = new URLSearchParams({
-          service: WFS_CONFIG.SERVICE,
-          version: WFS_CONFIG.VERSION,
-          request: WFS_CONFIG.REQUEST,
-          typeNames: layerName,
-          outputFormat: WFS_CONFIG.OUTPUT_FORMAT,
-        });
-        if (cqlFilter) wfsParams.append('CQL_FILTER', cqlFilter);
+  // Render fill + hover line layers using shared logic
+  renderAndSetupLayers(map, geoJsonData, sourceId, layerId);
 
-        // Uses activeController so abortActiveRequests() can cancel this fetch (Rule A)
-        const fetchPromise = (async () => {
-          const wfsResponse = await fetch(`${GEOSERVER_URL}?${wfsParams}`, {
-            signal: activeController.signal,
-          });
-          return await wfsResponse.json();
-        })();
-
-        store.setPending(cacheKey, fetchPromise);
-        geoJsonData = await fetchPromise;
-        store.clearPending(cacheKey);
-        store.setCacheGeoJSON(cacheKey, geoJsonData);
-      }
-    }
-  } catch (err) {
-    if (err.name === 'AbortError') return { geojson: null, cleanup: null };
-    console.error(`loadLayerWithCallback: failed to load ${layerId}:`, err);
-    return { geojson: null, cleanup: null };
-  }
-
-  if (!geoJsonData?.features?.length) return { geojson: null, cleanup: null };
-  geoJsonData.features.forEach((feature, index) => {
-    if (feature.id === undefined) feature.id = index;
-  });
-
-  // ─── ADD SOURCE + LAYER ──────────────────────────────────────────────────────
-  const hoverLineId = `${layerId}${LAYERS.HOVER_SUFFIX}`;
-  // Remove old layers before adding new ones (order: layers first, then source)
-  [hoverLineId, layerId].forEach((layerIdToRemove) => {
-    try {
-      if (map.getLayer(layerIdToRemove)) map.removeLayer(layerIdToRemove);
-    } catch {
-      /* skip */
-    }
-  });
-  try {
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
-  } catch {
-    /* skip */
-  }
-
-  map.addSource(sourceId, { type: 'geojson', data: geoJsonData, generateId: true });
-  map.addLayer({
-    id: layerId,
-    type: 'fill',
-    source: sourceId,
-    paint: {
-      'fill-color': 'transparent',
-      'fill-opacity': 0.5,
-      'fill-outline-color': [
-        'case',
-        ['boolean', ['feature-state', 'hover'], false],
-        COLORS.HIGHLIGHT,
-        COLORS.DEFAULT,
-      ],
-    },
-  });
-  map.addLayer({
-    id: hoverLineId,
-    type: 'line',
-    source: sourceId,
-    layout: { 'line-join': 'round', 'line-cap': 'round' },
-    paint: {
-      'line-color': [
-        'case',
-        ['boolean', ['feature-state', 'hover'], false],
-        COLORS.HIGHLIGHT,
-        COLORS.TRANSPARENT,
-      ],
-      'line-width': 2,
-      'line-opacity': 0.98,
-    },
-  });
-  bringHoverLayersToTop(map);
-
-  // ─── HOVER + CLICK INTERACTIONS ─────────────────────────────────────────────────
-  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
-  let lastHoveredFeatureId = null;
-
-  const clearHoverState = () => {
-    if (lastHoveredFeatureId !== null) {
-      try {
-        map.setFeatureState({ source: sourceId, id: lastHoveredFeatureId }, { hover: false });
-      } catch {
-        /* skip */
-      }
-      lastHoveredFeatureId = null;
-    }
-  };
-
-  const onMouseEnter = () => {
-    map.getCanvas().style.cursor = 'pointer';
-  };
-  const onMouseLeave = () => {
-    map.getCanvas().style.cursor = '';
-    popup.remove();
-    clearHoverState();
-  };
-
-  const onMouseMove = (e) => {
-    const hoveredFeature = e.features?.[0];
-    if (!hoveredFeature || !map.getSource(sourceId)) return;
-    const hoveredFeatureId = hoveredFeature.id;
-    if (lastHoveredFeatureId !== null && lastHoveredFeatureId !== hoveredFeatureId)
-      clearHoverState();
-    if (hoveredFeatureId !== undefined) {
-      try {
-        map.setFeatureState({ source: sourceId, id: hoveredFeatureId }, { hover: true });
-      } catch {
-        /* skip */
-      }
-      lastHoveredFeatureId = hoveredFeatureId;
-    }
-    const areaName =
-      hoveredFeature.properties?.des ??
-      hoveredFeature.properties?.kec ??
-      hoveredFeature.properties?.kab ??
-      'Unknown';
-    if (areaName !== 'Unknown')
-      popup.setLngLat(e.lngLat).setHTML(`<strong>${areaName}</strong>`).addTo(map);
-  };
-
-  const onClickHandler = (e) => {
+  // Attach interactions with local-state click handler (delegates to callback)
+  const cleanup = attachInteractions(map, layerId, (e) => {
     const clickedFeature = e.features?.[0];
-    // Delegate to local state — does not touch global store
     if (clickedFeature?.properties) onClickCallback(clickedFeature);
-  };
-
-  map.on('mouseenter', layerId, onMouseEnter);
-  map.on('mouseleave', layerId, onMouseLeave);
-  map.on('mousemove', layerId, onMouseMove);
-  map.on('click', layerId, onClickHandler);
-
-  // cleanup is called by caller before recreating layers to prevent listener buildup
-  const cleanup = () => {
-    try {
-      map.off('mouseenter', layerId, onMouseEnter);
-      map.off('mouseleave', layerId, onMouseLeave);
-      map.off('mousemove', layerId, onMouseMove);
-      map.off('click', layerId, onClickHandler);
-    } catch {
-      /* map may have been removed during component unmount */
-    }
-    popup.remove();
-    clearHoverState();
-  };
+  });
 
   return { geojson: geoJsonData, cleanup };
 };

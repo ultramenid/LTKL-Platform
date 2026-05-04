@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Layers, X } from 'lucide-react';
-import { KabupatenCard } from './map/KabupatesList.jsx';
+import { KabupatenCard } from './map/KabupatensList.jsx';
 
 // Left sidebar — logo, search, kabupaten list. On mobile it becomes an overlay drawer
 export function LeftPanel({ onClose }) {

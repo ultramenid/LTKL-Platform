@@ -82,4 +82,4 @@ export const loadDesaLevel = async (mapInstance, breadcrumbData) => {
   zoomToMatchingFeature(mapInstance, SOURCE_IDS.DESA, 'des', breadcrumbData.des);
 };
 
-// Note: hover/click event handlers are managed in mapLayerStore.js via attachLayerInteraction
+// Note: hover/click event handlers are managed in mapLayerStore.js via attachInteractions + handleGlobalDrillDown

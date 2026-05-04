@@ -6,6 +6,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+BACKEND_PLANNER.md
+CLAUDE.md
+DEVELOPMENT_RULES.md
+
 
 node_modules
 dist
