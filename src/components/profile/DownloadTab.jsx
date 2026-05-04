@@ -1,6 +1,6 @@
 import { Database, Download, FileText, Map as MapIcon } from 'lucide-react';
 import { COLORS, PROFILE_DOWNLOAD_DUMMY_FILES } from '../../config/constants.js';
-import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
+import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
 
 function getDownloadCategoryIcon(categoryName) {
   if (categoryName === 'dataset') return <Database size={16} className="text-emerald-600" />;
