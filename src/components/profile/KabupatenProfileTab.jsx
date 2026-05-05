@@ -144,7 +144,6 @@ const DEVELOPMENT_PARTNERS = [
   {
     id: 'partner6',
     name: 'Nama Partner 6',
-    focusArea: 'IDH – The Sustainable Trade Initiative',
     focusArea: 'Komoditas Berkelanjutan',
     since: 2021,
     partnerType: 'Lembaga Internasional',
