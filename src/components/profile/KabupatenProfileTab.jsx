@@ -7,31 +7,31 @@ import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSectio
 const MSF_STRUCTURE = [
   {
     position: 'Ketua Forum',
-    holder: 'Drs. Ahmad Karim, M.Si.',
+    holder: 'Nama Ketua',
     institution: 'Pemerintah Kabupaten',
     sector: 'government',
   },
   {
     position: 'Wakil Ketua I',
-    holder: 'Ir. Budi Santoso',
+    holder: 'Nama Wakil Ketua I',
     institution: 'DPRD Kabupaten',
     sector: 'government',
   },
   {
     position: 'Wakil Ketua II',
-    holder: 'Dr. Sri Wahyuni, M.M.',
+    holder: 'Nama Wakil Ketua II',
     institution: 'Asosiasi Pengusaha Lokal',
     sector: 'private',
   },
   {
     position: 'Sekretaris',
-    holder: 'Hendra Pratama, S.H.',
+    holder: 'Nama Sekretaris',
     institution: 'Sekretariat MSF',
     sector: 'secretariat',
   },
   {
     position: 'Bendahara',
-    holder: 'Amelia Rosa, S.E., M.Ak.',
+    holder: 'Nama Bendahara',
     institution: 'Dinas Keuangan Daerah',
     sector: 'government',
   },
@@ -74,26 +74,26 @@ const REGIONAL_STATS = [
 ];
 
 const REGIONAL_LEADERS = [
-  { title: 'Bupati', name: 'Mohamad Irwan Lapatta, S.Sos., M.Si.' },
-  { title: 'Wakil Bupati', name: 'Samuel Yansen Pongi, S.H.' },
+  { title: 'Bupati', name: 'Nama Bupati' },
+  { title: 'Wakil Bupati', name: 'Nama Wakil Bupati' },
 ];
 
 const OPD_LIST = [
-  { name: 'Badan Perencanaan Pembangunan Daerah', abbreviation: 'Bappeda', head: 'Dr. Ir. H. Hendra W., M.T.' },
-  { name: 'Dinas Pertanian dan Ketahanan Pangan', abbreviation: 'Distan', head: 'Ir. Muh. Arif, M.P.' },
-  { name: 'Dinas Kehutanan', abbreviation: 'Dishut', head: 'Andi Basri, S.Hut., M.Si.' },
-  { name: 'Dinas Komunikasi dan Informatika', abbreviation: 'Diskominfo', head: 'Drs. Rizal Hamid' },
-  { name: 'Dinas Pekerjaan Umum dan Penataan Ruang', abbreviation: 'DPUPR', head: 'Ir. Fakhri Abdillah, M.T.' },
-  { name: 'Dinas Lingkungan Hidup', abbreviation: 'DLH', head: 'drh. Yuliana Dewi, M.Si.' },
-  { name: 'Dinas Koperasi, UKM dan Perdagangan', abbreviation: 'Diskopdag', head: 'Drs. Rahmat Hidayat, M.M.' },
-  { name: 'Badan Pengelola Keuangan dan Aset Daerah', abbreviation: 'BPKAD', head: 'Amelia Rosa, S.E., M.Ak.' },
+  { name: 'Badan Perencanaan Pembangunan Daerah', abbreviation: 'Bappeda', head: 'Nama Kepala Bappeda' },
+  { name: 'Dinas Pertanian dan Ketahanan Pangan', abbreviation: 'Distan', head: 'Nama Kepala Distan' },
+  { name: 'Dinas Kehutanan', abbreviation: 'Dishut', head: 'Nama Kepala Dishut' },
+  { name: 'Dinas Komunikasi dan Informatika', abbreviation: 'Diskominfo', head: 'Nama Kepala Diskominfo' },
+  { name: 'Dinas Pekerjaan Umum dan Penataan Ruang', abbreviation: 'DPUPR', head: 'Nama Kepala DPUPR' },
+  { name: 'Dinas Lingkungan Hidup', abbreviation: 'DLH', head: 'Nama Kepala DLH' },
+  { name: 'Dinas Koperasi, UKM dan Perdagangan', abbreviation: 'Diskopdag', head: 'Nama Kepala Diskopdag' },
+  { name: 'Badan Pengelola Keuangan dan Aset Daerah', abbreviation: 'BPKAD', head: 'Nama Kepala BPKAD' },
 ];
 
 // Development partners list — placeholder
 const DEVELOPMENT_PARTNERS = [
   {
-    id: 'giz',
-    name: 'GIZ Indonesia',
+    id: 'partner1',
+    name: 'Nama Partner 1',
     focusArea: 'Tata Kelola Hutan & Iklim',
     since: 2019,
     partnerType: 'Lembaga Kerjasama Teknik',
@@ -102,8 +102,8 @@ const DEVELOPMENT_PARTNERS = [
     typeColor: '#14b8a6',
   },
   {
-    id: 'wwf',
-    name: 'WWF Indonesia',
+    id: 'partner2',
+    name: 'Nama Partner 2',
     focusArea: 'Konservasi Keanekaragaman Hayati',
     since: 2020,
     partnerType: 'NGO Internasional',
@@ -112,8 +112,8 @@ const DEVELOPMENT_PARTNERS = [
     typeColor: '#6366f1',
   },
   {
-    id: 'kehati',
-    name: 'Yayasan KEHATI',
+    id: 'partner3',
+    name: 'Nama Partner 3',
     focusArea: 'Keanekaragaman Hayati & Pertanian',
     since: 2021,
     partnerType: 'NGO Nasional',
@@ -122,8 +122,8 @@ const DEVELOPMENT_PARTNERS = [
     typeColor: '#8b5cf6',
   },
   {
-    id: 'undp',
-    name: 'UNDP Indonesia',
+    id: 'partner4',
+    name: 'Nama Partner 4',
     focusArea: 'Pembangunan Berkelanjutan',
     since: 2020,
     partnerType: 'Badan PBB',
@@ -132,8 +132,8 @@ const DEVELOPMENT_PARTNERS = [
     typeColor: '#3b82f6',
   },
   {
-    id: 'bni',
-    name: 'PT Bank Negara Indonesia (BNI)',
+    id: 'partner5',
+    name: 'Nama Partner 5',
     focusArea: 'Pemberdayaan UMKM & CSR',
     since: 2022,
     partnerType: 'BUMN / Sektor Swasta',
@@ -142,8 +142,9 @@ const DEVELOPMENT_PARTNERS = [
     typeColor: '#f59e0b',
   },
   {
-    id: 'idh',
-    name: 'IDH – The Sustainable Trade Initiative',
+    id: 'partner6',
+    name: 'Nama Partner 6',
+    focusArea: 'IDH – The Sustainable Trade Initiative',
     focusArea: 'Komoditas Berkelanjutan',
     since: 2021,
     partnerType: 'Lembaga Internasional',

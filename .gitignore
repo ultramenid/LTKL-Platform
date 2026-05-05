@@ -1,28 +1,33 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-BACKEND_PLANNER.md
-CLAUDE.md
-DEVELOPMENT_RULES.md
+# ==========================
+# ENVIRONMENTS & SECRETS
+# ==========================
+.env
+.env.local
+.env.production
 
+# ==========================
+# BUILDS
+# ==========================
+node_modules/
+dist/
+dist-ssr/
+.vite/
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# ==========================
+# EDITOR & OS FILES
+# ==========================
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
