@@ -247,7 +247,7 @@ const COMMODITY_SUMMARY_STATS = [
 export function CommodityTab() {
   return (
     <ProfileSection>
-      <SectionHeader title="Komoditas Unggulan" borderColor="#92400e" dotColor="#92400e" />
+      <SectionHeader title="Komoditas Pangan dan Horti" borderColor="#92400e" dotColor="#92400e" />
 
       {/* ─── KARTU SUMMARY STATISTIK ─── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -326,6 +326,9 @@ export function CommodityTab() {
           </div>
         </div>
       </div>
+
+      <SectionHeader title="Komoditas Perkebunan" borderColor="#92400e" dotColor="#92400e" />
+      <p className=' text-xs text-gray-600 leading-relaxed'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem, voluptatum exercitationem soluta dolorem error ex doloribus id voluptate corrupti facilis molestiae enim ratione aliquam labore accusamus, eveniet velit eius voluptatem!</p>
     </ProfileSection>
   );
 }

@@ -28,10 +28,10 @@ const NAV_TABS = [
 
 // ─── HERO STATISTICS (summary at top of page) ───
 const HERO_STATS = [
-  { label: 'PENDUDUK MISKIN 2025', value: '30,500', sub: 'Jiwa' },
-  { label: 'PDRB ADHK 2025', value: 'Rp 9.300', sub: 'trilliun' },
-  { label: 'JUMLAH PENDUDUK 2025', value: '274,800', sub: 'Jiwa' },
-  { label: 'RATA-RATA PENGELUARAN 2025 (Rumah Tangga)', value: '4,5 Juta', sub: '/bulan' },
+  { label: 'PENDUDUK MISKIN 2025', value: '26.030', sub: 'Jiwa' },
+  { label: 'PDRB ADHK 2025', value: 'Rp 13.500', sub: 'Miliar' },
+  { label: 'JUMLAH PENDUDUK 2025', value: '279.140', sub: 'Jiwa' },
+  { label: 'RATA-RATA PENGELUARAN 2025 (Rumah Tangga)', value: '4.5 Juta', sub: '/bulan' },
   { label: 'SEKTOR UNGGULAN', value: 'Pertanian', sub: '45% dari total PDRB' },
 ];
 
