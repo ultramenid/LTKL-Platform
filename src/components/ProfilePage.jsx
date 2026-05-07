@@ -80,6 +80,23 @@ export function ProfilePage({ kabupatenName }) {
     document.title = `${kabupatenName} · ${tabLabel} · LTKL Platform`;
   }, [kabupatenName, activeTab]);
 
+  // ─── PRELOAD ALL TAB CHUNKS AFTER MOUNT ─────────────────────────────────────
+  // Fire off dynamic imports immediately so tab chunks are cached in the
+  // browser before the user clicks. This eliminates the first-click delay.
+  useEffect(() => {
+    const tabImports = [
+      import('./profile/NewsTab.jsx'),
+      import('./profile/KabupatenProfileTab.jsx'),
+      import('./profile/MapTab.jsx'),
+      import('./profile/ProdukUnggulanTab.jsx'),
+      import('./profile/ReportsTab.jsx'),
+      import('./profile/DownloadTab.jsx'),
+      import('./profile/ContactTab.jsx'),
+    ];
+    // We intentionally ignore rejections — preloading is a best-effort optimization
+    Promise.all(tabImports).catch(() => {});
+  }, []);
+
   // ─── GLOBAL YEAR & URL PARAMS INIT ──────────────────────────────────────────
   useEffect(() => {
     useMapStore.getState().setYear(urlYear);
