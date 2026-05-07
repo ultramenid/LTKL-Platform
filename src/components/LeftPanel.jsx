@@ -44,20 +44,22 @@ export function LeftPanel({ onClose }) {
 
         {/* Search input */}
         <div className="mt-4 relative">
-          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
           <input
             type="text"
             placeholder="Cari kabupaten..."
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
             className="w-full pl-8 pr-7 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 transition-all text-gray-700 placeholder:text-gray-400"
+            aria-label="Cari kabupaten"
           />
           {searchText && (
             <button
               onClick={() => setSearchText('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Hapus pencarian"
             >
-              <X size={12} />
+              <X size={12} aria-hidden="true" />
             </button>
           )}
         </div>

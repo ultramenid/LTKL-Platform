@@ -20,6 +20,14 @@ dist-ssr/
 !.vscode/extensions.json
 .idea/
 .DS_Store
+
+# ==========================
+# AI IDE LOCAL CONFIGS
+# ==========================
+.poolside/
+.cursor/
+.windsurf/
+.aider/
 *.suo
 *.ntvs*
 *.njsproj
@@ -31,3 +39,5 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 logs/
+.agents/
+skills-lock.json

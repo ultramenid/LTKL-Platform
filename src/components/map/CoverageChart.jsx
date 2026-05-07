@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { memo, useEffect, useMemo, useState, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { useMapStore } from '../../store/mapStore.js';
 import { normalizeServerResponse, transformDataForChart } from '../../utils/dataTransform.js';
@@ -28,7 +28,7 @@ function LoadingChartSkeleton() {
 }
 
 // Bar chart of area (ha) per kabupaten from LULC endpoint
-export default function CoverageChart() {
+function CoverageChart() {
   // ─── YEAR ───
   const yearFromStore = useMapStore((state) => state.year);
   const year = Number(yearFromStore) || YEAR_CONFIG.DEFAULT;
@@ -259,3 +259,6 @@ export default function CoverageChart() {
     </div>
   );
 }
+
+export default memo(CoverageChart);
+

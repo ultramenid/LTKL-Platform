@@ -1,5 +1,5 @@
 import './App.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
 import { useMapStore } from './store/mapStore';
 import { parseUrlState } from './utils/urlStateSync';
@@ -9,10 +9,17 @@ import { ProfilePage } from './components/ProfilePage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 function MapView() {
+  const mainRef = useRef(null);
+
   // Restore state from URL query params when entering map view
   useEffect(() => {
     const { year, breadcrumbs, selectedKab } = parseUrlState();
     useMapStore.setState({ year, breadcrumbs, selectedKab });
+  }, []);
+
+  // Dynamic document title for SEO
+  useEffect(() => {
+    document.title = 'LTKL Platform — Peta Gotong Royong Kabupaten Lestari';
   }, []);
 
   // Sidebar drawer state — only active on mobile (lg+ sidebar always visible)
@@ -39,8 +46,16 @@ function MapView() {
         <LeftPanel onClose={() => setIsSidebarOpen(false)} />
       </div>
 
+      {/* Skip to main content link for accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:text-gray-900 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:font-medium focus:text-sm"
+      >
+        Lompat ke konten utama
+      </a>
+
       {/* Right panel: full width on mobile, 78% on desktop */}
-      <div className="flex-1 min-w-0">
+      <div id="main-content" ref={mainRef} className="flex-1 min-w-0" tabIndex={-1}>
         <ErrorBoundary label="Peta dan Analitik">
           <RightPanel onToggleSidebar={() => setIsSidebarOpen((previous) => !previous)} />
         </ErrorBoundary>
