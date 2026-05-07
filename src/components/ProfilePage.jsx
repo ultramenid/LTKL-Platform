@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { KABUPATENS } from '../data/kabupatens.js';
@@ -7,26 +7,13 @@ import { useMapStore } from '../store/mapStore.js';
 import { encodeAdministrasi, decodeAdministrasi } from '../utils/urlStateSync.js';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
 
-// ─── LAZY LOADED TAB COMPONENTS (code splitting per tab) ───
-// Each tab is loaded on demand to reduce initial bundle size.
-// Components use named exports, so we map them to 'default' for React.lazy().
-const NewsTab = lazy(() => import('./profile/NewsTab.jsx').then((m) => ({ default: m.NewsTab })));
-const KabupatenProfileTab = lazy(() =>
-  import('./profile/KabupatenProfileTab.jsx').then((m) => ({ default: m.KabupatenProfileTab }))
-);
-const MapTab = lazy(() => import('./profile/MapTab.jsx').then((m) => ({ default: m.MapTab })));
-const ProdukUnggulanTab = lazy(() =>
-  import('./profile/ProdukUnggulanTab.jsx').then((m) => ({ default: m.ProdukUnggulanTab }))
-);
-const ReportsTab = lazy(() =>
-  import('./profile/ReportsTab.jsx').then((m) => ({ default: m.ReportsTab }))
-);
-const DownloadTab = lazy(() =>
-  import('./profile/DownloadTab.jsx').then((m) => ({ default: m.DownloadTab }))
-);
-const ContactTab = lazy(() =>
-  import('./profile/ContactTab.jsx').then((m) => ({ default: m.ContactTab }))
-);
+import { NewsTab } from './profile/NewsTab.jsx';
+import { KabupatenProfileTab } from './profile/KabupatenProfileTab.jsx';
+import { MapTab } from './profile/MapTab.jsx';
+import { ProdukUnggulanTab } from './profile/ProdukUnggulanTab.jsx';
+import { ReportsTab } from './profile/ReportsTab.jsx';
+import { DownloadTab } from './profile/DownloadTab.jsx';
+import { ContactTab } from './profile/ContactTab.jsx';
 
 // ─── TAB NAVIGATION (stored at module level for stable references) ───
 const NAV_TABS = [
@@ -51,16 +38,6 @@ const HERO_STATS = [
 // ─── VALID TAB ID LIST (for URL validation) ───
 const VALID_TAB_IDS = NAV_TABS.map((tab) => tab.id);
 
-// Simple tab content fallback while lazy chunk loads
-function TabFallback() {
-  return (
-    <div className="max-w-5xl mx-auto px-4 md:px-8 py-12 space-y-6">
-      <div className="h-8 w-48 bg-gray-100 rounded animate-pulse" />
-      <div className="h-64 bg-gray-50 rounded-xl animate-pulse" />
-    </div>
-  );
-}
-
 // Kabupaten analytics profile page: hero → stats → tab → content
 export function ProfilePage({ kabupatenName }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -79,23 +56,6 @@ export function ProfilePage({ kabupatenName }) {
     const tabLabel = NAV_TABS.find((t) => t.id === activeTab)?.label || '';
     document.title = `${kabupatenName} · ${tabLabel} · LTKL Platform`;
   }, [kabupatenName, activeTab]);
-
-  // ─── PRELOAD ALL TAB CHUNKS AFTER MOUNT ─────────────────────────────────────
-  // Fire off dynamic imports immediately so tab chunks are cached in the
-  // browser before the user clicks. This eliminates the first-click delay.
-  useEffect(() => {
-    const tabImports = [
-      import('./profile/NewsTab.jsx'),
-      import('./profile/KabupatenProfileTab.jsx'),
-      import('./profile/MapTab.jsx'),
-      import('./profile/ProdukUnggulanTab.jsx'),
-      import('./profile/ReportsTab.jsx'),
-      import('./profile/DownloadTab.jsx'),
-      import('./profile/ContactTab.jsx'),
-    ];
-    // We intentionally ignore rejections — preloading is a best-effort optimization
-    Promise.all(tabImports).catch(() => {});
-  }, []);
 
   // ─── GLOBAL YEAR & URL PARAMS INIT ──────────────────────────────────────────
   useEffect(() => {
@@ -248,21 +208,19 @@ export function ProfilePage({ kabupatenName }) {
           role="tabpanel"
           aria-labelledby={`tab-${activeTab}`}
         >
-          <Suspense fallback={<TabFallback />}>
-            {activeTab === 'news' && <NewsTab />}
-            {activeTab === 'profile' && <KabupatenProfileTab kabupaten={kabupatenName} />}
-            {activeTab === 'map' && (
-              <MapTab
-                kabupaten={kabupatenName}
-                initialDrillState={initialDrillStateRef.current}
-                onStateChange={handleMapStateChange}
-              />
-            )}
-            {activeTab === 'products' && <ProdukUnggulanTab kabupaten={kabupatenName} />}
-            {activeTab === 'reports' && <ReportsTab />}
-            {activeTab === 'data' && <DownloadTab />}
-            {activeTab === 'contact' && <ContactTab />}
-          </Suspense>
+          {activeTab === 'news' && <NewsTab />}
+          {activeTab === 'profile' && <KabupatenProfileTab kabupaten={kabupatenName} />}
+          {activeTab === 'map' && (
+            <MapTab
+              kabupaten={kabupatenName}
+              initialDrillState={initialDrillStateRef.current}
+              onStateChange={handleMapStateChange}
+            />
+          )}
+          {activeTab === 'products' && <ProdukUnggulanTab kabupaten={kabupatenName} />}
+          {activeTab === 'reports' && <ReportsTab />}
+          {activeTab === 'data' && <DownloadTab />}
+          {activeTab === 'contact' && <ContactTab />}
         </div>
       </ErrorBoundary>
 
