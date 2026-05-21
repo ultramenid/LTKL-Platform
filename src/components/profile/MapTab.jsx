@@ -215,8 +215,6 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
   useEffect(() => {
     if (!isMapReady || !mapRef.current) return;
 
-    abortActiveRequests();
-
     let isEffectActive = true;
     abortActiveRequests();
     const signal = getActiveSignal();
@@ -320,13 +318,24 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     if (previousYearRef.current === year) return;
     previousYearRef.current = year;
 
+    let isEffectActive = true;
     abortActiveRequests();
     const signal = getActiveSignal();
     const { kec, des } = localBreadcrumbsRef.current;
     const geeFilter = des ? { des } : kec ? { kec } : { kab: kabupaten };
-    loadGEEPolygonRaster(mapRef.current, geeFilter, signal).catch((error) => {
-      if (error.name !== 'AbortError') console.error('MapTab year load error:', error);
-    });
+    setIsLayerLoading(true);
+
+    loadGEEPolygonRaster(mapRef.current, geeFilter, signal)
+      .catch((error) => {
+        if (isEffectActive && error.name !== 'AbortError') console.error('MapTab year load error:', error);
+      })
+      .finally(() => {
+        if (isEffectActive) setIsLayerLoading(false);
+      });
+
+    return () => {
+      isEffectActive = false;
+    };
   }, [year, isMapReady, kabupaten]);
 
   useEffect(() => {

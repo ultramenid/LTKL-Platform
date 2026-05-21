@@ -1,365 +1,232 @@
-# My MapLibre App
+# LTKL Web — Public Map Website
 
-Aplikasi web interaktif untuk visualisasi data geografis dengan integrasi Google Earth Engine (GEE) dan GeoServer. Aplikasi ini memungkinkan pengguna menjelajahi data satelit dan administrasi geografis dengan fitur drilling down dari level kabupaten hingga desa.
+Interactive geospatial data platform for Kalimantan Tengah kabupaten governments. Drives map exploration from kabupaten to desa, Google Earth Engine satellite imagery, supply chain analytics, and commodity dashboards.
 
-## 🎯 Fitur Utama
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=flat&logo=vite)](https://vite.dev)
+[![MapLibre](https://img.shields.io/badge/MapLibre%20GL-5-3766CC?style=flat&logo=maplibre)](https://maplibre.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-06B6D4?style=flat&logo=tailwindcss)](https://tailwindcss.com)
+[![Node.js](https://img.shields.io/badge/Node.js-22-339933?style=flat&logo=nodedotjs)](https://nodejs.org)
 
-- **Visualisasi Peta Interaktif**: Menggunakan MapLibre GL untuk display yang smooth dan responsif
-- **Integrasi Google Earth Engine**: Menampilkan citra satelit dengan filter tahun dan area geografis
-- **Data Administrasi**: Boundary polygon dari GeoServer untuk kabupaten, kecamatan, dan desa
-- **Drill-Down Navigation**: Navigasi dari level kabupaten → kecamatan → desa dengan breadcrumb tracking
-- **Intelligent Caching**:
-  - Cache di memory (Zustand)
-  - Persist ke localStorage
-  - TTL 2 hari untuk auto-refresh data
-  - Request deduplication untuk mencegah fetch redundan
-- **Coverage Chart**: Visualisasi coverage area dengan ECharts
-- **Responsive UI**: Tailwind CSS untuk styling yang clean dan responsive
+## Table of Contents
 
-## 🏗️ Tech Stack
+- [About](#about)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Data Flow](#data-flow)
+- [External Services](#external-services)
+- [State Management](#state-management)
+- [Key Patterns](#key-patterns)
+- [Build & Deploy](#build--deploy)
+- [Contributing](#contributing)
 
-| Layer                  | Technology        |
-| ---------------------- | ----------------- |
-| **Frontend Framework** | React 18 + Vite   |
-| **State Management**   | Zustand           |
-| **Mapping Library**    | MapLibre GL       |
-| **Charting**           | ECharts for React |
-| **Styling**            | Tailwind CSS      |
-| **Build Tool**         | Vite              |
-| **Linting**            | ESLint            |
+## About
 
-## 📦 Dependensi Data
+Public-facing website with interactive MapLibre GL maps for citizen engagement. Users explore land-cover change across kabupaten, kecamatan, and desa boundaries with yearly satellite imagery from Google Earth Engine. Profile pages include coverage statistics, commodity dashboards, supply chain sankey diagrams, population tables, and downloadable reports.
 
-### Tile Server (GEE Imagery)
+**Drill-down flow:** Indonesia → Kabupaten → Kecamatan → Desa, with breadcrumb navigation and URL-synced state.
 
-- **Endpoint**: `https://gee.simontini.id/gee`
-- **Data**: Satellite imagery tiles dengan filter tahun dan lokasi
-- **Caching**: 2 hari TTL dengan request deduplication
+## Tech Stack
 
-### GeoServer (Vector Boundaries)
+| Layer | Technology |
+|---|---|
+| **Framework** | React 19 + Vite 7 |
+| **Maps** | MapLibre GL JS 5 |
+| **Charts** | ECharts 6 via `echarts-for-react` |
+| **Geo** | Turf.js 7 (`pointOnFeature`, centroid calculations) |
+| **State** | Zustand 5 (two stores: `mapStore`, `mapLayerStore`) |
+| **Routing** | react-router-dom 7 |
+| **Styling** | Tailwind CSS 4 via `@tailwindcss/vite` |
+| **Diagrams** | d3-sankey, d3-shape, d3-interpolate |
+| **Icons** | lucide-react |
+| **Build** | Vite 7 |
+| **Lint** | ESLint 9 + Prettier |
 
-- **Endpoint**: `https://aws.simontini.id/geoserver/ows`
-- **Service**: WFS (Web Feature Service)
-- **Data**: Polygon boundaries kabupaten, kecamatan, desa
-- **Format**: GeoJSON
-- **Caching**: 2 hari TTL dengan request deduplication
-
-## 📁 Struktur Project
+## Project Structure
 
 ```
 src/
+├── App.jsx                    # Root component + routing
+├── main.jsx                   # React root mount
 ├── components/
-│   ├── BreadCrumbs.jsx          # Navigasi trail (Indonesia comments, meaningful names)
-│   ├── CoverageChart.jsx         # Chart visualisasi coverage (full sections)
-│   ├── KabupatesList.jsx         # Daftar kabupaten (handler dengan flow comments)
-│   ├── LeftPanel.jsx             # Panel kiri + Logo sticky
-│   ├── Map.jsx                   # Komponen peta utama (refs, state, handlers)
-│   ├── MapLayout.jsx             # Layout wrapper dengan collapsible panels
-│   ├── RightPanel.jsx            # Panel kanan (65% map, 35% charts)
-│   └── TimeSelector.jsx          # Selector tahun dengan raster reload
+│   ├── ErrorBoundary.jsx      # Per-area error isolation
+│   ├── LeftPanel.jsx          # Sidebar (kabupaten list, breadcrumbs)
+│   ├── RightPanel.jsx         # Map container
+│   ├── ProfilePage.jsx        # Kabupaten profile page
+│   ├── map/                   # Map-specific components
+│   │   ├── Map.jsx            # Main map (lifecycle, transitions)
+│   │   ├── BreadCrumbs.jsx    # Drill-down breadcrumb trail
+│   │   ├── KabupatensList.jsx # Sidebar kabupaten cards + hover markers
+│   │   ├── CoverageChart.jsx  # ECharts area coverage bar chart
+│   │   ├── TimeSelector.jsx   # Year selector (timeline dots)
+│   │   └── MapLegend.jsx      # LULC color legend
+│   ├── profile/               # Profile tab components
+│   │   ├── MapTab.jsx         # Profile-level drill-down map
+│   │   ├── Commodity.jsx      # Commodity dashboard
+│   │   ├── SupplyChainTab.jsx # Sankey supply chain diagram
+│   │   ├── EconomyTab.jsx     # Economic indicators
+│   │   ├── PopulationTab.jsx  # Population statistics
+│   │   ├── NewsTab.jsx        # Kabupaten news/articles
+│   │   ├── ReportsTab.jsx     # Downloadable reports
+│   │   ├── DownloadTab.jsx    # File downloads
+│   │   ├── ContactTab.jsx     # Contact information
+│   │   ├── ProdukUnggulanTab.jsx
+│   │   ├── KabupatenProfileTab.jsx
+│   │   ├── ProfileSection.jsx # Shared section wrapper
+│   │   └── TabSkeleton.jsx    # Loading placeholder
+│   └── ui/                    # Shared UI primitives
 ├── config/
-│   └── constants.js              # 60+ centralized constants (map, API, colors, etc)
+│   └── constants.js           # All constants (endpoints, colors, layer IDs, cache config)
 ├── data/
-│   └── kabupatens.js             # Kabupaten reference data
+│   └── kabupatens.js          # Static kabupaten reference data
+├── hooks/                     # Custom React hooks
+├── lib/                       # Utility libraries
+├── pages/                     # Route-level page components
 ├── store/
-│   ├── mapStore.js               # Global state + caching (sections, meaningful names)
-│   └── mapLayerStore.js          # Layer management (refactored 300+ lines)
-├── utils/
-│   ├── mapDrilldown.js           # Drill-down logic (LEVEL 1/2/3 comments)
-│   ├── mapLoadingSetup.js        # Loading setup (kabupaten/kecamatan/desa flows)
-│   ├── mapUtils.js               # Map helpers (extractCoordinates, fit bounds, zoom)
-│   ├── filterBuilder.js          # CQL filter builders (newbie friendly)
-│   ├── dataTransform.js          # Response normalization (3 transformers)
-│   └── urlStateSync.js           # URL query param sync
-├── App.jsx                        # Root component
-├── main.jsx                       # Entry point
-└── App.css                        # Global styles
+│   ├── mapLayerStore.js       # Layer management, AbortController, GEE/GeoJSON fetch
+│   └── mapStore.js            # Breadcrumbs, year, cache, map instance
+└── utils/
+    ├── dataTransform.js       # Server response normalization
+    ├── filterBuilder.js       # CQL/WFS filter construction
+    ├── mapDrilldown.js        # Home reset + breadcrumb drill-down
+    ├── mapTransitionController.js  # Centralized main-map transition orchestration
+    ├── mapUtils.js            # Zoom, bounds, source-data waiting, feature lookup
+    └── urlStateSync.js        # URL ↔ state synchronization
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 16+
-- npm atau yarn
+- Node.js 22+
+- npm
 
 ### Installation
 
 ```bash
-# Clone repository
-git clone <repository-url>
-cd my-maplibre-app
-
-# Install dependencies
+cd web
 npm install
-
-# Install MapLibre GL (jika belum)
-npm install maplibre-gl
 ```
 
 ### Development
 
 ```bash
-# Start dev server
-npm run dev
-
-# Open browser
-# http://localhost:5173
+npm run dev        # Vite dev server → http://localhost:3000
+npm run lint       # ESLint
+npm run format     # Prettier (write)
+npm run format:check  # Prettier (check-only)
 ```
 
-### Build
+The dev server proxies API calls automatically (see `vite.config.ts`).
+
+## Data Flow
+
+```
+URL params → parseUrlState() → mapStore.setState() → useEffect → transitionMainMap()
+User click → attachInteractions() → handleGlobalDrillDown() → updateBreadcrumb() → transitionMainMap()
+Year change → setYear() → updateUrl() → loadGEEPolygonRaster() with new filter
+```
+
+## External Services
+
+| Service | Endpoint | Purpose |
+|---|---|---|
+| **GeoServer WFS** | `https://aws.simontini.id/geoserver/ows` | Admin boundary GeoJSON (kabupaten, kecamatan, desa) |
+| **GEE Tile Server** | `$VITE_TILE_SERVER` | LULC raster tiles + `/lulc-stats` endpoint |
+
+Both are external and pre-configured. Do not modify the endpoint URLs.
+
+## State Management
+
+Two Zustand stores with distinct responsibilities.
+
+### `mapStore.js` — Read & Write State
+
+```js
+// Breadcrumbs
+useMapStore.getState().updateBreadcrumb('kecamatan', 'Pahandut');
+useMapStore.getState().resetBreadcrumbs();
+
+// Year
+useMapStore.getState().setYear(2024);
+
+// Map instance (set once on mount)
+useMapStore.getState().setMap(mapInstance);
+
+// Selected kabupaten
+useMapStore.getState().setSelectedKab('Sintang');
+```
+
+### `mapLayerStore.js` — Layer & Fetch Utilities
+
+```js
+import { abortActiveRequests, getActiveSignal } from './store/mapLayerStore.js';
+
+abortActiveRequests();                    // Cancel all in-flight fetches
+const signal = getActiveSignal();         // New signal for current operation
+await fetch(url, { signal });            // Bound to module-level AbortController
+```
+
+**Key rules:**
+
+- Never `new AbortController()` in components — use the module-level one
+- Zustand subscriptions: use `useShallow` for 2+ fields, individual selector for 1 field
+- Layer removal order: hover-line → fill → source
+
+## Key Patterns
+
+### Map Transition Controller
+
+Centralized orchestration in `utils/mapTransitionController.js`:
+
+```js
+transitionMainMap({ map, target, setLoading, shouldCommit });
+```
+
+- `target`: `{ kabupaten, kecamatan, desa, year }`
+- `shouldCommit`: prevents stale transitions from clearing loading state
+- Handles abort → clear → load layer → zoom → load GEE → pre-load child layers
+- Single entry point for main-map state changes (breadcrumb click, year change, kabupaten list click)
+
+### Cache Strategy
+
+```
+In-memory (Zustand) → localStorage → pending request dedup → fetch from API
+```
+
+- GeoJSON: cached by layer name + CQL filter
+- GEE tiles: cached by filter params, validated with Image() probe (5s timeout)
+- TTL: 1.5 hours for GEE tokens
+
+### Abort Safety
+
+```js
+// Do
+import { abortActiveRequests, getActiveSignal } from './store/mapLayerStore.js';
+const signal = getActiveSignal();
+await fetchGeeData(map, filters, signal);
+
+// Don't
+const controller = new AbortController();  // ← never in components
+```
+
+## Build & Deploy
 
 ```bash
-# Production build
-npm run build
-
-# Preview build
-npm run preview
+npm run build      # Production build → dist/
+npm run preview    # Preview production build locally
 ```
 
-## 🔄 State Management (Zustand)
+## Contributing
 
-### `mapStore.js`
+1. Follow the conventions in `CLAUDE.md` (English code, Indonesian UI strings, no abbreviations)
+2. All constants from `src/config/constants.js` — no magic strings/numbers
+3. Map event listeners must be cleaned up in `useEffect` return
+4. Use `waitForSourceData()` for event-driven waits (not `setTimeout`)
+5. Layer removal order: hover-line → fill → source
+6. Run `npm run build` before committing — build must pass
 
-Global state untuk map dan caching:
-
-```javascript
-// Cache GEE imagery
-useMapStore.setCacheGEE(cacheKey, imageData);
-useMapStore.getCacheGEE(cacheKey);
-
-// Cache GeoJSON
-useMapStore.setCacheGeoJSON(cacheKey, geoboundaryData);
-useMapStore.getCacheGeoJSON(cacheKey);
-
-// Breadcrumb navigation
-useMapStore.updateBreadcrumb(level, value);
-
-// Year selector
-useMapStore.setYear(2024);
-```
-
-### `mapLayerStore.js`
-
-Layer management:
-
-```javascript
-// Load GEE tiles dengan cache-first strategy
-useMapLayerStore.loadGEEPolygonRaster(year, filters);
-
-// Load GeoJSON dari GeoServer dengan cache-first strategy
-useMapLayerStore.loadLayer(layerName, filters);
-
-// Remove layers dan cleanup
-useMapLayerStore.removeLayer(layerId);
-```
-
-## 💾 Caching Strategy
-
-### Multi-Layer Cache
-
-1. **In-Memory Cache (Zustand)**
-   - Fastest access (dalam session)
-   - Lost on page refresh
-
-2. **localStorage Persistence**
-   - Survives page reload
-   - ~5-10MB limit per browser
-   - Keys: `mapCache_gee`, `mapCache_geojson`
-
-3. **TTL Expiration**
-   - 2 hari (172,800,000 ms)
-   - Auto-filter expired entries saat app load
-   - Timestamp stored: `{value: data, expiresAt: timestamp}`
-
-4. **Request Deduplication**
-   - Track pending requests
-   - Prevent duplicate API calls
-   - Returned promise shared ke multiple callers
-
-### Cache Key Format
-
-```
-gee_year=2024&kab=Bantul&kec=Kraton
-geojson_kab=Bantul
-geojson_kec=Kraton&kab=Bantul
-```
-
-## 📊 Data Flow
-
-```
-User Interaction (TimeSelector/Map Click)
-        ↓
-updateBreadcrumb() / setYear()
-        ↓
-loadGEEPolygonRaster() / loadLayer()
-        ↓
-Check Cache (Zustand) → Hit? Return cached data
-        ↓
-Check localStorage → Valid & not expired? Load to Zustand
-        ↓
-Check pending request → Fetch in progress? Wait for promise
-        ↓
-Fetch from API → Save to Zustand + localStorage → Return Promise
-        ↓
-Map layer updated → User sees changes
-```
-
-## 🎨 UI Components Breakdown
-
-| Komponen        | Fungsi & Fitur                               |
-| --------------- | -------------------------------------------- |
-| `MapLayout`     | Container utama, layout dengan toggle panels |
-| `LeftPanel`     | Sidebar: Logo LTKL + KabupatesList (drill)   |
-| `Map`           | MapLibre GL (refs, state, handlers sections) |
-| `RightPanel`    | Split: 65% Map, 35% Charts (scrollable)      |
-| `BreadCrumbs`   | Trail, home reset, level navigation          |
-| `CoverageChart` | ECharts bar chart (area per kabupaten)       |
-| `TimeSelector`  | Timeline dots untuk year selection + reload  |
-| `KabupatesList` | List kabupaten dengan drill-down + zoom      |
-
-## 🔧 Important Fixes & Optimizations
-
-### Layer Removal Order (Critical)
-
-```javascript
-// ✅ Correct order (prevents source removal errors)
-1. Remove hover line layer
-2. Remove main polygon layer
-3. Remove source
-
-// ❌ Wrong order would cause:
-// "Source cannot be removed while layer is using it"
-```
-
-### Event Handler Safety
-
-```javascript
-// ✅ Always check source existence before setFeatureState
-if (map.getSource(sourceId)) {
-  map.setFeatureState(...)
-}
-```
-
-### Map Cleanup
-
-```javascript
-// ✅ Proper cleanup on unmount
-try {
-  map.remove();
-} catch (error) {
-  console.error("Map cleanup error:", error);
-}
-```
-
-## 📝 Code Quality Standards
-
-**Development Rules Applied (Session 7):**
-
-1. **Newbie Friendly & Reusable Code** ✅
-   - Clear variable names (no `a`, `b`, `x`, `data`)
-   - Functions properly exported and composable
-   - No hardcoding - all constants dari `src/config/constants.js`
-   - Example: `fid` → `featureId`, `kabName` → `kabupatenName`
-
-2. **Indonesian Comments** ✅
-   - 100% Bahasa Indonesia untuk maintainability
-   - Simple, natural style (bukan AI-generated JSDoc)
-   - Section dividers dengan `─── SECTION ───`
-   - Example: comments di mapLayerStore.js, CoverageChart.jsx
-
-3. **Meaningful Variable Names** ✅
-   - Descriptive naming everywhere
-   - Function names clearly state purpose
-   - No abbreviations (res → response, json → parsedJson)
-   - Include type hints in names (geeCache, geoJsonCache, etc)
-
-**Technical Standards:**
-
-- **Error Handling**: Try-catch untuk localStorage, API calls, cleanup
-- **Performance**: Cache-first strategy, request deduplication, lazy loading
-- **Code Organization**: Section dividers, clear flow documentation
-- **Build**: 661 modules, 0 errors, ~4.2s build time
-
-## � Helper Utilities
-
-### `src/utils/filterBuilder.js` - CQL Filter Builders
-
-```javascript
-// Build single condition filter
-const filter = buildSingleFilter("kab", "Bantul");
-// Output: "kab='Bantul'"
-
-// Build multi-condition filter
-const multiFiler = buildMultiFilter({ kab: "Bantul", kec: "Imogiri" });
-// Output: "kab='Bantul' AND kec='Imogiri'"
-```
-
-### `src/utils/dataTransform.js` - Data Transformers
-
-```javascript
-// Normalize berbagai format server response
-const normalized = normalizeServerResponse(serverData);
-
-// Transform untuk chart display
-const chartData = transformDataForChart(normalizedData);
-```
-
-### `src/config/constants.js` - Centralized Configuration
-
-```javascript
-// 60+ constants terorganisir:
-(MAP_CONFIG,
-  API_ENDPOINTS,
-  LAYER_TYPES,
-  LAYER_IDS,
-  SOURCE_IDS,
-  COLORS,
-  CACHE_CONFIG,
-  ADMIN_LEVELS,
-  WFS_CONFIG,
-  YEAR_CONFIG);
-```
-
-## �🐛 Known Limitations
-
-- localStorage limit (~5-10MB) - Future: Redis integration
-- Offline mode: Works partially (cached data only)
-- Concurrent filter changes: Sequential processing (by design)
-
-## 🎯 Refactoring Session 7 Summary
-
-**13 files refactored** dengan improvements:
-
-- 50+ variable renames untuk clarity
-- 100+ comment improvements dengan Indonesian explanations
-- 50+ section dividers untuk better code organization
-- Major refactoring: mapLayerStore.js, CoverageChart.jsx, mapStore.js
-
-Dokumentasi lengkap: [REFACTOR_SESSION_7_SUMMARY.md](REFACTOR_SESSION_7_SUMMARY.md)
-
-## 🚀 Future Enhancements
-
-- [ ] Extract cache logic ke `src/utils/cacheUtils.js` (shared utilities)
-- [ ] Extract layer creation helpers (fill + hover layer pattern)
-- [ ] Redis integration untuk shared server-side cache
-- [ ] Offline mode dengan Service Workers
-- [ ] Data export (PDF, GeoJSON)
-- [ ] Analysis tools (polygon intersection, area calculation)
-- [ ] User authentication & role-based data access
-- [ ] Real-time data updates
-- [ ] JSDoc type annotations untuk IDE support
-- [ ] Unit tests untuk cache handling & data transformation
-
-## 📄 License
+## License
 
 TBD
-
-## 👤 Author
-
-- **Project**: Multi-layer mapping dengan GEE integration
-- **Last Updated**: February 2026
-
-## 📞 Support
-
-Untuk questions atau issues, silakan open issue di repository.

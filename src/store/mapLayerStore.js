@@ -29,9 +29,34 @@ export const GEOSERVER_URL = API_ENDPOINTS.GEOSERVER;
 export const TILE_SERVER_URL = API_ENDPOINTS.TILE_SERVER;
 
 const LAYERS = {
-  GEE_LAYER: LAYER_IDS.GEE_LAYER,
-  GEE_SOURCE: SOURCE_IDS.GEE,
   HOVER_SUFFIX: '-hover-line',
+};
+
+const mapLayerCleanups = new WeakMap();
+
+const getGeeLayerIds = (map) => {
+  const mapId = map?._ltklMapId ?? crypto.randomUUID();
+  if (map && !map._ltklMapId) map._ltklMapId = mapId;
+  return {
+    layerId: `${LAYER_IDS.GEE_LAYER}-${mapId}`,
+    sourceId: `${SOURCE_IDS.GEE}-${mapId}`,
+  };
+};
+
+const getLayerCleanupMap = (map) => {
+  let cleanupMap = mapLayerCleanups.get(map);
+  if (!cleanupMap) {
+    cleanupMap = new Map();
+    mapLayerCleanups.set(map, cleanupMap);
+  }
+  return cleanupMap;
+};
+
+const replaceLayerCleanup = (map, layerId, cleanup) => {
+  const cleanupMap = getLayerCleanupMap(map);
+  cleanupMap.get(layerId)?.();
+  if (cleanup) cleanupMap.set(layerId, cleanup);
+  else cleanupMap.delete(layerId);
 };
 
 // ─── ABORT CONTROLLER (module-level) ───
@@ -48,7 +73,7 @@ let activeController = new AbortController();
  * Returns validated GeoJSON object or null on abort/error.
  * Uses activeController signal so abortActiveRequests() can cancel in-flight fetches (Rule A).
  */
-async function fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter, signal = activeController.signal) {
+export async function fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter, signal = activeController.signal) {
   throwIfAborted(signal);
 
   const store = useMapStore.getState();
@@ -335,28 +360,24 @@ const waitWithAbort = async (promise, signal) => {
   throwIfAborted(signal);
   if (!signal) return await promise;
 
-  try {
-    return await Promise.race([
-      promise,
-      new Promise((_, reject) => {
-        const onAbort = () => reject(new DOMException('Aborted', 'AbortError'));
-        signal.addEventListener('abort', onAbort, { once: true });
+  let onAbort;
+  const abortPromise = new Promise((_, reject) => {
+    onAbort = () => reject(new DOMException('Aborted', 'AbortError'));
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
 
-        promise.finally(() => {
-          signal.removeEventListener('abort', onAbort);
-        });
-      }),
-    ]);
-  } catch (err) {
-    if (err.name === 'AbortError') throw err;
-    throw err;
+  try {
+    return await Promise.race([promise, abortPromise]);
+  } finally {
+    signal.removeEventListener('abort', onAbort);
   }
 };
 
 export function removeGEERasterLayer(map) {
   try {
-    if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
-    if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
+    const { layerId, sourceId } = getGeeLayerIds(map);
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
   } catch {
     void 0;
   }
@@ -367,11 +388,12 @@ function applyGEERasterLayer(map, geeRasterTileUrl, signal) {
   removeGEERasterLayer(map);
 
   try {
+    const { layerId, sourceId } = getGeeLayerIds(map);
     throwIfAborted(signal);
-    if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
     throwIfAborted(signal);
 
-    map.addSource(LAYERS.GEE_SOURCE, {
+    map.addSource(sourceId, {
       type: 'raster',
       tiles: [geeRasterTileUrl],
       tileSize: 256,
@@ -388,9 +410,9 @@ function applyGEERasterLayer(map, geeRasterTileUrl, signal) {
 
     map.addLayer(
       {
-        id: LAYERS.GEE_LAYER,
+        id: layerId,
         type: 'raster',
-        source: LAYERS.GEE_SOURCE,
+        source: sourceId,
         paint: { 'raster-opacity': 1 },
       },
       layerIdToPlaceBelow,
@@ -398,7 +420,6 @@ function applyGEERasterLayer(map, geeRasterTileUrl, signal) {
     throwIfAborted(signal);
     bringHoverLayersToTop(map);
   } catch (err) {
-    // Roll back source if added without layer (abort between addSource/addLayer)
     if (err.name === 'AbortError') {
       removeGEERasterLayer(map);
     }
@@ -590,8 +611,12 @@ export const loadLayer = async (
   throwIfAborted(signal);
 
   // Clean up old layers before loading
+  replaceLayerCleanup(map, layerId, null);
   removeLayerAndSource(map, layerId);
-  removeLayerIds.forEach((id) => removeLayerAndSource(map, id));
+  removeLayerIds.forEach((id) => {
+    replaceLayerCleanup(map, id, null);
+    removeLayerAndSource(map, id);
+  });
   throwIfAborted(signal);
 
   // Fetch GeoJSON with shared cache-first + dedup logic
@@ -607,9 +632,10 @@ export const loadLayer = async (
   throwIfAborted(signal);
 
   // Attach interactions with drill-down behavior (delegates to updateBreadcrumb)
-  attachInteractions(map, layerId, (e) => {
+  const cleanup = attachInteractions(map, layerId, (e) => {
     handleGlobalDrillDown(e, map);
   });
+  replaceLayerCleanup(map, layerId, cleanup);
 
   return geoJsonData;
 };

@@ -28,12 +28,12 @@ const clearMainLayers = (map) => {
   removeGEERasterLayer(map);
 };
 
-export async function transitionMainMap({ map, target, setLoading }) {
+export async function transitionMainMap({ map, target, setLoading, shouldCommit = () => true }) {
   if (!map) return;
 
   abortActiveRequests();
   const signal = getActiveSignal();
-  setLoading?.(true);
+  if (shouldCommit()) setLoading?.(true);
   clearMainLayers(map);
 
   try {
@@ -43,16 +43,16 @@ export async function transitionMainMap({ map, target, setLoading }) {
         kec: target.kecamatan,
         des: target.desa,
       });
-      await loadLayer(map, LAYER_TYPES.DESA, SOURCE_IDS.DESA, LAYER_IDS.DESA_FILL, desaFilter, [], signal);
+      const desaGeoJson = await loadLayer(map, LAYER_TYPES.DESA, SOURCE_IDS.DESA, LAYER_IDS.DESA_FILL, desaFilter, [], signal);
       await waitForSourceData(map, SOURCE_IDS.DESA, signal);
-      zoomToMatchingFeature(map, SOURCE_IDS.DESA, 'des', target.desa);
+      zoomToMatchingFeature(map, desaGeoJson, 'des', target.desa);
       await loadGEEPolygonRaster(map, buildGeeFilter(target), signal);
       return;
     }
 
     if (target.kecamatan) {
       const kecamatanFilter = buildSingleFilter('kec', target.kecamatan);
-      await loadLayer(
+      const kecamatanGeoJson = await loadLayer(
         map,
         LAYER_TYPES.KECAMATAN,
         SOURCE_IDS.ZOOM_KECAMATAN,
@@ -62,7 +62,7 @@ export async function transitionMainMap({ map, target, setLoading }) {
         signal,
       );
       await waitForSourceData(map, SOURCE_IDS.ZOOM_KECAMATAN, signal);
-      zoomToMatchingFeature(map, SOURCE_IDS.ZOOM_KECAMATAN, 'kec', target.kecamatan);
+      zoomToMatchingFeature(map, kecamatanGeoJson, 'kec', target.kecamatan);
       await loadGEEPolygonRaster(map, buildGeeFilter(target), signal);
       await loadLayer(
         map,
@@ -79,7 +79,7 @@ export async function transitionMainMap({ map, target, setLoading }) {
 
     if (target.kabupaten) {
       const kabupatenFilter = buildSingleFilter('kab', target.kabupaten);
-      await loadLayer(
+      const kabupatenGeoJson = await loadLayer(
         map,
         LAYER_TYPES.KABUPATEN,
         SOURCE_IDS.ZOOM_KABUPATEN,
@@ -89,7 +89,7 @@ export async function transitionMainMap({ map, target, setLoading }) {
         signal,
       );
       await waitForSourceData(map, SOURCE_IDS.ZOOM_KABUPATEN, signal);
-      zoomToMatchingFeature(map, SOURCE_IDS.ZOOM_KABUPATEN, 'kab', target.kabupaten);
+      zoomToMatchingFeature(map, kabupatenGeoJson, 'kab', target.kabupaten);
       await loadGEEPolygonRaster(map, buildGeeFilter(target), signal);
       await loadLayer(
         map,
@@ -117,6 +117,6 @@ export async function transitionMainMap({ map, target, setLoading }) {
   } catch (error) {
     if (!isAbortError(error)) throw error;
   } finally {
-    setLoading?.(false);
+    if (shouldCommit()) setLoading?.(false);
   }
 }

@@ -29,6 +29,7 @@ const Map = ({ onToggleSidebar }) => {
   );
   const [isMapReady, setIsMapReady] = useState(false);
   const [isLayersLoading, setIsLayersLoading] = useState(false);
+  const transitionIdRef = useRef(0);
 
   const handleHome = () =>
     handleHomeReset(mapRef.current, resetBreadcrumbs, DEFAULT_CENTER, DEFAULT_ZOOM);
@@ -97,17 +98,21 @@ const Map = ({ onToggleSidebar }) => {
       year,
     };
 
+    const transitionId = transitionIdRef.current + 1;
+    transitionIdRef.current = transitionId;
+    const isCurrentTransition = () => transitionIdRef.current === transitionId;
+
     transitionMainMap({
       map: mapRef.current,
       target,
       setLoading: setIsLayersLoading,
+      shouldCommit: isCurrentTransition,
     }).catch((error) => {
-      if (error?.name !== 'AbortError') console.error(error);
+      if (isCurrentTransition() && error?.name !== 'AbortError') console.error(error);
     });
 
     return () => {
       abortActiveRequests();
-      setIsLayersLoading(false);
     };
   }, [breadcrumbs, isMapReady, year]);
 
@@ -123,7 +128,7 @@ const Map = ({ onToggleSidebar }) => {
       )}
 
       {isLayersLoading && isMapReady && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-gray-900/80 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/10 shadow-lg pointer-events-none">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-gray-900/80 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/10 shadow-lg pointer-events-none">
           <div className="w-3 h-3 border border-teal-400 border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-white/80 font-medium">Memuat layer…</span>
         </div>

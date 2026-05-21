@@ -42,6 +42,8 @@ const fitBoundsToCoordinates = (mapInstance, coordinates, paddingPixels = 100) =
   mapInstance.fitBounds(bounds, { padding: paddingPixels, duration: 400 });
 };
 
+const SOURCE_DATA_TIMEOUT_MS = 8000;
+
 // Wait for source data to be ready in map using event-driven approach (more reliable than setTimeout)
 export const waitForSourceData = (mapInstance, sourceId, signal) => {
   return new Promise((resolveWaiting, rejectWaiting) => {
@@ -61,6 +63,7 @@ export const waitForSourceData = (mapInstance, sourceId, signal) => {
       mapInstance.off('sourcedata', onSourceDataReady);
       mapInstance.off('styledata', onStyleDataChanged);
       signal?.removeEventListener('abort', onAbort);
+      clearTimeout(timeoutId);
     };
 
     const resolve = () => {
@@ -92,6 +95,10 @@ export const waitForSourceData = (mapInstance, sourceId, signal) => {
     function onAbort() {
       reject(new DOMException('Aborted', 'AbortError'));
     }
+
+    const timeoutId = setTimeout(() => {
+      reject(new DOMException('Source data timed out', 'AbortError'));
+    }, SOURCE_DATA_TIMEOUT_MS);
 
     mapInstance.on('sourcedata', onSourceDataReady);
     mapInstance.on('styledata', onStyleDataChanged);
@@ -131,18 +138,16 @@ export const zoomToFeature = (mapInstance, featureObject) => {
   fitBoundsToCoordinates(mapInstance, featureCoordinates, 40);
 };
 
-// Find a feature in a source by property, then zoom to it
-export const zoomToMatchingFeature = (mapInstance, sourceId, propertyName, propertyValue) => {
-  const source = mapInstance.getSource(sourceId);
-  if (!source || !('_data' in source)) return;
-
-  const geojsonCollection = source._data;
-  if (!geojsonCollection?.features) return;
-
-  // Find feature matching the property
-  const targetFeature = geojsonCollection.features.find(
-    (feature) => feature.properties[propertyName] === propertyValue,
+export const findFeatureInCollection = (geojsonCollection, propertyName, propertyValue) => {
+  if (!geojsonCollection?.features) return null;
+  return (
+    geojsonCollection.features.find((feature) => feature.properties?.[propertyName] === propertyValue) ?? null
   );
+};
+
+// Find a feature in a GeoJSON collection by property, then zoom to it
+export const zoomToMatchingFeature = (mapInstance, geojsonCollection, propertyName, propertyValue) => {
+  const targetFeature = findFeatureInCollection(geojsonCollection, propertyName, propertyValue);
   if (!targetFeature?.geometry) return;
 
   const featureCoordinates = extractCoordinates(targetFeature.geometry);
