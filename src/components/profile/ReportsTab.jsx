@@ -2,39 +2,41 @@ import { BarChart3, BookOpen } from 'lucide-react';
 import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
 
-// ─── LAPORAN ITEMS ────────────────────────────────────────────────────────
 const LAPORAN_ITEMS = [
   {
     id: 'ar-2024',
     title: 'Laporan Tahunan MSF 2024',
-    description: 'Rangkuman seluruh kegiatan, capaian program, dan rekomendasi kebijakan MSF sepanjang tahun 2024.',
+    description:
+      'Rangkuman seluruh kegiatan, capaian program, dan rekomendasi kebijakan MSF sepanjang tahun 2024.',
     size: '6.2 MB',
     updated: '15 Februari 2025',
   },
   {
     id: 'ar-2023',
     title: 'Laporan Tahunan MSF 2023',
-    description: 'Laporan komprehensif kegiatan MSF 2023 mencakup monev program, dinamika multipihak, dan proyeksi 2024.',
+    description:
+      'Laporan komprehensif kegiatan MSF 2023 mencakup monev program, dinamika multipihak, dan proyeksi 2024.',
     size: '5.8 MB',
     updated: '10 Januari 2024',
   },
   {
     id: 'ar-2022',
     title: 'Laporan Tahunan MSF 2022',
-    description: 'Dokumentasi kegiatan dan capaian forum tahun 2022, termasuk agenda pemulihan pascapandemi.',
+    description:
+      'Dokumentasi kegiatan dan capaian forum tahun 2022, termasuk agenda pemulihan pascapandemi.',
     size: '4.9 MB',
     updated: '5 Maret 2023',
   },
 ];
 
-// ─── PUSTAKA ITEMS ────────────────────────────────────────────────────────
 const PUSTAKA_ITEMS = [
   {
     id: 'strategi-pembangunan-lestari',
     title: 'Strategi Pembangunan Lestari Kabupaten 2024–2029',
     category: 'Strategi',
     categoryColor: '#6366f1',
-    description: 'Dokumen strategis jangka menengah yang mengintegrasikan target SDGs ke dalam rencana pembangunan daerah.',
+    description:
+      'Dokumen strategis jangka menengah yang mengintegrasikan target SDGs ke dalam rencana pembangunan daerah.',
     size: '3.7 MB',
     updated: '20 April 2024',
   },
@@ -43,7 +45,8 @@ const PUSTAKA_ITEMS = [
     title: 'Baseline Tutupan Lahan 2020–2024',
     category: 'Data & Analisis',
     categoryColor: '#f59e0b',
-    description: 'Analisis mendalam perubahan tutupan lahan berbasis MapBiomas dan interpretasi implikasinya terhadap program konservasi.',
+    description:
+      'Analisis mendalam perubahan tutupan lahan berbasis MapBiomas dan interpretasi implikasinya terhadap program konservasi.',
     size: '8.4 MB',
     updated: '12 Maret 2024',
   },
@@ -52,7 +55,8 @@ const PUSTAKA_ITEMS = [
     title: 'Panduan Operasional Forum MSF',
     category: 'Pedoman',
     categoryColor: '#14b8a6',
-    description: 'Dokumen acuan tata cara penyelenggaraan Forum Multi-Stakeholder, mekanisme pengambilan keputusan, dan pengelolaan sekretariat.',
+    description:
+      'Dokumen acuan tata cara penyelenggaraan Forum Multi-Stakeholder, mekanisme pengambilan keputusan, dan pengelolaan sekretariat.',
     size: '2.1 MB',
     updated: '28 Januari 2023',
   },
@@ -61,16 +65,26 @@ const PUSTAKA_ITEMS = [
     title: 'Panduan Pengembangan Kakao Berkelanjutan',
     category: 'Teknis',
     categoryColor: '#10b981',
-    description: 'Panduan teknis budi daya kakao berkelanjutan yang mengintegrasikan praktik baik dan standar sertifikasi internasional.',
+    description:
+      'Panduan teknis budi daya kakao berkelanjutan yang mengintegrasikan praktik baik dan standar sertifikasi internasional.',
     size: '1.9 MB',
     updated: '15 November 2023',
   },
 ];
 
-// ─── Combined flat list (laporan first, then pustaka) ─────────────────────
 const ALL_ITEMS = [
-  ...LAPORAN_ITEMS.map((item) => ({ ...item, type: 'Laporan', icon: BarChart3, iconColor: '#14b8a6' })),
-  ...PUSTAKA_ITEMS.map((item) => ({ ...item, type: 'Pustaka', icon: BookOpen, iconColor: '#6366f1' })),
+  ...LAPORAN_ITEMS.map((item) => ({
+    ...item,
+    type: 'Laporan',
+    icon: BarChart3,
+    iconColor: '#14b8a6',
+  })),
+  ...PUSTAKA_ITEMS.map((item) => ({
+    ...item,
+    type: 'Pustaka',
+    icon: BookOpen,
+    iconColor: '#6366f1',
+  })),
 ];
 
 export function ReportsTab() {
@@ -116,8 +130,7 @@ export function ReportsTab() {
                     <span className="font-semibold text-gray-600">Ukuran:</span> {item.size}
                   </div>
                   <div>
-                    <span className="font-semibold text-gray-600">Pembaruan:</span>{' '}
-                    {item.updated}
+                    <span className="font-semibold text-gray-600">Pembaruan:</span> {item.updated}
                   </div>
                 </div>
               </article>

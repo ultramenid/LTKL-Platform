@@ -39,10 +39,6 @@ const LAYERS = {
 // Replaced (abort + new) every time abortActiveRequests() is called
 let activeController = new AbortController();
 
-// Separate controller for stats/chart fetches so map navigation (abortActiveRequests)
-// never cancels in-flight chart data — stats are independent of layer lifecycle
-let statsController = new AbortController();
-
 // ─── SHARED HELPERS (extracted from loadLayer & loadLayerWithCallback) ──
 // These eliminate duplicated WFS fetch, layer creation, and interaction binding logic.
 // Both public functions now delegate to these helpers, differing only in click behavior.
@@ -52,17 +48,26 @@ let statsController = new AbortController();
  * Returns validated GeoJSON object or null on abort/error.
  * Uses activeController signal so abortActiveRequests() can cancel in-flight fetches (Rule A).
  */
-async function fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter) {
+async function fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter, signal = activeController.signal) {
+  throwIfAborted(signal);
+
   const store = useMapStore.getState();
   const cacheKey = `geojson_${layerName}_${cqlFilter || 'all'}`;
 
   // Return cached data immediately if available
   const cachedGeoJson = store.getCacheGeoJSON(cacheKey);
-  if (cachedGeoJson) return cachedGeoJson;
+  if (cachedGeoJson) {
+    throwIfAborted(signal);
+    return cachedGeoJson;
+  }
 
   // Await existing pending request if one is already in-flight (dedup)
   const pendingRequest = store.getPending(cacheKey);
-  if (pendingRequest) return await pendingRequest;
+  if (pendingRequest) {
+    const geoJsonData = await waitWithAbort(pendingRequest, signal);
+    throwIfAborted(signal);
+    return geoJsonData;
+  }
 
   // Build WFS query params
   const wfsParams = new URLSearchParams({
@@ -78,14 +83,17 @@ async function fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter) {
 
   // Create and track the fetch promise for deduplication
   const fetchPromise = (async () => {
-    const response = await fetch(geoserverUrl, { signal: activeController.signal });
-    return await response.json();
+    const response = await fetch(geoserverUrl, { signal });
+    const geoJsonData = await response.json();
+    throwIfAborted(signal);
+    return geoJsonData;
   })();
 
   store.setPending(cacheKey, fetchPromise);
   let geoJsonData;
   try {
     geoJsonData = await fetchPromise;
+    throwIfAborted(signal);
   } finally {
     store.clearPending(cacheKey);
   }
@@ -280,12 +288,14 @@ function attachInteractions(map, layerId, onClickHandler) {
   map.on('mouseleave', layerId, onMouseLeave);
   map.on('mousemove', layerId, onMouseMove);
 
-  // Delegate click to handler — caller decides drill-down vs local state
-  map.on('click', layerId, async (e) => {
+  const onClick = async (e) => {
     const clickedFeature = e.features?.[0];
     if (!clickedFeature?.properties) return;
     onClickHandler(e);
-  });
+  };
+
+  // Delegate click to handler — caller decides drill-down vs local state
+  map.on('click', layerId, onClick);
 
   // Return cleanup function for caller to invoke before recreation
   return () => {
@@ -293,7 +303,7 @@ function attachInteractions(map, layerId, onClickHandler) {
       map.off('mouseenter', layerId, onMouseEnter);
       map.off('mouseleave', layerId, onMouseLeave);
       map.off('mousemove', layerId, onMouseMove);
-      map.off('click', layerId);
+      map.off('click', layerId, onClick);
     } catch {
       /* map may have been removed during unmount */
     }
@@ -315,21 +325,93 @@ export function getActiveSignal() {
   return activeController.signal;
 }
 
-// Cancel any in-flight stats/chart fetch (called before each new stats fetch)
-// Kept separate from activeController so map navigation doesn't abort chart data
-export function abortStatsRequests() {
-  statsController.abort();
-  statsController = new AbortController();
+const throwIfAborted = (signal) => {
+  if (signal?.aborted) {
+    throw new DOMException('Aborted', 'AbortError');
+  }
+};
+
+const waitWithAbort = async (promise, signal) => {
+  throwIfAborted(signal);
+  if (!signal) return await promise;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        const onAbort = () => reject(new DOMException('Aborted', 'AbortError'));
+        signal.addEventListener('abort', onAbort, { once: true });
+
+        promise.finally(() => {
+          signal.removeEventListener('abort', onAbort);
+        });
+      }),
+    ]);
+  } catch (err) {
+    if (err.name === 'AbortError') throw err;
+    throw err;
+  }
+};
+
+export function removeGEERasterLayer(map) {
+  try {
+    if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
+    if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
+  } catch {
+    void 0;
+  }
 }
 
-// Return the current stats signal for CoverageChart and similar data fetches
-export function getStatsSignal() {
-  return statsController.signal;
+function applyGEERasterLayer(map, geeRasterTileUrl, signal) {
+  throwIfAborted(signal);
+  removeGEERasterLayer(map);
+
+  try {
+    throwIfAborted(signal);
+    if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
+    throwIfAborted(signal);
+
+    map.addSource(LAYERS.GEE_SOURCE, {
+      type: 'raster',
+      tiles: [geeRasterTileUrl],
+      tileSize: 256,
+    });
+    throwIfAborted(signal);
+
+    const allLayers = map.getStyle()?.layers ?? [];
+    const layerIdToPlaceBelow =
+      allLayers.find((layer) =>
+        [LAYER_IDS.KABUPATEN_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.DESA_FILL].includes(
+          layer.id,
+        ),
+      )?.id || undefined;
+
+    map.addLayer(
+      {
+        id: LAYERS.GEE_LAYER,
+        type: 'raster',
+        source: LAYERS.GEE_SOURCE,
+        paint: { 'raster-opacity': 1 },
+      },
+      layerIdToPlaceBelow,
+    );
+    throwIfAborted(signal);
+    bringHoverLayersToTop(map);
+  } catch (err) {
+    // Roll back source if added without layer (abort between addSource/addLayer)
+    if (err.name === 'AbortError') {
+      removeGEERasterLayer(map);
+    }
+    throw err;
+  }
 }
 
 // Load GEE LULC raster — cache-first + image probe validation, dedup pending requests
-export async function loadGEEPolygonRaster(map, filters = {}) {
+export async function loadGEEPolygonRaster(map, filters = {}, signal = activeController.signal) {
   try {
+    throwIfAborted(signal);
+    removeGEERasterLayer(map);
+
     const { year } = useMapStore.getState();
 
     const queryParams = new URLSearchParams({
@@ -349,8 +431,6 @@ export async function loadGEEPolygonRaster(map, filters = {}) {
         .replace('{z}', '4')
         .replace('{x}', '12')
         .replace('{y}', '7');
-      const signal = activeController.signal;
-
       // Abort-aware image probe: resolve true/false, reject only on abort
       const cachedUrlIsValid = await new Promise((resolve, reject) => {
         if (signal.aborted) {
@@ -358,53 +438,36 @@ export async function loadGEEPolygonRaster(map, filters = {}) {
           return;
         }
 
+        let settled = false;
         const imageProbe = new Image();
+        const cleanup = () => {
+          signal.removeEventListener('abort', onAbort);
+          clearTimeout(timeoutId);
+        };
+        const settle = (result) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve(result);
+        };
         const onAbort = () => {
+          if (settled) return;
+          settled = true;
           imageProbe.src = '';
+          cleanup();
           reject(new DOMException('Aborted', 'AbortError'));
         };
+        const timeoutId = setTimeout(() => settle(false), 5000);
         signal.addEventListener('abort', onAbort, { once: true });
 
-        imageProbe.onload = () => {
-          signal.removeEventListener('abort', onAbort);
-          resolve(true);
-        };
-        imageProbe.onerror = () => {
-          signal.removeEventListener('abort', onAbort);
-          resolve(false);
-        };
+        imageProbe.onload = () => settle(true);
+        imageProbe.onerror = () => settle(false);
         imageProbe.src = testTileUrl;
       });
+      throwIfAborted(signal);
 
       if (cachedUrlIsValid) {
-        if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
-        if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
-        map.addSource(LAYERS.GEE_SOURCE, {
-          type: 'raster',
-          tiles: [cachedTileUrl],
-          tileSize: 256,
-        });
-
-        const allLayers = map.getStyle()?.layers ?? [];
-        const layerIdToPlaceBelow =
-          allLayers.find((layer) =>
-            [LAYER_IDS.KABUPATEN_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.DESA_FILL].includes(
-              layer.id,
-            ),
-          )?.id || undefined;
-
-        map.addLayer(
-          {
-            id: LAYERS.GEE_LAYER,
-            type: 'raster',
-            source: LAYERS.GEE_SOURCE,
-            paint: { 'raster-opacity': 1 },
-          },
-          layerIdToPlaceBelow,
-        );
-
-        // Ensure hover line layers are on top (visible)
-        bringHoverLayersToTop(map);
+        applyGEERasterLayer(map, cachedTileUrl, signal);
         return;
       }
 
@@ -415,8 +478,10 @@ export async function loadGEEPolygonRaster(map, filters = {}) {
     // ─── CHECK PENDING REQUEST (avoid duplicate requests) ───
     const pendingRequest = store.getPending(cacheKey);
     if (pendingRequest) {
-      // Request already in-flight by another caller, just wait for it
-      await pendingRequest;
+      // Request already in-flight by another caller, just wait for the tile URL
+      const pendingTileUrl = await waitWithAbort(pendingRequest, signal);
+      throwIfAborted(signal);
+      if (pendingTileUrl) applyGEERasterLayer(map, pendingTileUrl, signal);
       return;
     }
 
@@ -425,55 +490,29 @@ export async function loadGEEPolygonRaster(map, filters = {}) {
 
     const fetchPromise = (async () => {
       const response = await fetch(tileServerUrl, {
-        signal: activeController.signal,
+        signal,
       });
       const geeRasterTileUrl = await response.text();
+      throwIfAborted(signal);
 
       if (!geeRasterTileUrl || geeRasterTileUrl.trim() === '') {
-        return;
+        return null;
       }
 
       store.setCacheGEE(cacheKey, geeRasterTileUrl);
-
-      if (map.getLayer(LAYERS.GEE_LAYER)) map.removeLayer(LAYERS.GEE_LAYER);
-      if (map.getSource(LAYERS.GEE_SOURCE)) map.removeSource(LAYERS.GEE_SOURCE);
-
-      map.addSource(LAYERS.GEE_SOURCE, {
-        type: 'raster',
-        tiles: [geeRasterTileUrl],
-        tileSize: 256,
-      });
-
-      // Place GEE raster below administrative boundaries
-      const allLayers = map.getStyle()?.layers ?? [];
-      const layerIdToPlaceBelow =
-        allLayers.find((layer) =>
-          [LAYER_IDS.KABUPATEN_FILL, LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.DESA_FILL].includes(
-            layer.id,
-          ),
-        )?.id || undefined;
-
-      map.addLayer(
-        {
-          id: LAYERS.GEE_LAYER,
-          type: 'raster',
-          source: LAYERS.GEE_SOURCE,
-          paint: {
-            'raster-opacity': 1,
-          },
-        },
-        layerIdToPlaceBelow,
-      );
-
-      // Ensure hover line layers are on top
-      bringHoverLayersToTop(map);
+      return geeRasterTileUrl;
     })();
 
     store.setPending(cacheKey, fetchPromise);
-    await fetchPromise;
-    store.clearPending(cacheKey);
+    try {
+      const geeRasterTileUrl = await fetchPromise;
+      throwIfAborted(signal);
+      if (geeRasterTileUrl) applyGEERasterLayer(map, geeRasterTileUrl, signal);
+    } finally {
+      store.clearPending(cacheKey);
+    }
   } catch (err) {
-    if (err.name === 'AbortError') return; // Cancelled on Home click, not an error
+    if (err.name === 'AbortError') throw err;
     console.error('Failed to load GEE LULC raster:', err);
   }
 }
@@ -546,12 +585,18 @@ export const loadLayer = async (
   layerId,
   cqlFilter,
   removeLayerIds = [],
+  signal = activeController.signal,
 ) => {
+  throwIfAborted(signal);
+
   // Clean up old layers before loading
+  removeLayerAndSource(map, layerId);
   removeLayerIds.forEach((id) => removeLayerAndSource(map, id));
+  throwIfAborted(signal);
 
   // Fetch GeoJSON with shared cache-first + dedup logic
-  const geoJsonData = await fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter);
+  const geoJsonData = await fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter, signal);
+  throwIfAborted(signal);
   if (!geoJsonData?.features) {
     console.warn(`No GeoJSON features loaded for ${layerId}`);
     return;
@@ -559,6 +604,7 @@ export const loadLayer = async (
 
   // Render fill + hover line layers using shared logic
   renderAndSetupLayers(map, geoJsonData, sourceId, layerId);
+  throwIfAborted(signal);
 
   // Attach interactions with drill-down behavior (delegates to updateBreadcrumb)
   attachInteractions(map, layerId, (e) => {
@@ -568,73 +614,52 @@ export const loadLayer = async (
   return geoJsonData;
 };
 
+// ─── GLOBAL DRILL-DOWN RE-ENTRY GUARD ───
+// Prevents interleaving of concurrent drill-down operations from rapid clicks
+let isGlobalDrilling = false;
+
 // Global drill-down logic — called when user clicks a feature on the main map.
 // Updates breadcrumbs, loads child layers, and manages layer removal chain.
 async function handleGlobalDrillDown(event, map) {
-  const { updateBreadcrumb } = useMapStore.getState();
-  const clickedFeature = event.features?.[0];
-  if (!clickedFeature?.properties) return;
+  if (isGlobalDrilling) return;
+  isGlobalDrilling = true;
+  try {
+    const { updateBreadcrumb } = useMapStore.getState();
+    const clickedFeature = event.features?.[0];
+    if (!clickedFeature?.properties) return;
 
-  const { kab, kec, des } = clickedFeature.properties;
+    const { kab, kec, des } = clickedFeature.properties;
 
-  // === DESA LEVEL (deepest) ===
-  if (des) {
-    updateBreadcrumb('kabupaten', kab);
-    updateBreadcrumb('kecamatan', kec);
-    updateBreadcrumb('desa', des);
-    useMapStore.getState().setSelectedKab(resolveKabName(kab));
-    zoomToFeature(map, clickedFeature);
-    await loadGEEPolygonRaster(map, { des });
-    [LAYER_IDS.KECAMATAN_FILL, LAYER_IDS.KABUPATEN_FILL].forEach((id) =>
-      removeLayerAndSource(map, id),
-    );
-    removeLayerAndSource(map, LAYER_IDS.DESA_FILL);
-    await loadLayer(
-      map,
-      LAYER_TYPES.DESA,
-      SOURCE_IDS.DESA,
-      LAYER_IDS.DESA_FILL,
-      buildDesaFilter({ kab, kec, des }),
-    );
-    return;
-  }
+    // === DESA LEVEL (deepest) ===
+    if (des) {
+      updateBreadcrumb('kabupaten', kab);
+      updateBreadcrumb('kecamatan', kec);
+      updateBreadcrumb('desa', des);
+      useMapStore.getState().setSelectedKab(resolveKabName(kab));
+      zoomToFeature(map, clickedFeature);
+      return;
+    }
 
-  // === KECAMATAN LEVEL (mid-level) ===
-  if (kec) {
-    updateBreadcrumb('kabupaten', kab);
-    updateBreadcrumb('kecamatan', kec);
-    updateBreadcrumb('desa', undefined);
-    useMapStore.getState().setSelectedKab(resolveKabName(kab));
-    zoomToFeature(map, clickedFeature);
-    await loadGEEPolygonRaster(map, { kec });
-    removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
-    await loadLayer(
-      map,
-      LAYER_TYPES.DESA,
-      SOURCE_IDS.DESA,
-      LAYER_IDS.DESA_FILL,
-      buildKecamatanFilter({ kab, kec }),
-      [LAYER_IDS.KECAMATAN_FILL],
-    );
-    return;
-  }
+    // === KECAMATAN LEVEL (mid-level) ===
+    if (kec) {
+      updateBreadcrumb('kabupaten', kab);
+      updateBreadcrumb('kecamatan', kec);
+      updateBreadcrumb('desa', undefined);
+      useMapStore.getState().setSelectedKab(resolveKabName(kab));
+      zoomToFeature(map, clickedFeature);
+      return;
+    }
 
-  // === KABUPATEN LEVEL (top-level) ===
-  if (kab) {
-    updateBreadcrumb('kabupaten', kab);
-    updateBreadcrumb('kecamatan', undefined);
-    updateBreadcrumb('desa', undefined);
-    useMapStore.getState().setSelectedKab(resolveKabName(kab));
-    zoomToFeature(map, clickedFeature);
-    await loadGEEPolygonRaster(map, { kab });
-    await loadLayer(
-      map,
-      LAYER_TYPES.KECAMATAN,
-      SOURCE_IDS.KECAMATAN,
-      LAYER_IDS.KECAMATAN_FILL,
-      buildSingleFilter('kab', kab),
-      [LAYER_IDS.KABUPATEN_FILL],
-    );
+    // === KABUPATEN LEVEL (top-level) ===
+    if (kab) {
+      updateBreadcrumb('kabupaten', kab);
+      updateBreadcrumb('kecamatan', undefined);
+      updateBreadcrumb('desa', undefined);
+      useMapStore.getState().setSelectedKab(resolveKabName(kab));
+      zoomToFeature(map, clickedFeature);
+    }
+  } finally {
+    isGlobalDrilling = false;
   }
 }
 
@@ -649,13 +674,17 @@ export const loadLayerWithCallback = async (
   layerId,
   cqlFilter,
   onClickCallback,
+  signal = activeController.signal,
 ) => {
   // Fetch GeoJSON using shared cache-first + dedup logic
-  const geoJsonData = await fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter);
+  removeLayerAndSource(map, layerId);
+  const geoJsonData = await fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter, signal);
+  throwIfAborted(signal);
   if (!geoJsonData?.features) return { geojson: null, cleanup: null };
 
   // Render fill + hover line layers using shared logic
   renderAndSetupLayers(map, geoJsonData, sourceId, layerId);
+  throwIfAborted(signal);
 
   // Attach interactions with local-state click handler (delegates to callback)
   const cleanup = attachInteractions(map, layerId, (e) => {

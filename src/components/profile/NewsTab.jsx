@@ -2,7 +2,6 @@ import { Calendar, User, ChevronRight, BookOpen } from 'lucide-react';
 import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
 
-// Dummy news and event posts — replace with API data when backend is ready
 const NEWS_ITEMS = [
   {
     id: 'annual-forum-2025',
@@ -71,16 +70,18 @@ const NEWS_ITEMS = [
   },
 ];
 
-// News & Events tab — featured article at top, grid of regular posts below
 export function NewsTab() {
   const featuredArticle = NEWS_ITEMS.find((item) => item.featured);
   const regularArticles = NEWS_ITEMS.filter((item) => !item.featured);
 
   return (
     <ProfileSection>
-      <SectionHeader title="Berita & Acara" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
+      <SectionHeader
+        title="Berita & Acara"
+        borderColor={COLORS.PRIMARY}
+        dotColor={COLORS.PRIMARY}
+      />
 
-      {/* Featured post — larger horizontal card */}
       {featuredArticle && (
         <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm group cursor-pointer hover:shadow-md transition-shadow">
           <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr]">
@@ -126,7 +127,6 @@ export function NewsTab() {
         </div>
       )}
 
-      {/* Regular article grid — 2 columns on sm+ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {regularArticles.map((article) => (
           <div
@@ -166,7 +166,6 @@ export function NewsTab() {
         ))}
       </div>
 
-      {/* Load more button */}
       <div className="flex justify-center pt-2">
         <button className="flex items-center gap-2 px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:border-teal-300 hover:text-teal-600 transition-colors cursor-pointer">
           <BookOpen size={14} />

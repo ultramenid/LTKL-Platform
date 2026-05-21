@@ -4,7 +4,6 @@ import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
 import SUPPLY_CHAIN_DATA from '../../data/supplychain-data.json';
 
-// Pre-computed summary stats at build time — read directly from JSON without browser-side calculation
 function getStatistics(district, year) {
   const summary = SUPPLY_CHAIN_DATA.data[district]?.[year]?.summary;
   if (!summary)
@@ -17,7 +16,6 @@ function getStatistics(district, year) {
   return { ...summary, totalVolume: summary.totalVolume.toFixed(1) };
 }
 
-// Commodity Supply Chain tab
 export function SupplyChainTab({ kabupaten }) {
   const districtData = SUPPLY_CHAIN_DATA.data[kabupaten];
   const availableYears = districtData?.tahun_tersedia || [];
@@ -25,7 +23,6 @@ export function SupplyChainTab({ kabupaten }) {
     availableYears[availableYears.length - 1] || 2022,
   );
 
-  // Read pre-computed stats from JSON — no recalculation in browser
   const statistics = useMemo(
     () => getStatistics(kabupaten, selectedYear),
     [kabupaten, selectedYear],
@@ -47,7 +44,7 @@ export function SupplyChainTab({ kabupaten }) {
             dotColor={COLORS.PRIMARY}
           />
         </div>
-        {/* ─── YEAR SELECTOR DROPDOWN ───*/}
+
         {availableYears.length > 0 && (
           <select
             value={selectedYear}
@@ -64,7 +61,6 @@ export function SupplyChainTab({ kabupaten }) {
         )}
       </div>
 
-      {/* ─── SUMMARY STATISTICS CARDS (volume, exporters, destinations) ───*/}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {SUPPLY_CHAIN_STATS.map((stat) => (
           <div key={stat.label} className="bg-teal-50 border border-teal-100 p-4 rounded-lg">
@@ -75,7 +71,6 @@ export function SupplyChainTab({ kabupaten }) {
         ))}
       </div>
 
-      {/* ─── SANKEY VISUALIZATION (alur rantai pasok dengan nodes & links) ───*/}
       <div>
         <SubSectionHeader title="Supply Chain Flow" dotColor={COLORS.PRIMARY} />
         <SankeySupplyChain kabupaten={kabupaten} year={selectedYear} />

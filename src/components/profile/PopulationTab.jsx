@@ -2,7 +2,6 @@ import ReactECharts from 'echarts-for-react';
 import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
 
-// ─── POPULATION DATA KABUPATEN SIGI 2015–2025 ───
 const POPULATION_YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
 const POPULATION_TOTAL = [
@@ -21,7 +20,6 @@ const HOUSEHOLD_TOTAL = [
   59133, 60477, 61793, 63090, 64415, 66520, 68050, 69509, 71800, 73378, 75200,
 ];
 
-// ─── CHART OPTIONS: STACKED BAR TOTAL VS POOR POPULATION ───
 const populationBarOption = {
   grid: { top: 24, right: 12, bottom: 32, left: 12, containLabel: true },
   tooltip: {
@@ -74,7 +72,6 @@ const populationBarOption = {
   ],
 };
 
-// ─── CHART OPTIONS: BAR HOUSEHOLD COUNT ───
 const householdBarOption = {
   grid: { top: 28, right: 12, bottom: 32, left: 12, containLabel: true },
   tooltip: {
@@ -101,7 +98,6 @@ const householdBarOption = {
   ],
 };
 
-// ─── CHART OPTIONS: LINE PER CAPITA EXPENDITURE ───
 const expenditureLineOption = {
   grid: { top: 24, right: 48, bottom: 40, left: 48, containLabel: true },
   tooltip: {
@@ -137,7 +133,6 @@ const expenditureLineOption = {
   ],
 };
 
-// ─── CHART OPTIONS: LINE PER CAPITA EXPENDITURE ───
 const expenditureLineOption2 = {
   grid: { top: 24, right: 48, bottom: 40, left: 48, containLabel: true },
   tooltip: {
@@ -173,14 +168,12 @@ const expenditureLineOption2 = {
   ],
 };
 
-// Population & Diversity tab
 export function PopulationTab() {
   return (
     <ProfileSection>
       <SectionHeader title="Kependudukan" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 items-start">
-        {/* ─── LEFT COLUMN: NARRATIVE ───*/}
         <div className="space-y-4 text-xs text-gray-600 leading-relaxed">
           <p>
             Jumlah penduduk Kabupaten Sigi mencapai{' '}
@@ -204,7 +197,6 @@ export function PopulationTab() {
           </p>
         </div>
 
-        {/* ─── RIGHT COLUMN: CHARTS ───*/}
         <div className="space-y-6 min-w-0">
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">
@@ -221,11 +213,9 @@ export function PopulationTab() {
           </div>
         </div>
       </div>
-      {/* ─── SECTION: HOUSEHOLDS ─── */}
       <div>
         <SectionHeader title="Rumah Tangga" borderColor="#4ade80" dotColor="#4ade80" />
         <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 items-start mt-6">
-          {/* Narrative */}
           <div className="space-y-4 text-xs text-gray-600 leading-relaxed">
             <p>
               Jumlah rumah tangga di Kabupaten Sigi terus bertumbuh seiring meningkatnya pasangan
@@ -242,7 +232,6 @@ export function PopulationTab() {
             </p>
           </div>
 
-          {/* Two charts */}
           <div className="space-y-6 min-w-0">
             <div>
               <p className="text-sm font-semibold mb-2" style={{ color: '#16a34a' }}>

@@ -43,21 +43,59 @@ const fitBoundsToCoordinates = (mapInstance, coordinates, paddingPixels = 100) =
 };
 
 // Wait for source data to be ready in map using event-driven approach (more reliable than setTimeout)
-export const waitForSourceData = (mapInstance, sourceId) => {
-  return new Promise((resolveWaiting) => {
-    // If source is already loaded, resolve immediately
-    if (mapInstance.isSourceLoaded(sourceId)) {
+export const waitForSourceData = (mapInstance, sourceId, signal) => {
+  return new Promise((resolveWaiting, rejectWaiting) => {
+    if (signal?.aborted) {
+      rejectWaiting(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+
+    if (!mapInstance.getSource(sourceId) || mapInstance.isSourceLoaded(sourceId)) {
       resolveWaiting();
       return;
     }
 
-    const onSourceDataReady = (sourceEvent) => {
-      if (sourceEvent.sourceId === sourceId && sourceEvent.isSourceLoaded) {
-        mapInstance.off('sourcedata', onSourceDataReady);
-        resolveWaiting();
-      }
+    let settled = false;
+
+    const cleanup = () => {
+      mapInstance.off('sourcedata', onSourceDataReady);
+      mapInstance.off('styledata', onStyleDataChanged);
+      signal?.removeEventListener('abort', onAbort);
     };
+
+    const resolve = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolveWaiting();
+    };
+
+    const reject = (error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      rejectWaiting(error);
+    };
+
+    function onSourceDataReady(sourceEvent) {
+      if (sourceEvent.sourceId === sourceId && sourceEvent.isSourceLoaded) {
+        resolve();
+      }
+    }
+
+    function onStyleDataChanged() {
+      if (!mapInstance.getSource(sourceId)) {
+        reject(new DOMException('Source removed', 'AbortError'));
+      }
+    }
+
+    function onAbort() {
+      reject(new DOMException('Aborted', 'AbortError'));
+    }
+
     mapInstance.on('sourcedata', onSourceDataReady);
+    mapInstance.on('styledata', onStyleDataChanged);
+    signal?.addEventListener('abort', onAbort, { once: true });
   });
 };
 

@@ -12,6 +12,7 @@ import {
   loadGEEPolygonRaster,
   removeLayerAndSource,
   abortActiveRequests,
+  getActiveSignal,
 } from '../../store/mapLayerStore.js';
 import { buildSingleFilter, buildDesaFilter } from '../../utils/filterBuilder.js';
 import {
@@ -24,7 +25,6 @@ import {
 } from '../../config/constants.js';
 import { zoomToCollection } from '../../utils/mapUtils.js';
 
-// ─── YEAR SELECTOR ───────────────────────────────────────────────────────────
 function ProfileYearSelector({ year, onYearChange }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [hoveredYear, setHoveredYear] = useState(null);
@@ -92,9 +92,6 @@ function ProfileYearSelector({ year, onYearChange }) {
   );
 }
 
-// ─── LOCAL BREADCRUMBS ───────────────────────────────────────────────────────
-// Identical to BreadcrumbsComponent in main map, but reads local state
-// instead of global Zustand so profile navigation doesn't affect the main map.
 function ProfileMapBreadcrumbs({ kabupaten, kec, des, onHome, onKecClick }) {
   const breadcrumbItems = [
     { level: 'kab', label: kabupaten },
@@ -138,46 +135,31 @@ function ProfileMapBreadcrumbs({ kabupaten, kec, des, onHome, onKecClick }) {
   );
 }
 
-// ─── MAP TAB ─────────────────────────────────────────────────────────────────
-// Reuses existing utilities without duplicating logic:
-//   loadLayerWithCallback → WFS fetch + shared cache + hover + fill (mapLayerStore)
-//   loadGEEPolygonRaster  → GEE fetch + shared cache + image probe (mapLayerStore)
-//   removeLayerAndSource  → correct layer + source cleanup (mapLayerStore)
-//   abortActiveRequests   → cancel previous fetch via activeController (Rule A)
-//   LAYER_IDS/SOURCE_IDS  → global IDs so loadGEEPolygonRaster knows GEE position
 export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
 
-  // Cleanup functions for currently active layer event listeners
   const kecLayerCleanupRef = useRef(null);
   const desLayerCleanupRef = useRef(null);
 
   const [isMapReady, setIsMapReady] = useState(false);
   const [isLayerLoading, setIsLayerLoading] = useState(true);
-  // Initialize from URL so drill position is restored when map tab is reopened
   const [localBreadcrumbs, setLocalBreadcrumbs] = useState({
     kec: initialDrillState?.kec ?? null,
     des: initialDrillState?.des ?? null,
   });
 
-  // Year from global store so it stays in sync with CoverageChart below
   const { year, setYear } = useMapStore(
     useShallow((state) => ({ year: state.year, setYear: state.setYear })),
   );
 
-  // Ref to let the year-change effect read localBreadcrumbs without adding it to deps
-  // (adding localBreadcrumbs to the year effect would make WFS layers reload on drill)
   const localBreadcrumbsRef = useRef(localBreadcrumbs);
   useEffect(() => {
     localBreadcrumbsRef.current = localBreadcrumbs;
   }, [localBreadcrumbs]);
 
-  // Tracks the year seen on previous render; null on first mount so the year effect
-  // skips the initial run (the layer effect already loads GEE on first mount)
   const previousYearRef = useRef(null);
 
-  // ─── MAP INIT ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
@@ -188,7 +170,6 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
       zoom: 5,
       minZoom: 3,
       attributionControl: false,
-      // Normal scroll → page scroll; Ctrl/Cmd + scroll → map zoom
       cooperativeGestures: true,
     });
 
@@ -205,54 +186,55 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     );
 
     mapRef.current = mapInstance;
-    mapInstance.on('load', () => setIsMapReady(true));
+
+    function onMapLoad() {
+      setIsMapReady(true);
+    }
+
+    if (mapInstance.isStyleLoaded()) {
+      onMapLoad();
+    } else {
+      mapInstance.on('load', onMapLoad);
+    }
 
     return () => {
+      mapInstance.off('load', onMapLoad);
       kecLayerCleanupRef.current?.();
       desLayerCleanupRef.current?.();
       try {
-        if (mapRef.current) mapRef.current.remove();
+        mapInstance.remove();
       } catch {
-        /* skip */
+        void 0;
       }
       mapRef.current = null;
       setIsMapReady(false);
+      setIsLayerLoading(false);
     };
   }, []);
 
-  // ─── LOAD LAYER + GEE BY DRILL LEVEL ────────────────────────────────────
-  // State machine based on localBreadcrumbs:
-  //   !kec → all kec in kab (click → enter kec level), GEE kab
-  //    kec → all des in kec (click → select des), GEE kec
-  //   +des → single des (3-level filter), GEE des
-  //
-  // abortActiveRequests() at the start ensures fetches from the previous effect
-  // are cancelled before new ones begin — follows Rule A (activeController).
   useEffect(() => {
     if (!isMapReady || !mapRef.current) return;
 
-    // Cancel all in-flight fetches from previous effect run
     abortActiveRequests();
 
     let isEffectActive = true;
+    abortActiveRequests();
+    const signal = getActiveSignal();
     setIsLayerLoading(true);
 
     const mapInstance = mapRef.current;
     const { kec, des } = localBreadcrumbs;
 
     const loadLayersAndGEE = async () => {
-      // Remove old listeners before removing layers to prevent stale handlers
       kecLayerCleanupRef.current?.();
       kecLayerCleanupRef.current = null;
       desLayerCleanupRef.current?.();
       desLayerCleanupRef.current = null;
 
-      // Remove all drilldown layers so no leftovers from previous state
       removeLayerAndSource(mapInstance, LAYER_IDS.KECAMATAN_FILL);
       removeLayerAndSource(mapInstance, LAYER_IDS.DESA_FILL);
 
       if (!kec) {
-        // ── Kabupaten Level ────────────────────────────────────────────────────
         const { geojson: kecGeoJson, cleanup } = await loadLayerWithCallback(
           mapInstance,
           LAYER_TYPES.KECAMATAN,
@@ -261,17 +243,16 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
           buildSingleFilter('kab', kabupaten),
           (clickedFeature) =>
             setLocalBreadcrumbs({ kec: clickedFeature.properties.kec, des: null }),
+          signal,
         );
         if (!isEffectActive) return;
         kecLayerCleanupRef.current = cleanup;
 
-        // Zoom to combined kec boundaries so the whole kab area is visible
         if (kecGeoJson) zoomToCollection(mapInstance, kecGeoJson, 20);
+        if (!isEffectActive) return;
 
-        // GEE raster placed below boundary lines so admin borders remain readable
-        await loadGEEPolygonRaster(mapInstance, { kab: kabupaten });
+        await loadGEEPolygonRaster(mapInstance, { kab: kabupaten }, signal);
       } else if (!des) {
-        // ── Kecamatan Level ────────────────────────────────────────────────────
         const { geojson: desaGeoJson, cleanup } = await loadLayerWithCallback(
           mapInstance,
           LAYER_TYPES.DESA,
@@ -283,17 +264,16 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
               ...previous,
               des: clickedFeature.properties.des,
             })),
+          signal,
         );
         if (!isEffectActive) return;
         desLayerCleanupRef.current = cleanup;
 
-        // Zoom to combined desa boundaries so the kec area is immediately readable
         if (desaGeoJson) zoomToCollection(mapInstance, desaGeoJson, 60);
+        if (!isEffectActive) return;
 
-        await loadGEEPolygonRaster(mapInstance, { kec });
+        await loadGEEPolygonRaster(mapInstance, { kec }, signal);
       } else {
-        // ── Desa Level ─────────────────────────────────────────────────────────
-        // 3-level filter to load only the selected desa polygon
         const { geojson: selectedDesaGeoJson, cleanup } = await loadLayerWithCallback(
           mapInstance,
           LAYER_TYPES.DESA,
@@ -305,14 +285,15 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
               ...previous,
               des: clickedFeature.properties.des,
             })),
+          signal,
         );
         if (!isEffectActive) return;
         desLayerCleanupRef.current = cleanup;
 
-        // Zoom to selected desa boundary so user focus stays on the area
         if (selectedDesaGeoJson) zoomToCollection(mapInstance, selectedDesaGeoJson, 40);
+        if (!isEffectActive) return;
 
-        await loadGEEPolygonRaster(mapInstance, { des });
+        await loadGEEPolygonRaster(mapInstance, { des }, signal);
       }
     };
 
@@ -329,14 +310,9 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     };
   }, [isMapReady, localBreadcrumbs, kabupaten]);
 
-  // ─── RELOAD GEE ON YEAR CHANGE (without reloading WFS layers) ───
-  // Separated from the layer effect so kecamatan/desa boundaries don't reload when
-  // only the raster year changes — WFS data is year-independent.
   useEffect(() => {
     if (!isMapReady || !mapRef.current) return;
 
-    // Skip the initial run: the layer effect above already loads GEE on first mount.
-    // Using null sentinel avoids the stale-closure problem of isFirstRender booleans.
     if (previousYearRef.current === null) {
       previousYearRef.current = year;
       return;
@@ -344,21 +320,21 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     if (previousYearRef.current === year) return;
     previousYearRef.current = year;
 
+    abortActiveRequests();
+    const signal = getActiveSignal();
     const { kec, des } = localBreadcrumbsRef.current;
     const geeFilter = des ? { des } : kec ? { kec } : { kab: kabupaten };
-    loadGEEPolygonRaster(mapRef.current, geeFilter);
-  }, [year, isMapReady]); // kabupaten read from closure (stable prop, never changes mid-mount)
+    loadGEEPolygonRaster(mapRef.current, geeFilter, signal).catch((error) => {
+      if (error.name !== 'AbortError') console.error('MapTab year load error:', error);
+    });
+  }, [year, isMapReady, kabupaten]);
 
-  // ─── SYNC TO URL ────────────────────────────────────────────────────────────
-  // Send state to parent so URL always records the active position and stays shareable.
   useEffect(() => {
     onStateChange?.(year, { kab: kabupaten, ...localBreadcrumbs });
   }, [year, localBreadcrumbs, kabupaten, onStateChange]);
 
-  // ─── RENDER ─────────────────────────────────────────────────────────────────
   return (
     <ProfileSection>
-      {/* ── 1. MAP ── */}
       <div>
         <SectionHeader
           title="Peta Tutupan Lahan (LULC)"
@@ -373,7 +349,6 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
         <div className="relative w-full h-[65vh] rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
           <div ref={mapContainerRef} className="w-full h-full" />
 
-          {/* Local breadcrumbs — doesn't touch global Zustand store */}
           {isMapReady && (
             <ProfileMapBreadcrumbs
               kabupaten={kabupaten}
@@ -384,7 +359,6 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
             />
           )}
 
-          {/* Loading overlay while map initializes */}
           {!isMapReady && (
             <div className="absolute inset-0 bg-gray-100 flex flex-col items-center justify-center gap-3">
               <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
@@ -394,7 +368,6 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
             </div>
           )}
 
-          {/* Loading pill while layers/GEE are being fetched after map is ready */}
           {isLayerLoading && isMapReady && (
             <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-gray-900/80 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/10 shadow-lg pointer-events-none">
               <div className="w-3 h-3 border border-teal-400 border-t-transparent rounded-full animate-spin" />
@@ -402,7 +375,6 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
             </div>
           )}
 
-          {/* Bottom-left controls: Legend + Year selector */}
           {isMapReady && (
             <div className="absolute bottom-8 left-3 flex flex-col gap-1 items-start select-none z-10">
               <MapLegend />
@@ -415,7 +387,6 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
         </div>
       </div>
 
-      {/* ── 2. STATISTICS CHART ── */}
       <div>
         <SectionHeader
           title="Statistik Cakupan Area LULC"

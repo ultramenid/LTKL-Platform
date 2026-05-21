@@ -2,10 +2,8 @@ import ReactECharts from 'echarts-for-react';
 import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
 
-// ─── DUMMY DATA: TOP COMMODITY PRODUCTION 2015–2025 (Tonnes) ───
 const COMMODITY_YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
-// Production data for 5 main commodities in tonnes
 const COMMODITY_PRODUCTION = [
   {
     name: 'Kakao',
@@ -34,7 +32,6 @@ const COMMODITY_PRODUCTION = [
   },
 ];
 
-// Harvest area per commodity in hectares
 const HARVEST_AREA = [
   {
     name: 'Kakao',
@@ -63,7 +60,6 @@ const HARVEST_AREA = [
   },
 ];
 
-// ─── CHART OPTIONS: LINE PRODUCTION TREND PER COMMODITY ───
 const productionTrendOption = {
   grid: { top: 32, right: 16, bottom: 40, left: 12, containLabel: true },
   tooltip: {
@@ -106,8 +102,6 @@ const productionTrendOption = {
   })),
 };
 
-// ─── CHART OPTIONS: BAR LATEST YEAR PRODUCTION (2025) ───
-// Horizontal bar to make commodity comparison easier
 const latestProductionOption = {
   grid: { top: 8, right: 60, bottom: 8, left: 8, containLabel: true },
   tooltip: {
@@ -131,7 +125,6 @@ const latestProductionOption = {
     {
       type: 'bar',
       barMaxWidth: 28,
-      // Ambil nilai 2025 (indeks terakhir) per komoditas, dibalik sesuai urutan y-axis
       data: [...COMMODITY_PRODUCTION].reverse().map((commodity) => ({
         value: commodity.data[commodity.data.length - 1],
         itemStyle: { color: commodity.color, borderRadius: [0, 4, 4, 0] },
@@ -147,15 +140,12 @@ const latestProductionOption = {
   ],
 };
 
-// ─── OPSI CHART: GROUPED BAR LUAS PANEN VS PRODUKSI (indeks produktivitas) ───
-// Show ton/ha ratio per commodity as a proxy for land productivity
 const productivityOption = {
   grid: { top: 32, right: 16, bottom: 40, left: 12, containLabel: true },
   tooltip: {
     trigger: 'axis',
     formatter: (params) => {
       const year = params[0].axisValue;
-      // Calculate productivity (ton/ha) from the first two series
       const prod = params.find((p) => p.seriesName === 'Produksi (ton)');
       const area = params.find((p) => p.seriesName === 'Luas Panen (ha)');
       const ratio = prod && area && area.value > 0 ? (prod.value / area.value).toFixed(2) : '-';
@@ -180,7 +170,6 @@ const productivityOption = {
     {
       name: 'Produksi (ton)',
       type: 'bar',
-      // Use Padi (index 1) as the representative commodity
       data: COMMODITY_PRODUCTION[1].data,
       barMaxWidth: 20,
       itemStyle: { color: COLORS.PRIMARY, borderRadius: [3, 3, 0, 0] },
@@ -195,7 +184,6 @@ const productivityOption = {
   ],
 };
 
-// ─── OPSI CHART: DONUT KOMPOSISI KOMODITAS (% dari total produksi 2025) ───
 const totalProduction2025 = COMMODITY_PRODUCTION.reduce(
   (sum, commodity) => sum + commodity.data[commodity.data.length - 1],
   0,
@@ -235,7 +223,6 @@ const compositionDonutOption = {
   ],
 };
 
-// Summary statistics of top commodities for summary cards above
 const COMMODITY_SUMMARY_STATS = [
   { label: 'Komoditas Unggulan', value: 'Padi', unit: '138.000 ton (2025)' },
   { label: 'Total Produksi', value: '238K', unit: 'ton semua komoditas' },
@@ -243,13 +230,11 @@ const COMMODITY_SUMMARY_STATS = [
   { label: 'Produktivitas Padi', value: '5.43', unit: 'ton/ha' },
 ];
 
-// Commodity tab — production trends, composition, and land productivity
 export function CommodityTab() {
   return (
     <ProfileSection>
       <SectionHeader title="Komoditas Pangan dan Horti" borderColor="#92400e" dotColor="#92400e" />
 
-      {/* ─── KARTU SUMMARY STATISTIK ─── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {COMMODITY_SUMMARY_STATS.map((stat) => (
           <div key={stat.label} className="bg-amber-50 border border-amber-100 p-4 rounded-lg">
@@ -260,11 +245,9 @@ export function CommodityTab() {
         ))}
       </div>
 
-      {/* ─── SECTION: TREN PRODUKSI ─── */}
       <div>
         <SubSectionHeader title="Tren Produksi Komoditas (2015–2025)" dotColor="#92400e" />
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 items-start">
-          {/* Narasi */}
           <div className="space-y-3 text-xs text-gray-600 leading-relaxed">
             <p>
               Kabupaten Sigi dikenal sebagai lumbung pangan Sulawesi Tengah dengan{' '}
@@ -287,25 +270,21 @@ export function CommodityTab() {
             </p>
           </div>
 
-          {/* Grafik batang produksi terbaru */}
           <div>
             <p className="text-xs font-semibold text-gray-600 mb-2">Produksi 2025 per Komoditas</p>
             <ReactECharts option={latestProductionOption} style={{ height: 180, width: '100%' }} />
           </div>
         </div>
 
-        {/* Grafik tren garis — lebar penuh */}
         <div className="mt-6">
           <p className="text-xs font-semibold text-gray-600 mb-2">Tren Produksi 2015–2025 (ton)</p>
           <ReactECharts option={productionTrendOption} style={{ height: 240, width: '100%' }} />
         </div>
       </div>
 
-      {/* ─── SECTION: PRODUKTIVITAS & KOMPOSISI ─── */}
       <div>
         <SubSectionHeader title="Produktivitas & Komposisi" dotColor={COLORS.PRIMARY} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          {/* Grafik produktivitas padi */}
           <div>
             <p className="text-xs font-semibold text-gray-600 mb-1">
               Produksi vs Luas Panen — <span style={{ color: COLORS.PRIMARY }}>Padi</span>
@@ -316,7 +295,6 @@ export function CommodityTab() {
             <ReactECharts option={productivityOption} style={{ height: 200, width: '100%' }} />
           </div>
 
-          {/* Grafik donat komposisi */}
           <div>
             <p className="text-xs font-semibold text-gray-600 mb-1">Komposisi Produksi 2025</p>
             <p className="text-[10px] text-gray-400 mb-2">
@@ -328,7 +306,11 @@ export function CommodityTab() {
       </div>
 
       <SectionHeader title="Komoditas Perkebunan" borderColor="#92400e" dotColor="#92400e" />
-      <p className=' text-xs text-gray-600 leading-relaxed'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem, voluptatum exercitationem soluta dolorem error ex doloribus id voluptate corrupti facilis molestiae enim ratione aliquam labore accusamus, eveniet velit eius voluptatem!</p>
+      <p className=" text-xs text-gray-600 leading-relaxed">
+        Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem, voluptatum exercitationem
+        soluta dolorem error ex doloribus id voluptate corrupti facilis molestiae enim ratione
+        aliquam labore accusamus, eveniet velit eius voluptatem!
+      </p>
     </ProfileSection>
   );
 }

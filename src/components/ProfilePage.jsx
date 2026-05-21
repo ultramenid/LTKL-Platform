@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { KABUPATENS } from '../data/kabupatens.js';
-import { COLORS, PROFILE_HERO_IMAGE_URL, YEAR_CONFIG } from '../config/constants.js';
+import { PROFILE_HERO_IMAGE_URL, YEAR_CONFIG } from '../config/constants.js';
 import { useMapStore } from '../store/mapStore.js';
 import { encodeAdministrasi, decodeAdministrasi } from '../utils/urlStateSync.js';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
@@ -15,7 +15,6 @@ import { ReportsTab } from './profile/ReportsTab.jsx';
 import { DownloadTab } from './profile/DownloadTab.jsx';
 import { ContactTab } from './profile/ContactTab.jsx';
 
-// ─── TAB NAVIGATION (stored at module level for stable references) ───
 const NAV_TABS = [
   { id: 'news', label: 'Berita & Acara' },
   { id: 'profile', label: 'Profil' },
@@ -26,7 +25,6 @@ const NAV_TABS = [
   { id: 'contact', label: 'Kontak' },
 ];
 
-// ─── HERO STATISTICS (summary at top of page) ───
 const HERO_STATS = [
   { label: 'PENDUDUK MISKIN 2025', value: '26.030', sub: 'Jiwa' },
   { label: 'PDRB ADHK 2025', value: 'Rp 13.500', sub: 'Miliar' },
@@ -35,36 +33,29 @@ const HERO_STATS = [
   { label: 'SEKTOR UNGGULAN', value: 'Pertanian', sub: '45% dari total PDRB' },
 ];
 
-// ─── VALID TAB ID LIST (for URL validation) ───
 const VALID_TAB_IDS = NAV_TABS.map((tab) => tab.id);
 
-// Kabupaten analytics profile page: hero → stats → tab → content
 export function ProfilePage({ kabupatenName }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // ─── READ STATE FROM URL ───────────────────────────────────────────────────
   const urlTab = searchParams.get('tab');
   const activeTab = VALID_TAB_IDS.includes(urlTab) ? urlTab : 'news';
   const urlYear = parseInt(searchParams.get('year')) || YEAR_CONFIG.DEFAULT;
   const urlAdministrasi = searchParams.get('administrasi') || 'all';
 
-  // Decode drill state ONCE on mount so MapTab position doesn't reset on every URL update
   const initialDrillStateRef = useRef(decodeAdministrasi(urlAdministrasi));
 
-  // ─── DYNAMIC DOCUMENT TITLE FOR SEO ────────────────────────────────────────
   useEffect(() => {
     const tabLabel = NAV_TABS.find((t) => t.id === activeTab)?.label || '';
     document.title = `${kabupatenName} · ${tabLabel} · LTKL Platform`;
   }, [kabupatenName, activeTab]);
 
-  // ─── GLOBAL YEAR & URL PARAMS INIT ──────────────────────────────────────────
   useEffect(() => {
     useMapStore.getState().setYear(urlYear);
     setSearchParams(
       (previousParams) => {
         const updatedParams = new URLSearchParams(previousParams);
         if (!updatedParams.has('tab')) updatedParams.set('tab', activeTab);
-        // Year and administrasi only added when in map tab
         if (activeTab === 'map') {
           if (!updatedParams.has('year')) updatedParams.set('year', String(urlYear));
           if (!updatedParams.has('administrasi'))
@@ -76,7 +67,6 @@ export function ProfilePage({ kabupatenName }) {
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── HANDLERS ─────────────────────────────────────────────────────────────
   const selectTab = useCallback(
     (tabId) => {
       setSearchParams(
@@ -117,7 +107,6 @@ export function ProfilePage({ kabupatenName }) {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      {/* ─── HERO SECTION ───*/}
       <div className="relative bg-gray-900 overflow-hidden">
         <div
           className="absolute inset-0 opacity-25"
@@ -174,7 +163,6 @@ export function ProfilePage({ kabupatenName }) {
         </div>
       </div>
 
-      {/* ─── TAB NAVIGATION (sticky, with ARIA roles for accessibility) ───*/}
       <div className="sticky top-0 z-30 border-t border-white/10 bg-gray-900 shadow-md">
         <div
           className="max-w-5xl mx-auto flex overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
@@ -201,13 +189,8 @@ export function ProfilePage({ kabupatenName }) {
         </div>
       </div>
 
-      {/* ─── TAB CONTENT (each component manages its own state) ───*/}
       <ErrorBoundary label="Konten tab">
-        <div
-          id={`tabpanel-${activeTab}`}
-          role="tabpanel"
-          aria-labelledby={`tab-${activeTab}`}
-        >
+        <div id={`tabpanel-${activeTab}`} role="tabpanel" aria-labelledby={`tab-${activeTab}`}>
           {activeTab === 'news' && <NewsTab />}
           {activeTab === 'profile' && <KabupatenProfileTab kabupaten={kabupatenName} />}
           {activeTab === 'map' && (
@@ -224,7 +207,6 @@ export function ProfilePage({ kabupatenName }) {
         </div>
       </ErrorBoundary>
 
-      {/* ─── FOOTER ───*/}
       <footer className="bg-gray-950 text-white mt-16">
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-12 grid grid-cols-1 md:grid-cols-[1.8fr_1fr_1fr] gap-10">
           <div className="space-y-5">
@@ -245,13 +227,15 @@ export function ProfilePage({ kabupatenName }) {
               />
             </div>
             <p className="text-sm text-white/50 leading-relaxed max-w-xs">
-              Platform data dan kolaborasi multipihak untuk mendukung pembangunan
-              kabupaten yang lestari, berkeadilan, dan berkelanjutan.
+              Platform data dan kolaborasi multipihak untuk mendukung pembangunan kabupaten yang
+              lestari, berkeadilan, dan berkelanjutan.
             </p>
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Navigasi</p>
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+              Navigasi
+            </p>
             <ul className="space-y-2.5">
               {NAV_TABS.map((tab) => (
                 <li key={tab.id}>
@@ -267,7 +251,9 @@ export function ProfilePage({ kabupatenName }) {
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Kabupaten</p>
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+              Kabupaten
+            </p>
             <div className="flex items-center gap-3">
               {districtRecord?.logoUrl && (
                 <img
@@ -287,7 +273,9 @@ export function ProfilePage({ kabupatenName }) {
                 { label: 'Kontak', value: 'sekretariat.msf@sigikab.go.id' },
               ].map((item) => (
                 <li key={item.label}>
-                  <p className="text-[10px] text-white/30 uppercase tracking-widest">{item.label}</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-widest">
+                    {item.label}
+                  </p>
                   <p className="text-xs text-white/55 mt-0.5 break-all">{item.value}</p>
                 </li>
               ))}
@@ -298,7 +286,8 @@ export function ProfilePage({ kabupatenName }) {
         <div className="border-t border-white/10">
           <div className="max-w-5xl mx-auto px-4 md:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-[11px] text-white/30">
-              © {new Date().getFullYear()} LTKL · Auriga Nusantara. Sumber data: BPS, Pemerintah Daerah, Indonesia Open Data.
+              © {new Date().getFullYear()} LTKL · Auriga Nusantara. Sumber data: BPS, Pemerintah
+              Daerah, Indonesia Open Data.
             </p>
             <Link
               to="/"

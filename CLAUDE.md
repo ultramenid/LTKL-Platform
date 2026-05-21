@@ -53,7 +53,7 @@ web/src/
 │   ├── dataTransform.js  # Server response normalization
 │   ├── filterBuilder.js  # CQL/WFS filter construction
 │   ├── mapDrilldown.js   # Breadcrumb drill-down logic
-│   ├── mapLoadingSetup.js # Map initialization helpers
+│   ├── mapTransitionController.js # Main map transition orchestration
 │   ├── mapUtils.js       # General map utilities
 │   └── urlStateSync.js   # URL ↔ state synchronization
 ```
@@ -152,6 +152,173 @@ VITE_TILE_SERVER    # GEE tile server base URL
 ```
 
 Accessed via `import.meta.env.VITE_TILE_SERVER`.
+
+## Race Condition Prevention
+
+### Rule 1: All async map interaction handlers must have a re-entry guard
+
+```js
+// ❌ Wrong — rapid clicks interleave addSource/removeSource on same layers
+async function handleDrillDown(feature) {
+  await removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
+  await loadLayer(map, ...);
+}
+
+// ✅ Correct — abort previous then proceed, or use a lock ref
+const isDrilling = useRef(false);
+async function handleDrillDown(feature) {
+  if (isDrilling.current) return;
+  isDrilling.current = true;
+  try {
+    abortActiveRequests();
+    await removeLayerAndSource(map, LAYER_IDS.KABUPATEN_FILL);
+    await loadLayer(map, ...);
+  } finally {
+    isDrilling.current = false;
+  }
+}
+```
+
+Applies to: `store/mapLayerStore.js` (`handleGlobalDrillDown`), `utils/mapDrilldown.js` (`handleBreadcrumbDrill`), `components/map/KabupatensList.jsx` (`handleKabupatenClick`), `components/map/TimeSelector.jsx` (`handleChange`), `components/profile/MapTab.jsx` (year effect).
+
+### Rule 2: Every long-lived promise listener must be cleaned up
+
+```js
+// ❌ Wrong — waitForSourceData listener never removed on abort
+map.on('sourcedata', handler);  // leaks when source removed before event fires
+
+// ✅ Correct — always clean up with AbortSignal or explicit off()
+async function waitForSourceData(map, sourceId, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new DOMException('Aborted', 'AbortError'));
+    function onData(e) {
+      if (e.sourceId === sourceId) {
+        map.off('sourcedata', onData);
+        resolve();
+      }
+    }
+    signal?.addEventListener('abort', () => {
+      map.off('sourcedata', onData);
+      reject(new DOMException('Aborted', 'AbortError'));
+    });
+    map.on('sourcedata', onData);
+  });
+}
+```
+
+Applies to: `utils/mapUtils.js` `waitForSourceData`. Also applies to `map.on('load', ...)` in `components/map/KabupatensList.jsx`.
+
+### Rule 3: Effects with async map operations that can overlap must check isEffectActive before every await
+
+```js
+// ❌ Wrong — isEffectActive only checked in .finally()
+useEffect(() => {
+  let isEffectActive = true;
+  async function load() {
+    await loadLayerWithCallback(map, ...);  // completes
+    await zoomToCollection(map, ...);        // runs even if cleanup fired!
+    await loadGEEPolygonRaster(map, ...);    // races with new effect
+  }
+  load();
+  return () => { isEffectActive = false; };
+}, [breadcrumbs]);
+
+// ✅ Correct — check before every async step
+useEffect(() => {
+  let isEffectActive = true;
+  async function load() {
+    await loadLayerWithCallback(map, ...);
+    if (!isEffectActive) return;
+    await zoomToCollection(map, ...);
+    if (!isEffectActive) return;
+    await loadGEEPolygonRaster(map, ...);
+  }
+  load();
+  return () => { isEffectActive = false; };
+}, [breadcrumbs]);
+```
+
+Applies to: `components/profile/MapTab.jsx` (breadcrumb effect), `components/map/Map.jsx` (breadcrumb effect).
+
+### Rule 4: Each independent feature needs its own AbortController
+
+```js
+// ❌ Wrong — three CoverageChart instances share one statsController,
+// each cleanup aborts the others' fetches
+const statsController = new AbortController();  // module-level, shared
+
+// ✅ Correct — charts manage their own controllers
+// Option A: per-component controller (ref inside component)
+function CoverageChart() {
+  const controllerRef = useRef(null);
+  useEffect(() => {
+    controllerRef.current = new AbortController();
+    return () => controllerRef.current?.abort();
+  }, [year]);
+  // use controllerRef.current.signal for fetch
+}
+
+// Option B: family of controllers with unique keys in the store
+const statsControllers = {};
+function getStatsController(key) {
+  statsControllers[key]?.abort();
+  statsControllers[key] = new AbortController();
+  return statsControllers[key];
+}
+```
+
+Applies to: `store/mapLayerStore.js` (`statsController`), `components/map/CoverageChart.jsx`, `components/RightPanel.jsx`.
+
+### Rule 5: `waitForSourceData` must reject when the source is removed or map destroyed
+
+```js
+// The current implementation creates a promise that hangs forever if the
+// source is removed before 'sourcedata' fires. Must add:
+// 1. AbortSignal support (for abortActiveRequests)
+// 2. Timeout as fallback
+// 3. Map 'removesource' event listener to detect source removal
+```
+
+Applies to: `utils/mapUtils.js` `waitForSourceData`.
+
+### Rule 6: Map event listeners must be removed in cleanup
+
+```jsx
+// ❌ Wrong — listener leaks on re-render/unmount
+useEffect(() => {
+  map?.on('load', () => setIsMapReady(true));
+}, [map]);
+
+// ✅ Correct
+useEffect(() => {
+  if (!map) return;
+  function onLoad() { setIsMapReady(true); }
+  if (map.isStyleLoaded()) onLoad();
+  else map.on('load', onLoad);
+  return () => map.off('load', onLoad);
+}, [map]);
+```
+
+Applies to: `components/map/KabupatensList.jsx`.
+
+### Rule 7: GEE layer mutations on shared source/layer ids must be serialized
+
+```js
+// ❌ Wrong — year change + breadcrumb click both call loadGEEPolygonRaster
+// concurrently on the same gee-lulc source/layer
+
+// ✅ Correct — use a request queue or abort-before-proceed
+let geeLoadPromise = null;
+async function loadGEEPolygonRaster(map, filters) {
+  if (geeLoadPromise) {
+    // Either await the current one (dedup) or abort and restart
+  }
+  geeLoadPromise = doLoadGEE(map, filters);
+  try { await geeLoadPromise; } finally { geeLoadPromise = null; }
+}
+```
+
+Applies to: `store/mapLayerStore.js` `loadGEEPolygonRaster`.
 
 ## Conventions
 

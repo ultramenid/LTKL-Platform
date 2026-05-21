@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Layers } from 'lucide-react';
 
-// LULC MapBiomas Indonesia Collection 4 classification data
-// Hierarchy: parent category → subcategory (English name + Indonesian name + hex color)
 const LULC_LEGEND = [
   {
     id: 1,
@@ -76,13 +74,11 @@ const LULC_LEGEND = [
   },
 ];
 
-// LULC raster legend placed at bottom-left for easy access while user explores the map
 export default function MapLegend() {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="relative z-10">
-      {/* ── Collapsed mode ── */}
       {!expanded && (
         <button
           onClick={() => setExpanded(true)}
@@ -93,10 +89,8 @@ export default function MapLegend() {
         </button>
       )}
 
-      {/* Expanded panel — floats upward (bottom-full) and scrollable */}
       {expanded && (
         <div className="absolute bottom-full  left-0 bg-gray-900/85 backdrop-blur-md rounded-xl shadow-xl border border-white/10 w-52 h-[50vh] flex flex-col overflow-hidden">
-          {/* Header — stays visible while list scrolls */}
           <div className="shrink-0 flex items-center justify-between px-3 pt-3 pb-2 border-b border-white/10">
             <div className="flex items-center gap-1.5">
               <Layers size={11} className="text-teal-400" />
@@ -112,11 +106,9 @@ export default function MapLegend() {
             </button>
           </div>
 
-          {/* Legend list — scrollable area */}
           <div className="legend-scroll flex-1 overflow-y-auto px-3 py-2 space-y-1">
             {LULC_LEGEND.map((category) => (
               <div key={category.id}>
-                {/* Parent category row */}
                 <div className="flex items-center gap-2 py-0.5">
                   <div
                     className="shrink-0 w-3 h-3 rounded-sm border border-white/20"
@@ -130,7 +122,6 @@ export default function MapLegend() {
                   </div>
                 </div>
 
-                {/* Subcategory rows */}
                 {category.children.map((child) => (
                   <div key={child.code} className="flex items-center gap-2 py-0.5 pl-4">
                     <div

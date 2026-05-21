@@ -4,7 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { initializeUrl } from './utils/urlStateSync.js';
 
-// Initialize default URL if empty
 if (!window.location.search || window.location.search === '?') {
   initializeUrl();
 }

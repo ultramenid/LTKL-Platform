@@ -3,7 +3,6 @@ import { Building2, Users, FileText, Download } from 'lucide-react';
 import { COLORS } from '../../config/constants.js';
 import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
 
-// MSF organizational structure — placeholder, replace with real data per kabupaten
 const MSF_STRUCTURE = [
   {
     position: 'Ketua Forum',
@@ -65,7 +64,6 @@ const MSF_LEGAL_DOCUMENTS = [
   },
 ];
 
-// Regional government data — placeholder per kabupaten
 const REGIONAL_STATS = [
   { label: 'Ibukota', value: 'Sigi Biromaru' },
   { label: 'Luas Wilayah', value: '5.196,02 km²' },
@@ -79,17 +77,40 @@ const REGIONAL_LEADERS = [
 ];
 
 const OPD_LIST = [
-  { name: 'Badan Perencanaan Pembangunan Daerah', abbreviation: 'Bappeda', head: 'Nama Kepala Bappeda' },
-  { name: 'Dinas Pertanian dan Ketahanan Pangan', abbreviation: 'Distan', head: 'Nama Kepala Distan' },
+  {
+    name: 'Badan Perencanaan Pembangunan Daerah',
+    abbreviation: 'Bappeda',
+    head: 'Nama Kepala Bappeda',
+  },
+  {
+    name: 'Dinas Pertanian dan Ketahanan Pangan',
+    abbreviation: 'Distan',
+    head: 'Nama Kepala Distan',
+  },
   { name: 'Dinas Kehutanan', abbreviation: 'Dishut', head: 'Nama Kepala Dishut' },
-  { name: 'Dinas Komunikasi dan Informatika', abbreviation: 'Diskominfo', head: 'Nama Kepala Diskominfo' },
-  { name: 'Dinas Pekerjaan Umum dan Penataan Ruang', abbreviation: 'DPUPR', head: 'Nama Kepala DPUPR' },
+  {
+    name: 'Dinas Komunikasi dan Informatika',
+    abbreviation: 'Diskominfo',
+    head: 'Nama Kepala Diskominfo',
+  },
+  {
+    name: 'Dinas Pekerjaan Umum dan Penataan Ruang',
+    abbreviation: 'DPUPR',
+    head: 'Nama Kepala DPUPR',
+  },
   { name: 'Dinas Lingkungan Hidup', abbreviation: 'DLH', head: 'Nama Kepala DLH' },
-  { name: 'Dinas Koperasi, UKM dan Perdagangan', abbreviation: 'Diskopdag', head: 'Nama Kepala Diskopdag' },
-  { name: 'Badan Pengelola Keuangan dan Aset Daerah', abbreviation: 'BPKAD', head: 'Nama Kepala BPKAD' },
+  {
+    name: 'Dinas Koperasi, UKM dan Perdagangan',
+    abbreviation: 'Diskopdag',
+    head: 'Nama Kepala Diskopdag',
+  },
+  {
+    name: 'Badan Pengelola Keuangan dan Aset Daerah',
+    abbreviation: 'BPKAD',
+    head: 'Nama Kepala BPKAD',
+  },
 ];
 
-// Development partners list — placeholder
 const DEVELOPMENT_PARTNERS = [
   {
     id: 'partner1',
@@ -107,8 +128,7 @@ const DEVELOPMENT_PARTNERS = [
     focusArea: 'Konservasi Keanekaragaman Hayati',
     since: 2020,
     partnerType: 'NGO Internasional',
-    description:
-      'Program konservasi satwa liar dan ekosistem hutan tropis di wilayah kabupaten.',
+    description: 'Program konservasi satwa liar dan ekosistem hutan tropis di wilayah kabupaten.',
     typeColor: '#6366f1',
   },
   {
@@ -153,7 +173,6 @@ const DEVELOPMENT_PARTNERS = [
   },
 ];
 
-// Sector tag styling for MSF structure
 const SECTOR_STYLES = {
   government: { bg: '#eff6ff', text: '#1d4ed8', label: 'Pemerintah' },
   private: { bg: '#fefce8', text: '#92400e', label: 'Swasta' },
@@ -166,13 +185,11 @@ const PROFILE_SUB_TABS = [
   { id: 'partners', label: 'Daftar Mitra' },
 ];
 
-// Kabupaten profile: MSF info, regional government, and development partners
 export function KabupatenProfileTab({ kabupaten }) {
   const [activeSubTab, setActiveSubTab] = useState('msf');
 
   return (
     <div>
-      {/* Sub-tab navigation — sticky below the main dark nav bar */}
       <div className="border-b border-gray-200 bg-white sticky top-[49px] z-20">
         <div className="max-w-5xl mx-auto flex overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
           {PROFILE_SUB_TABS.map((tab) => (
@@ -191,7 +208,6 @@ export function KabupatenProfileTab({ kabupaten }) {
         </div>
       </div>
 
-      {/* ── Tentang MSF ── */}
       {activeSubTab === 'msf' && (
         <ProfileSection>
           <SectionHeader
@@ -200,24 +216,19 @@ export function KabupatenProfileTab({ kabupaten }) {
             dotColor={COLORS.PRIMARY}
           />
 
-          {/* About text + quick stats */}
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 items-start">
             <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
               <p>
-                <strong className="text-gray-800">
-                  Forum Multi-Stakeholder (MSF) {kabupaten}
-                </strong>{' '}
+                <strong className="text-gray-800">Forum Multi-Stakeholder (MSF) {kabupaten}</strong>{' '}
                 adalah platform kolaborasi multipihak yang mempertemukan pemerintah daerah, sektor
                 swasta, masyarakat sipil, dan akademisi dalam satu wadah koordinasi pembangunan
                 berkelanjutan.
               </p>
               <p>
                 Forum ini dibentuk sebagai bagian dari jaringan{' '}
-                <strong className="text-gray-800">
-                  Lingkar Temu Kabupaten Lestari (LTKL)
-                </strong>
-                , sebuah asosiasi kabupaten yang berkomitmen mengintegrasikan prinsip keberlanjutan
-                ke dalam tata kelola dan pembangunan daerah.
+                <strong className="text-gray-800">Lingkar Temu Kabupaten Lestari (LTKL)</strong>,
+                sebuah asosiasi kabupaten yang berkomitmen mengintegrasikan prinsip keberlanjutan ke
+                dalam tata kelola dan pembangunan daerah.
               </p>
               <p>
                 MSF {kabupaten} berfungsi sebagai ruang dialog, perencanaan bersama, serta
@@ -243,7 +254,6 @@ export function KabupatenProfileTab({ kabupaten }) {
             </div>
           </div>
 
-          {/* Organizational structure */}
           <div>
             <SubSectionHeader title="Struktur Pengurus MSF" dotColor={COLORS.PRIMARY} />
             <div className="space-y-2">
@@ -279,7 +289,6 @@ export function KabupatenProfileTab({ kabupaten }) {
             </div>
           </div>
 
-          {/* Working groups */}
           <div>
             <SubSectionHeader title="Kelompok Kerja (Pokja)" dotColor={COLORS.PRIMARY} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -298,12 +307,8 @@ export function KabupatenProfileTab({ kabupaten }) {
             </div>
           </div>
 
-          {/* SK and legal documents */}
           <div>
-            <SubSectionHeader
-              title="Surat Keputusan & Dokumen Hukum"
-              dotColor={COLORS.PRIMARY}
-            />
+            <SubSectionHeader title="Surat Keputusan & Dokumen Hukum" dotColor={COLORS.PRIMARY} />
             <div className="space-y-2">
               {MSF_LEGAL_DOCUMENTS.map((doc) => (
                 <div
@@ -333,7 +338,6 @@ export function KabupatenProfileTab({ kabupaten }) {
         </ProfileSection>
       )}
 
-      {/* ── Informasi Daerah ── */}
       {activeSubTab === 'regional' && (
         <ProfileSection>
           <SectionHeader
@@ -342,7 +346,6 @@ export function KabupatenProfileTab({ kabupaten }) {
             dotColor={COLORS.HIGHLIGHT}
           />
 
-          {/* District quick stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {REGIONAL_STATS.map((item) => (
               <div key={item.label} className="bg-gray-50 border border-gray-100 rounded-xl p-4">
@@ -352,7 +355,6 @@ export function KabupatenProfileTab({ kabupaten }) {
             ))}
           </div>
 
-          {/* Leadership cards */}
           <div>
             <SubSectionHeader title="Pimpinan Daerah" dotColor={COLORS.HIGHLIGHT} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -362,9 +364,7 @@ export function KabupatenProfileTab({ kabupaten }) {
                   className="flex items-center gap-4 p-5 bg-white rounded-xl border border-gray-100 shadow-sm"
                 >
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0">
-                    <span className="text-xl text-white font-black">
-                      {leader.name.charAt(0)}
-                    </span>
+                    <span className="text-xl text-white font-black">{leader.name.charAt(0)}</span>
                   </div>
                   <div>
                     <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">
@@ -377,7 +377,6 @@ export function KabupatenProfileTab({ kabupaten }) {
             </div>
           </div>
 
-          {/* OPD table */}
           <div>
             <SubSectionHeader
               title="Struktur OPD (Organisasi Perangkat Daerah)"
@@ -420,7 +419,6 @@ export function KabupatenProfileTab({ kabupaten }) {
         </ProfileSection>
       )}
 
-      {/* ── Daftar Mitra ── */}
       {activeSubTab === 'partners' && (
         <ProfileSection>
           <SectionHeader
@@ -459,8 +457,7 @@ export function KabupatenProfileTab({ kabupaten }) {
                 <p className="text-xs text-gray-500 leading-relaxed">{partner.description}</p>
                 <div className="pt-2 border-t border-gray-50">
                   <p className="text-[10px] text-gray-400">
-                    Mitra sejak{' '}
-                    <strong className="text-gray-600">{partner.since}</strong>
+                    Mitra sejak <strong className="text-gray-600">{partner.since}</strong>
                   </p>
                 </div>
               </div>

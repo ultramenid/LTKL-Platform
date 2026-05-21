@@ -25,10 +25,7 @@ export function TabSkeleton() {
       {/* Stats row skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            key={`${skeletonId}-stat-${index}`}
-            className="h-24 bg-gray-50 rounded-xl"
-          />
+          <div key={`${skeletonId}-stat-${index}`} className="h-24 bg-gray-50 rounded-xl" />
         ))}
       </div>
     </div>

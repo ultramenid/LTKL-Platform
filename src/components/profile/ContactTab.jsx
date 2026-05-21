@@ -1,14 +1,22 @@
 import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { MapPin, Mail, Phone, MessageCircle, Instagram, Facebook, Youtube, Twitter, ExternalLink } from 'lucide-react';
+import {
+  MapPin,
+  Mail,
+  Phone,
+  MessageCircle,
+  Instagram,
+  Facebook,
+  Youtube,
+  Twitter,
+  ExternalLink,
+} from 'lucide-react';
 import { COLORS, MAP_CONFIG } from '../../config/constants.js';
 import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
 
-// Contact details — placeholder, replace with real secretariat data per kabupaten
 const CONTACT_DETAILS = {
   address: 'Jl. Dewi Sartika No. 47, Sigi Biromaru, Kabupaten Sigi, Sulawesi Tengah 94364',
-  // Approximate coordinates for Sigi Biromaru — update with precise pin from Google Maps
   coordinates: [119.8503, -1.0667],
   email: 'sekretariat.msf@sigikab.go.id',
   phone: '+62 451 123456',
@@ -74,7 +82,6 @@ const SOCIAL_MEDIA = [
   },
 ];
 
-// Small interactive map showing the secretariat pin
 function SecretariatMap({ coordinates, label }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -88,16 +95,11 @@ function SecretariatMap({ coordinates, label }) {
       center: coordinates,
       zoom: 4,
       attributionControl: false,
-      // Normal scroll → page scroll; Ctrl/Cmd + scroll → map zoom
       cooperativeGestures: true,
     });
 
-    mapInstance.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
-      'bottom-right',
-    );
+    mapInstance.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
 
-    // Teal marker matching the app brand color
     const markerElement = document.createElement('div');
     markerElement.style.cssText = `
       width: 14px; height: 14px;
@@ -111,10 +113,9 @@ function SecretariatMap({ coordinates, label }) {
     new maplibregl.Marker({ element: markerElement })
       .setLngLat(coordinates)
       .setPopup(
-        new maplibregl.Popup({ offset: 30, closeButton: false })
-          .setHTML(
-            `<div style="font-size:12px;font-weight:700;color:#0f766e;padding:2px 0">${label}</div>`,
-          ),
+        new maplibregl.Popup({ offset: 30, closeButton: false }).setHTML(
+          `<div style="font-size:12px;font-weight:700;color:#0f766e;padding:2px 0">${label}</div>`,
+        ),
       )
       .addTo(mapInstance);
 
@@ -123,17 +124,16 @@ function SecretariatMap({ coordinates, label }) {
     return () => {
       try {
         if (mapRef.current) mapRef.current.remove();
-      } catch {
-        /* skip */
+      } catch (removeError) {
+        void removeError;
       }
       mapRef.current = null;
     };
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [coordinates, label]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }
 
-// Contact tab — secretariat map, direct contacts, and social media
 export function ContactTab() {
   const googleMapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(
     CONTACT_DETAILS.address,
@@ -144,13 +144,8 @@ export function ContactTab() {
       <SectionHeader title="Kontak" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
 
       <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr] gap-8 items-start">
-        {/* Interactive MapLibre map */}
         <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm h-80 md:h-96 relative">
-          <SecretariatMap
-            coordinates={CONTACT_DETAILS.coordinates}
-            label="Sekretariat MSF"
-          />
-          {/* "Open in Google Maps" button overlaid at bottom */}
+          <SecretariatMap coordinates={CONTACT_DETAILS.coordinates} label="Sekretariat MSF" />
           <a
             href={googleMapsUrl}
             target="_blank"
@@ -162,9 +157,7 @@ export function ContactTab() {
           </a>
         </div>
 
-        {/* Contact information */}
         <div className="space-y-7">
-          {/* Secretariat address */}
           <div>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
               Alamat Sekretariat
@@ -177,7 +170,6 @@ export function ContactTab() {
             </div>
           </div>
 
-          {/* Direct contact channels */}
           <div>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
               Kontak Langsung
@@ -210,7 +202,6 @@ export function ContactTab() {
             </div>
           </div>
 
-          {/* Social media grid */}
           <div>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
               Media Sosial
@@ -227,9 +218,7 @@ export function ContactTab() {
                   <platform.icon size={16} style={{ color: platform.color }} />
                   <div className="min-w-0">
                     <p className="text-[9px] text-gray-400">{platform.label}</p>
-                    <p className="text-xs font-semibold text-gray-700 truncate">
-                      {platform.value}
-                    </p>
+                    <p className="text-xs font-semibold text-gray-700 truncate">{platform.value}</p>
                   </div>
                 </a>
               ))}

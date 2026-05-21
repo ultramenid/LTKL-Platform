@@ -1,9 +1,7 @@
 import { Home, ChevronRight } from 'lucide-react';
 import { useMapStore } from '../../store/mapStore.js';
 
-// Breadcrumb drill-down navigation (kab → kec → desa) — overlay top-left of map
 const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
-  // Individual selector so re-render only happens when breadcrumbs change
   const breadcrumbs = useMapStore((state) => state.breadcrumbs);
 
   const breadcrumbItems = [
@@ -14,7 +12,6 @@ const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
 
   return (
     <div className="absolute top-4 left-4 z-10 flex items-center gap-1 bg-gray-900/75 backdrop-blur-md rounded-xl px-3 py-1.5 shadow-lg border border-white/10">
-      {/* Home button */}
       <button
         onClick={onHome}
         className={`cursor-pointer flex items-center justify-center w-5 h-5 rounded-md transition-colors hover:text-teal-400 ${
@@ -25,7 +22,6 @@ const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
         <Home size={12} />
       </button>
 
-      {/* Breadcrumb items */}
       {breadcrumbItems.map((item, idx) => {
         const isActive = idx === breadcrumbItems.length - 1;
         return (

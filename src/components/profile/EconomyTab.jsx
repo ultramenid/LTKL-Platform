@@ -1,8 +1,5 @@
 import ReactECharts from 'echarts-for-react';
-import { COLORS } from '../../config/constants.js';
-import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
-// ─── SIGI DISTRICT GDP ADHK DATA 2015–2025 (Billion IDR) ───
-// Orange gradient — 2015 lightest, 2025 darkest so time trends are visually readable
+import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
 const GDP_YEAR_COLORS = [
   '#fde8c8',
   '#fcd9a8',
@@ -66,7 +63,6 @@ const GDP_SECTORS = [
   },
 ];
 
-// Reversed so largest sector appears at the top of the chart (ECharts categories start from bottom)
 const GDP_SECTORS_REVERSED = [...GDP_SECTORS].reverse();
 
 const GDP_BAR_CHART_OPTION = {
@@ -106,15 +102,12 @@ const GDP_BAR_CHART_OPTION = {
   })),
 };
 
-// Tab Ekonomi & Industri
 export function EconomyTab() {
   return (
     <ProfileSection>
-      {/* ─── SECTION: PDRB ─── */}
       <div>
         <SectionHeader title="PDRB" borderColor="#f59e0b" dotColor="#f59e0b" />
         <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 items-start mt-6">
-          {/* Narrative column */}
           <div className="space-y-3 text-xs text-gray-600 leading-relaxed">
             <p>
               PDRB Kabupaten Sigi menunjukkan struktur ekonomi yang sangat bergantung pada kekayaan
@@ -141,7 +134,6 @@ export function EconomyTab() {
             </p>
           </div>
 
-          {/* Horizontal bar chart */}
           <div className="min-w-0">
             <p className="text-sm font-semibold text-amber-600 mb-3">
               Produk Domestik Regional Bruto (ADHK)

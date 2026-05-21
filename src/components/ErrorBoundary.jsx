@@ -1,7 +1,6 @@
 import { Component } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 
-// Catches render errors in child tree so one broken section doesn't crash the whole app
 export class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -13,7 +12,11 @@ export class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error(`[ErrorBoundary${this.props.label ? `: ${this.props.label}` : ''}]`, error, errorInfo);
+    console.error(
+      `[ErrorBoundary${this.props.label ? `: ${this.props.label}` : ''}]`,
+      error,
+      errorInfo,
+    );
   }
 
   handleReset = () => {
@@ -22,7 +25,6 @@ export class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
-      // Use custom fallback if provided
       if (this.props.fallback) {
         return this.props.fallback;
       }
@@ -34,9 +36,7 @@ export class ErrorBoundary extends Component {
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-700">Terjadi kesalahan</p>
-            {this.props.label && (
-              <p className="text-xs text-gray-400 mt-0.5">{this.props.label}</p>
-            )}
+            {this.props.label && <p className="text-xs text-gray-400 mt-0.5">{this.props.label}</p>}
           </div>
           <button
             onClick={this.handleReset}

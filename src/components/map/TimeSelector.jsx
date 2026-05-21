@@ -2,48 +2,29 @@ import { useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useMapStore } from '../../store/mapStore.js';
-import { loadGEEPolygonRaster } from '../../store/mapLayerStore.js';
 import { YEAR_CONFIG } from '../../config/constants.js';
 
-// Timeline slider to pick coverage year — bottom-left corner of map
 export default function TimeSeriesSelector({
-  map,
   startYear = YEAR_CONFIG.MIN,
   endYear = YEAR_CONFIG.MAX,
 }) {
-  // useShallow so re-render only happens when year/breadcrumbs actually change
-  const { year, setYear, breadcrumbs } = useMapStore(
+  const { year, setYear } = useMapStore(
     useShallow((state) => ({
       year: state.year,
       setYear: state.setYear,
-      breadcrumbs: state.breadcrumbs,
     })),
   );
   const [hovered, setHovered] = useState(null);
   const [expanded, setExpanded] = useState(false);
 
-  // Year dot click: update global year + reload GEE raster
-  const handleChange = async (selectedYear) => {
-    if (!map) {
-      console.warn('Map instance not available');
-      return;
-    }
+  const handleChange = (selectedYear) => {
     setYear(selectedYear);
-
-    const geeFilters = {};
-    if (breadcrumbs.kab) geeFilters.kab = breadcrumbs.kab;
-    if (breadcrumbs.kec) geeFilters.kec = breadcrumbs.kec;
-    if (breadcrumbs.des) geeFilters.des = breadcrumbs.des;
-    geeFilters.year = String(selectedYear);
-
-    await loadGEEPolygonRaster(map, geeFilters);
   };
 
   const yearArray = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
 
   return (
     <div>
-      {/* ── Collapsed pill ── */}
       {!expanded && (
         <button
           onClick={() => setExpanded(true)}
@@ -55,10 +36,8 @@ export default function TimeSeriesSelector({
         </button>
       )}
 
-      {/* ── Expanded panel ── */}
       {expanded && (
         <div className="bg-gray-900/80 backdrop-blur-md rounded-xl shadow-lg border border-white/10 px-3 py-2 flex items-start lg:items-center gap-3">
-          {/* Year label — click to collapse */}
           <button
             onClick={() => setExpanded(false)}
             className="shrink-0 text-right cursor-pointer hover:opacity-70 transition-opacity"
@@ -72,12 +51,9 @@ export default function TimeSeriesSelector({
             <p className="text-sm font-black text-teal-400 leading-tight mt-0.5">{year}</p>
           </button>
 
-          {/* Divider */}
           <div className="w-px h-5 bg-white/10 shrink-0" />
 
-          {/* Timeline dots — mobile: flex-wrap grid, desktop: single row */}
           <div className="relative">
-            {/* Horizontal line — desktop only (single row) */}
             <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 pointer-events-none" />
 
             <div className="flex flex-wrap lg:flex-nowrap items-center gap-1.5 max-w-[12rem] lg:max-w-none">

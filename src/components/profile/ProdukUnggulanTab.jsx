@@ -11,13 +11,11 @@ const PRODUCT_SUB_TABS = [
   { id: 'supplychain', label: 'Rantai Pasok' },
 ];
 
-// Produk Unggulan tab — wraps existing analytics sub-tabs with internal navigation
 export function ProdukUnggulanTab({ kabupaten }) {
   const [activeSubTab, setActiveSubTab] = useState('population');
 
   return (
     <div>
-      {/* Sub-tab navigation — sticky below the main dark nav bar */}
       <div className="border-b border-gray-200 bg-white sticky top-[49px] z-20">
         <div className="max-w-5xl mx-auto flex overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
           {PRODUCT_SUB_TABS.map((tab) => (

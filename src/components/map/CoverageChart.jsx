@@ -3,9 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import { useMapStore } from '../../store/mapStore.js';
 import { normalizeServerResponse, transformDataForChart } from '../../utils/dataTransform.js';
 import { API_ENDPOINTS, YEAR_CONFIG, COLORS } from '../../config/constants.js';
-import { getStatsSignal, abortStatsRequests } from '../../store/mapLayerStore.js';
 
-// Skeleton loading so user still gets feedback while data loads
 function LoadingChartSkeleton() {
   return (
     <div className="w-full h-full flex flex-col p-4 gap-3">
@@ -27,43 +25,43 @@ function LoadingChartSkeleton() {
   );
 }
 
-// Bar chart of area (ha) per kabupaten from LULC endpoint
 function CoverageChart() {
-  // ─── YEAR ───
   const yearFromStore = useMapStore((state) => state.year);
   const year = Number(yearFromStore) || YEAR_CONFIG.DEFAULT;
 
-  // ─── STATE ───
   const [serverResponse, setServerResponse] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const echartsRef = useRef(null);
+  const statsControllerRef = useRef(null);
 
-  // ─── CLEANUP ECHARTS ───
   useEffect(() => {
+    const currentEchartsRef = echartsRef.current;
     return () => {
       try {
-        if (echartsRef.current) {
-          echartsRef.current.getEchartsInstance?.()?.dispose?.();
+        if (currentEchartsRef) {
+          currentEchartsRef.getEchartsInstance?.()?.dispose?.();
         }
       } catch {
-        // ignore echarts cleanup errors on unmount
+        void 0;
       }
     };
   }, []);
 
-  // ─── FETCH DATA ───
-  // Uses statsController (separate from map layer controller) so map navigation
-  // never aborts this fetch — only year change or component unmount cancels it
   useEffect(() => {
     let isComponentMounted = true;
     setLoading(true);
     setError(null);
     setServerResponse(null);
 
+    // Abort previous request and create a new per-instance controller
+    statsControllerRef.current?.abort();
+    const controller = new AbortController();
+    statsControllerRef.current = controller;
+
     const statsUrl = `${API_ENDPOINTS.TILE_SERVER}/lulc-stats?year=${year}`;
 
-    fetch(statsUrl, { signal: getStatsSignal() })
+    fetch(statsUrl, { signal: controller.signal })
       .then(async (response) => {
         const responseText = await response.text();
         try {
@@ -87,13 +85,11 @@ function CoverageChart() {
       })
       .then((response) => {
         if (!isComponentMounted) return;
-        // Validasi HTTP status
         if (!response.ok) {
           setError(`Server ${response.status}: ${response.statusText} — ${response.text}`);
           setLoading(false);
           return;
         }
-        // Validasi JSON
         if (!response.json) {
           setError(`Respons JSON dari server tidak valid. Isi respons: ${response.text}`);
           setLoading(false);
@@ -103,7 +99,6 @@ function CoverageChart() {
         setServerResponse(response.json);
       })
       .catch((fetchError) => {
-        // AbortError is expected when user switches year quickly — don't show as error
         if (fetchError.name === 'AbortError') return;
         if (!isComponentMounted) return;
         setError(String(fetchError));
@@ -115,26 +110,20 @@ function CoverageChart() {
 
     return () => {
       isComponentMounted = false;
-      // Abort in-flight fetch and create a fresh signal for the next run;
-      // cleanup-based abort ensures map navigation never cancels this fetch
-      abortStatsRequests();
+      controller.abort();
     };
   }, [year]);
 
-  // ─── NORMALIZE SERVER RESPONSE ───
-  // Use utility from dataTransform.js to avoid duplicating logic
   const normalizedData = useMemo(
     () => normalizeServerResponse(serverResponse, year),
     [serverResponse, year],
   );
 
-  // ─── TRANSFORM DATA FOR CHART ───
   const { labels: chartLabels, values: chartValues } = useMemo(() => {
     if (!normalizedData) return { labels: [], values: [] };
     return transformDataForChart(normalizedData.data);
   }, [normalizedData]);
 
-  // ─── EARLY RETURNS (loading / error / empty) ───
   if (loading) return <LoadingChartSkeleton />;
   if (error)
     return (
@@ -154,7 +143,6 @@ function CoverageChart() {
     );
   }
 
-  // ─── STATISTICS SUMMARY ───
   const totalArea = chartValues.reduce((total, areaValue) => total + areaValue, 0);
   const totalAreaLabel =
     totalArea >= 1_000_000
@@ -163,7 +151,6 @@ function CoverageChart() {
         ? `${(totalArea / 1_000).toFixed(1)}K ha`
         : `${totalArea.toLocaleString()} ha`;
 
-  // ─── CHART OPTIONS ───
   const chartOption = {
     tooltip: {
       trigger: 'axis',
@@ -226,10 +213,8 @@ function CoverageChart() {
     ],
   };
 
-  // ─── RENDER ───
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
-      {/* Judul ringkas */}
       <div className="shrink-0 flex items-center justify-between px-4 pt-3 pb-1">
         <div>
           <p className="text-xs font-bold text-gray-700 leading-tight">Area per Kabupaten</p>
@@ -242,15 +227,15 @@ function CoverageChart() {
           </div>
         </div>
       </div>
-      {/* Grafik */}
       <div className="flex-1 min-h-full relative overflow-hidden ">
         <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
           <ReactECharts
             ref={echartsRef}
             option={chartOption}
+            notMerge={true}
+            lazyUpdate={true}
             style={{ height: '100%', width: '100%' }}
             onChartReady={(instance) => {
-              // Force resize after browser finishes calculating flex layout
               requestAnimationFrame(() => instance.resize());
             }}
           />
@@ -261,4 +246,3 @@ function CoverageChart() {
 }
 
 export default memo(CoverageChart);
-
