@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { X, Maximize2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useMapStore } from '../../store/mapStore.js';
+import { makeViewportTooltipPosition } from '../../utils/tooltipPosition.js';
 import { API_ENDPOINTS, CHART_STYLE } from '../../config/constants.js';
 import SankeyYearSelector from './SankeyYearSelector.jsx';
 import {
@@ -75,7 +76,7 @@ function buildEdgeTooltipHtml(
   }
 
   return (
-    `<div style="padding:${padding};min-width:${minWidth};">` +
+    `<div style="padding:${padding};min-width:${minWidth};max-width:min(90vw,360px);word-break:break-word;overflow-wrap:anywhere;">` +
     `<div style="font-size:${titleSize};font-weight:600;color:#f1f5f9;margin-bottom:6px;">${startYear} - ${endYear}</div>` +
     `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">` +
     `<span style="display:inline-block;width:${dotSize};height:${dotSize};border-radius:50%;background:${sourceColor};flex-shrink:0;"></span>` +
@@ -102,7 +103,7 @@ function buildNodeTooltipHtml(name, { nodeColorMap, isCompact }) {
   const minWidth = isCompact ? '160px' : '180px';
 
   return (
-    `<div style="padding:${padding};min-width:${minWidth};">` +
+    `<div style="padding:${padding};min-width:${minWidth};max-width:min(90vw,240px);word-break:break-word;overflow-wrap:anywhere;">` +
     `<div style="font-size:${titleSize};font-weight:600;color:#f1f5f9;margin-bottom:4px;">${year}</div>` +
     `<div style="display:flex;align-items:center;gap:6px;">` +
     `<span style="display:inline-block;width:${dotSize};height:${dotSize};border-radius:50%;background:${color};flex-shrink:0;"></span>` +
@@ -112,11 +113,39 @@ function buildNodeTooltipHtml(name, { nodeColorMap, isCompact }) {
   );
 }
 
-function makeChartOption(nodes, links, isCompact) {
+function makeChartOption(nodes, links, nodeColorMap, startYear, endYear, detailsLabel, isCompact) {
   return {
-    // Disable ECharts' built-in tooltip — we render our own React tooltip
-    // outside the chart so it can be positioned and clipped by us.
-    tooltip: { show: false },
+    tooltip: {
+      trigger: 'item',
+      appendToBody: true,
+      confine: false,
+      backgroundColor: '#1e293b',
+      borderColor: 'transparent',
+      textStyle: {
+        color: '#f1f5f9',
+        fontSize: isCompact ? 11 : 13,
+        fontFamily: CHART_STYLE.FONT_SANS,
+      },
+      extraCssText:
+        'z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);' +
+        ' max-width: min(90vw, 360px); max-height: calc(100vh - 16px); overflow-y: auto;',
+      position: makeViewportTooltipPosition(),
+      formatter: (params) => {
+        if (params.dataType === 'node') {
+          return buildNodeTooltipHtml(params.name, { nodeColorMap, isCompact });
+        }
+        if (params.dataType === 'edge') {
+          return buildEdgeTooltipHtml(params.data, {
+            nodeColorMap,
+            startYear,
+            endYear,
+            detailsLabel,
+            isCompact,
+          });
+        }
+        return params.name;
+      },
+    },
     series: [
       {
         type: 'sankey',
@@ -149,85 +178,6 @@ function makeChartOption(nodes, links, isCompact) {
   };
 }
 
-// Compute a tooltip position that stays inside [0, containerWidth] × [0, containerHeight].
-function clampTooltipPosition(cursorX, cursorY, tooltipWidth, tooltipHeight, containerWidth, containerHeight, margin) {
-  const offset = 14;
-  let x = cursorX + offset;
-  let y = cursorY - tooltipHeight / 2;
-
-  // Flip to the left of the cursor if it would overflow the right edge.
-  if (x + tooltipWidth + margin > containerWidth) {
-    x = cursorX - tooltipWidth - offset;
-  }
-  // Clamp horizontally.
-  if (x < margin) x = margin;
-  if (x + tooltipWidth + margin > containerWidth) x = Math.max(margin, containerWidth - tooltipWidth - margin);
-
-  // Clamp vertically.
-  if (y < margin) y = margin;
-  if (y + tooltipHeight + margin > containerHeight) y = Math.max(margin, containerHeight - tooltipHeight - margin);
-
-  return { x, y };
-}
-
-function SankeyTooltip({ state, containerRef }) {
-  // Measures itself after render so it can clamp inside the container.
-  const tooltipRef = useRef(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    if (!state.visible) {
-      setSize({ width: 0, height: 0 });
-      return;
-    }
-    const node = tooltipRef.current;
-    if (!node) return;
-    const rect = node.getBoundingClientRect();
-    setSize({ width: rect.width, height: rect.height });
-  }, [state.html, state.visible]);
-
-  if (!state.visible) return null;
-
-  const container = containerRef.current;
-  if (!container) return null;
-  const containerRect = container.getBoundingClientRect();
-  // Use the chart's drawing area (subtract series top/left/right/bottom padding).
-  // For simplicity we clamp to the full container; the chart series has small
-  // padding so this is close enough.
-  const margin = 6;
-  const { x, y } = clampTooltipPosition(
-    state.relativeX,
-    state.relativeY,
-    size.width || 240,
-    size.height || 100,
-    containerRect.width,
-    containerRect.height,
-    margin,
-  );
-
-  return (
-    <div
-      ref={tooltipRef}
-      className="sankey-custom-tooltip absolute pointer-events-none rounded-lg"
-      style={{
-        left: `${x}px`,
-        top: `${y}px`,
-        maxWidth: `${containerRect.width - margin * 2}px`,
-        maxHeight: `${containerRect.height - margin * 2}px`,
-        overflowY: 'auto',
-        backgroundColor: '#1e293b',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
-        zIndex: 20,
-        color: '#f1f5f9',
-        fontFamily: CHART_STYLE.FONT_SANS,
-        opacity: size.width > 0 ? 1 : 0,
-        transition: 'opacity 80ms ease-out',
-      }}
-      dangerouslySetInnerHTML={{ __html: state.html }}
-    />
-  );
-}
-
 function SankeyTransitionChart({
   kabupaten: kabupatenProp = null,
   kec: kecProp = null,
@@ -235,21 +185,7 @@ function SankeyTransitionChart({
 }) {
   const echartsRef = useRef(null);
   const modalEchartsRef = useRef(null);
-  const chartContainerRef = useRef(null);
-  const modalContainerRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [compactTooltip, setCompactTooltip] = useState({
-    visible: false,
-    html: '',
-    relativeX: 0,
-    relativeY: 0,
-  });
-  const [modalTooltip, setModalTooltip] = useState({
-    visible: false,
-    html: '',
-    relativeX: 0,
-    relativeY: 0,
-  });
 
   const { startYear, endYear } = useMapStore(
     useShallow((state) => ({
@@ -303,7 +239,8 @@ function SankeyTransitionChart({
     });
 
     // ECharts sizes each Sankey node by Math.max(inflow, outflow, node.value).
-    // Pass the real per-node flow so node heights stay proportional to area.
+    // Pass the real per-node flow so node heights stay proportional to area
+    // (matches the reference: large forest block + tiny slivers for minor classes).
     const inflowByNode = {};
     const outflowByNode = {};
     serverResponse.links.forEach((link) => {
@@ -342,56 +279,32 @@ function SankeyTransitionChart({
   }, [serverResponse, startYear, endYear]);
 
   const chartOption = useMemo(
-    () => makeChartOption(chartData?.nodes, chartData?.links, true),
+    () =>
+      makeChartOption(
+        chartData?.nodes,
+        chartData?.links,
+        chartData?.nodeColorMap,
+        chartData?.startYear,
+        chartData?.endYear,
+        chartData?.detailsLabel,
+        true,
+      ),
     [chartData],
   );
 
   const modalOption = useMemo(
-    () => makeChartOption(chartData?.nodes, chartData?.links, false),
+    () =>
+      makeChartOption(
+        chartData?.nodes,
+        chartData?.links,
+        chartData?.nodeColorMap,
+        chartData?.startYear,
+        chartData?.endYear,
+        chartData?.detailsLabel,
+        false,
+      ),
     [chartData],
   );
-
-  // Convert chart-pixel coordinates to container-relative coordinates so the
-  // React tooltip can be positioned with `position: absolute` inside the
-  // chart's relative parent.
-  const buildChartHandlers = useCallback(
-    (setTooltip, isCompact) => ({
-      mouseover: (params) => {
-        if (!params || !chartData) return;
-        const { dataType, data, name, event } = params;
-        if (dataType !== 'node' && dataType !== 'edge') return;
-        if (!event || event.offsetX == null || event.offsetY == null) return;
-
-        const html =
-          dataType === 'node'
-            ? buildNodeTooltipHtml(name, { nodeColorMap: chartData.nodeColorMap, isCompact })
-            : buildEdgeTooltipHtml(data, {
-                nodeColorMap: chartData.nodeColorMap,
-                startYear: chartData.startYear,
-                endYear: chartData.endYear,
-                detailsLabel: chartData.detailsLabel,
-                isCompact,
-              });
-
-        setTooltip({
-          visible: true,
-          html,
-          relativeX: event.offsetX,
-          relativeY: event.offsetY,
-        });
-      },
-      // Use `globalout` to hide when the cursor leaves the chart entirely;
-      // do not hide on per-element mouseout because moving between elements
-      // would cause flicker.
-      globalout: () => {
-        setTooltip({ visible: false, html: '', relativeX: 0, relativeY: 0 });
-      },
-    }),
-    [chartData],
-  );
-
-  const compactEvents = useMemo(() => buildChartHandlers(setCompactTooltip, true), [buildChartHandlers]);
-  const modalEvents = useMemo(() => buildChartHandlers(setModalTooltip, false), [buildChartHandlers]);
 
   const openModal = useCallback(() => setIsModalOpen(true), []);
   const closeModal = useCallback(() => setIsModalOpen(false), []);
@@ -437,10 +350,7 @@ function SankeyTransitionChart({
             </div>
           </ChartHeader>
         </div>
-        <div
-          ref={chartContainerRef}
-          className="flex-1 min-h-0 relative overflow-hidden"
-        >
+        <div className="flex-1 min-h-0 relative overflow-hidden">
           <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
             <ReactECharts
               ref={echartsRef}
@@ -451,10 +361,8 @@ function SankeyTransitionChart({
               onChartReady={(instance) => {
                 requestAnimationFrame(() => instance.resize());
               }}
-              onEvents={compactEvents}
             />
           </div>
-          <SankeyTooltip state={compactTooltip} containerRef={chartContainerRef} />
         </div>
       </div>
 
@@ -487,10 +395,7 @@ function SankeyTransitionChart({
               </button>
             </div>
 
-            <div
-              ref={modalContainerRef}
-              className="flex-1 relative overflow-hidden p-2"
-            >
+            <div className="flex-1 relative overflow-hidden p-2">
               <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
                 <ReactECharts
                   ref={modalEchartsRef}
@@ -501,10 +406,8 @@ function SankeyTransitionChart({
                   onChartReady={(instance) => {
                     requestAnimationFrame(() => instance.resize());
                   }}
-                  onEvents={modalEvents}
                 />
               </div>
-              <SankeyTooltip state={modalTooltip} containerRef={modalContainerRef} />
             </div>
 
             <div className="shrink-0 px-5 py-2 border-t border-gray-100 bg-gray-50">

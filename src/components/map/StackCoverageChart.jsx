@@ -1,8 +1,8 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import useSWR from 'swr';
-import { PieChart } from 'lucide-react';
 import { useMapStore } from '../../store/mapStore.js';
+import { makeViewportTooltipPosition } from '../../utils/tooltipPosition.js';
 import { API_ENDPOINTS, YEAR_CONFIG, CHART_STYLE } from '../../config/constants.js';
 import {
   ChartHeader,
@@ -99,7 +99,9 @@ function CompositionPieChart({ data, year }) {
     tooltip: {
       trigger: 'item',
       appendToBody: true,
+      confine: false,
       extraCssText: 'z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);',
+      position: makeViewportTooltipPosition(),
       backgroundColor: '#1e293b',
       borderColor: 'transparent',
       textStyle: { color: '#f1f5f9', fontSize: 11, fontFamily: CHART_STYLE.FONT_SANS },
@@ -134,48 +136,17 @@ function CompositionPieChart({ data, year }) {
         type: 'pie',
         radius: ['40%', '72%'],
         center: ['35%', '50%'],
+        // Hovering a legend item must not pop the slice tooltip
+        legendHoverLink: false,
         avoidLabelOverlap: true,
         padAngle: 2,
         itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
-        emphasis: {
-          label: {
-            show: true,
-            fontSize: 11,
-            fontWeight: 600,
-            fontFamily: CHART_STYLE.FONT_SANS,
-            color: '#1c1917',
-          },
-        },
+        // Tooltip already names the hovered slice — the outside emphasis
+        // label only renders as truncated text ("Non…") next to the pie
+        emphasis: { label: { show: false } },
         labelLine: { show: false },
         data: pieData,
-      },
-    ],
-    graphic: [
-      {
-        type: 'text',
-        left: '26%',
-        top: '46%',
-        style: {
-          text: totalLabel,
-          textAlign: 'center',
-          fill: '#1c1917',
-          fontSize: 13,
-          fontWeight: 700,
-          fontFamily: CHART_STYLE.FONT_SANS,
-        },
-      },
-      {
-        type: 'text',
-        left: '30%',
-        top: '53%',
-        style: {
-          text: 'Total',
-          textAlign: 'center',
-          fill: '#a8a29e',
-          fontSize: 9,
-          fontFamily: CHART_STYLE.FONT_SANS,
-        },
       },
     ],
   };
@@ -185,14 +156,7 @@ function CompositionPieChart({ data, year }) {
       <ChartHeader
         title="Komposisi Tutupan Lahan"
         subtitle={`${row?.name || '—'} · ${year}`}
-      >
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-500">
-            <PieChart size={10} />
-            Pie
-          </span>
-        </div>
-      </ChartHeader>
+      />
       <div className="flex-1 min-h-0 relative overflow-hidden">
         <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
           <ReactECharts
@@ -205,6 +169,15 @@ function CompositionPieChart({ data, year }) {
               requestAnimationFrame(() => instance.resize());
             }}
           />
+          <div
+            className="absolute pointer-events-none text-center"
+            style={{ left: '35%', top: '50%', transform: 'translate(-50%, -50%)' }}
+          >
+            <div className="text-[13px] font-bold leading-tight text-stone-900">
+              {totalLabel}
+            </div>
+            <div className="text-[9px] text-stone-400 mt-0.5">Total</div>
+          </div>
         </div>
       </div>
     </div>
@@ -266,7 +239,9 @@ function StackBarChart({ data, year, kab, kec }) {
     tooltip: {
       trigger: 'item',
       appendToBody: true,
+      confine: false,
       extraCssText: 'z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);',
+      position: makeViewportTooltipPosition(),
       backgroundColor: '#1e293b',
       borderColor: 'transparent',
       textStyle: { color: '#f1f5f9', fontSize: 11, fontFamily: CHART_STYLE.FONT_SANS },

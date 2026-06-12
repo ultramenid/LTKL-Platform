@@ -3,6 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import useSWR from 'swr';
 import { useMapStore } from '../../store/mapStore.js';
 import { normalizeServerResponse, transformDataForChart } from '../../utils/dataTransform.js';
+import { makeViewportTooltipPosition } from '../../utils/tooltipPosition.js';
 import { API_ENDPOINTS, YEAR_CONFIG, COLORS, CHART_STYLE } from '../../config/constants.js';
 import {
   ChartHeader,
@@ -94,19 +95,7 @@ function CoverageChart() {
       backgroundColor: '#1e293b',
       borderColor: 'transparent',
       textStyle: { color: '#f1f5f9', fontSize: 11, fontFamily: CHART_STYLE.FONT_SANS },
-      position: function (point, _params, _dom, _rect, size) {
-        const x = point[0];
-        const y = point[1];
-        const tw = size.contentSize[0];
-        const th = size.contentSize[1];
-        const vw = size.viewSize[0];
-        let posX = x - tw / 2;
-        let posY = y - th - 10;
-        if (posY < 0) posY = y + 10;
-        if (posX < 0) posX = 8;
-        if (posX + tw > vw) posX = vw - tw - 8;
-        return [posX, posY];
-      },
+      position: makeViewportTooltipPosition(),
       formatter: (param) => {
         return (
           `<span style="font-weight:600">${param.name}</span><br/>` +
