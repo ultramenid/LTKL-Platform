@@ -1,13 +1,14 @@
-import { Calendar, User, ChevronRight, BookOpen } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { COLORS } from '../../config/constants.js';
 import { ProfileSection } from './ProfileSection.jsx';
 import { SectionHeader } from './SectionHeader.jsx';
+
+const NEWS_ACCENT = COLORS.PRIMARY;
 
 const NEWS_ITEMS = [
   {
     id: 'annual-forum-2025',
     category: 'Acara',
-    categoryColor: '#f59e0b',
     title: 'Forum MSF Tahunan 2025: Sinergi Multipihak untuk Pembangunan Lestari',
     date: '28 April 2025',
     author: 'Sekretariat MSF',
@@ -20,7 +21,6 @@ const NEWS_ITEMS = [
   {
     id: 'lulc-training-2025',
     category: 'Berita',
-    categoryColor: COLORS.PRIMARY,
     title: 'Pelatihan Analisis Tutupan Lahan untuk Aparatur Desa',
     date: '15 Maret 2025',
     author: 'Tim Data & Informasi',
@@ -33,7 +33,6 @@ const NEWS_ITEMS = [
   {
     id: 'partner-coordination-q1',
     category: 'Berita',
-    categoryColor: COLORS.PRIMARY,
     title: 'Koordinasi Mitra Pembangunan: Penyelarasan Program Q1 2025',
     date: '2 Maret 2025',
     author: 'Unit Kerjasama',
@@ -46,7 +45,6 @@ const NEWS_ITEMS = [
   {
     id: 'cocoa-harvest-festival',
     category: 'Acara',
-    categoryColor: '#f59e0b',
     title: 'Festival Panen Raya Kakao 2025',
     date: '10 Februari 2025',
     author: 'Unit Komoditas',
@@ -59,7 +57,6 @@ const NEWS_ITEMS = [
   {
     id: 'data-review-q4-2024',
     category: 'Laporan',
-    categoryColor: '#6366f1',
     title: 'Tinjauan Data Pembangunan Q4 2024: Capaian dan Tantangan',
     date: '20 Januari 2025',
     author: 'Tim Monitoring & Evaluasi',
@@ -77,104 +74,105 @@ export function NewsTab() {
 
   return (
     <ProfileSection>
-      <SectionHeader
-        title="Berita & Acara"
-        borderColor={COLORS.PRIMARY}
-        dotColor={COLORS.PRIMARY}
-      />
+      <div>
+        <SectionHeader kicker="Kabar Kabupaten" title="Berita & Acara" accent={NEWS_ACCENT} />
 
-      {featuredArticle && (
-        <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm group cursor-pointer hover:shadow-md transition-shadow">
-          <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr]">
-            <div className="h-56 md:h-auto overflow-hidden">
-              <img
-                src={featuredArticle.imageUrl}
-                alt={featuredArticle.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
+        {featuredArticle && (
+          <article className="group cursor-pointer grid grid-cols-1 md:grid-cols-[1fr_1.1fr] gap-6 md:gap-10 items-start border-b-2 border-coffee-900/80 pb-10">
+            <div>
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.24em] mb-3"
+                style={{ color: NEWS_ACCENT }}
+              >
+                {featuredArticle.category} Utama
+              </p>
+              <h2 className="text-2xl md:text-[2rem] font-extrabold text-coffee-900 leading-[1.15] tracking-tight group-hover:underline underline-offset-4 decoration-2">
+                {featuredArticle.title}
+              </h2>
+              <p className="text-[11px] text-coffee-600 uppercase tracking-[0.12em] mt-3">
+                {featuredArticle.date} — {featuredArticle.author}
+              </p>
+              <p className="text-sm text-coffee-700 leading-relaxed mt-4">
+                {featuredArticle.excerpt}
+              </p>
+              <span
+                className="inline-flex items-center gap-1.5 mt-5 text-[11px] font-bold uppercase tracking-[0.12em]"
+                style={{ color: NEWS_ACCENT }}
+              >
+                Baca Selengkapnya
+                <ArrowRight
+                  size={12}
+                  aria-hidden="true"
+                  className="transition-transform group-hover:translate-x-1"
+                />
+              </span>
             </div>
-            <div className="p-6 md:p-8 flex flex-col justify-between bg-white">
-              <div>
-                <span
-                  className="inline-block px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider rounded-full mb-3 text-white"
-                  style={{ backgroundColor: featuredArticle.categoryColor }}
+            <div className="border border-coffee-900/20 p-1.5 bg-white">
+              <div className="overflow-hidden">
+                <img
+                  src={featuredArticle.imageUrl}
+                  alt={featuredArticle.title}
+                  className="w-full h-56 md:h-72 object-cover sepia-[0.18] saturate-[0.9] group-hover:scale-[1.03] transition-transform duration-700"
+                />
+              </div>
+            </div>
+          </article>
+        )}
+
+        <div>
+          {regularArticles.map((article) => (
+            <article
+              key={article.id}
+              className="group cursor-pointer grid grid-cols-[1fr_auto] sm:grid-cols-[8rem_1fr_auto] gap-x-6 gap-y-2 items-start py-6 border-b border-coffee-900/15"
+            >
+              <div className="hidden sm:block pt-1">
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.18em]"
+                  style={{ color: NEWS_ACCENT }}
                 >
-                  {featuredArticle.category}
-                </span>
-                <h2 className="text-lg font-semibold text-gray-900 leading-snug mb-3 group-hover:text-teal-600 transition-colors">
-                  {featuredArticle.title}
-                </h2>
-                <p className="text-sm text-gray-500 leading-relaxed line-clamp-4">
-                  {featuredArticle.excerpt}
+                  {article.category}
+                </p>
+                <p className="text-[11px] text-coffee-600 tabular-nums mt-1 leading-snug">
+                  {article.date}
                 </p>
               </div>
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
-                <div className="flex items-center gap-3 text-[10px] text-gray-400">
-                  <span className="flex items-center gap-1">
-                    <Calendar size={10} />
-                    {featuredArticle.date}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <User size={10} />
-                    {featuredArticle.author}
-                  </span>
-                </div>
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-teal-600">
-                  Selengkapnya <ChevronRight size={11} />
-                </span>
+              <div className="min-w-0">
+                <p
+                  className="sm:hidden text-[10px] font-bold uppercase tracking-[0.18em] mb-1"
+                  style={{ color: NEWS_ACCENT }}
+                >
+                  {article.category} · {article.date}
+                </p>
+                <h3 className="text-base md:text-lg font-bold text-coffee-900 leading-snug tracking-tight group-hover:underline underline-offset-4">
+                  {article.title}
+                </h3>
+                <p className="text-xs text-coffee-600 leading-relaxed mt-1.5 line-clamp-2 max-w-2xl">
+                  {article.excerpt}
+                </p>
+                <p className="text-[10px] text-coffee-600/70 uppercase tracking-[0.12em] mt-2">
+                  {article.author}
+                </p>
               </div>
-            </div>
-          </div>
+              <div className="border border-coffee-900/20 p-1 bg-white shrink-0">
+                <img
+                  src={article.imageUrl}
+                  alt={article.title}
+                  className="w-20 h-20 sm:w-24 sm:h-24 object-cover sepia-[0.18] saturate-[0.9]"
+                />
+              </div>
+            </article>
+          ))}
         </div>
-      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {regularArticles.map((article) => (
-          <div
-            key={article.id}
-            className="rounded-xl overflow-hidden border border-gray-100 shadow-sm group cursor-pointer hover:shadow-md transition-shadow bg-white"
+        <div className="pt-8 text-center">
+          <button
+            type="button"
+            className="cursor-pointer inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-coffee-900 underline underline-offset-4 decoration-coffee-900/30 hover:decoration-coffee-900 transition-colors"
           >
-            <div className="h-44 overflow-hidden">
-              <img
-                src={article.imageUrl}
-                alt={article.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="p-4">
-              <span
-                className="inline-block px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider rounded-full mb-2 text-white"
-                style={{ backgroundColor: article.categoryColor }}
-              >
-                {article.category}
-              </span>
-              <h3 className="text-sm font-semibold text-gray-900 leading-snug mb-2 group-hover:text-teal-600 transition-colors line-clamp-2">
-                {article.title}
-              </h3>
-              <p className="text-xs text-gray-500 leading-relaxed line-clamp-3 mb-3">
-                {article.excerpt}
-              </p>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                  <Calendar size={10} /> {article.date}
-                </span>
-                <span className="flex items-center gap-1 text-[10px] font-semibold text-teal-600">
-                  Selengkapnya <ChevronRight size={10} />
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex justify-center pt-2">
-        <button
-          type="button"
-          className="flex items-center gap-2 px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:border-teal-300 hover:text-teal-600 transition-colors cursor-pointer"
-        >
-          <BookOpen size={14} />
-          Lihat Semua Berita & Acara
-        </button>
+            Lihat Semua Berita & Acara
+            <ArrowRight size={12} aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </ProfileSection>
   );

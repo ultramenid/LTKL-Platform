@@ -71,6 +71,36 @@ export const CHART_STYLE = {
   SPLIT_LINE: '#f5f5f4', // stone-100
 };
 
+// Unified tooltip design tokens (Rantaipasok deep-teal style)
+export const TOOLTIP_STYLE = {
+  backgroundColor: 'rgba(15, 41, 39, 0.95)',
+  borderColor: COLORS.PRIMARY,
+  borderWidth: 1,
+  textStyle: {
+    color: '#f4f9f8',
+    fontSize: 11,
+    fontFamily: CHART_STYLE.FONT_SANS,
+    lineHeight: 18,
+  },
+  extraCssText:
+    "z-index: 9999; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4); border-radius: 0; font-family: 'Schibsted Grotesk', ui-sans-serif, sans-serif;",
+};
+
+/**
+ * Build a complete ECharts tooltip option from the shared deep-teal tokens.
+ * Spread `extra` on top; `extra.textStyle` is shallow-merged with the base.
+ */
+export function makeTooltipOption(extra = {}) {
+  return {
+    ...TOOLTIP_STYLE,
+    ...extra,
+    textStyle: {
+      ...TOOLTIP_STYLE.textStyle,
+      ...(extra.textStyle || {}),
+    },
+  };
+}
+
 // Cache configuration (TTL, localStorage keys)
 export const CACHE_CONFIG = {
   // GEE auth token expires ~2h, cache 1.5h to avoid serving expired URLs

@@ -1,4 +1,5 @@
 import ReactECharts from 'echarts-for-react';
+import { COLORS, TOOLTIP_STYLE } from '../../config/constants.js';
 import { ProfileSection } from './ProfileSection.jsx';
 import { SectionHeader } from './SectionHeader.jsx';
 const GDP_YEAR_COLORS = [
@@ -70,8 +71,9 @@ const GDP_BAR_CHART_OPTION = {
   grid: { top: 16, right: 16, bottom: 56, left: 8, containLabel: true },
   tooltip: {
     trigger: 'item',
+    ...TOOLTIP_STYLE,
     formatter: (param) =>
-      `<b>${param.name}</b><br/>${param.marker}${param.seriesName}: <b>Rp ${param.value.toLocaleString('id-ID')} M</b>`,
+      `<b style="color:#f4f9f8;">${param.name}</b><br/>${param.marker}<span style="color:#f4f9f8;">${param.seriesName}: <b>Rp ${param.value.toLocaleString('id-ID')} M</b></span>`,
   },
   legend: {
     bottom: 0,
@@ -103,40 +105,42 @@ const GDP_BAR_CHART_OPTION = {
   })),
 };
 
+const PRODUK_ACCENT = COLORS.PRIMARY;
+
 export function EconomyTab() {
   return (
     <ProfileSection>
       <div>
-        <SectionHeader title="PDRB" borderColor="#f59e0b" dotColor="#f59e0b" />
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 items-start mt-6">
-          <div className="space-y-3 text-xs text-gray-600 leading-relaxed">
+        <SectionHeader kicker="Produk Unggulan · Ekonomi" title="PDRB" accent={PRODUK_ACCENT} />
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-10 items-start">
+          <div className="space-y-3 text-xs text-coffee-700 leading-relaxed">
             <p>
               PDRB Kabupaten Sigi menunjukkan struktur ekonomi yang sangat bergantung pada kekayaan
               alam dan aktivitas agraris. Pada tahun 2024, nilai PDRB Sigi diperkirakan mencapai{' '}
-              <strong className="text-gray-800">Rp 9,7 Triliun</strong>, yang dihasilkan dari
+              <strong className="text-coffee-900">Rp 9,7 Triliun</strong>, yang dihasilkan dari
               kontribusi 17 sektor lapangan usaha.
             </p>
             <p>
-              <strong className="text-gray-800">Kontribusi Dominan Sektor Pertanian:</strong> Sektor
-              Pertanian, Kehutanan, dan Perikanan merupakan tulang punggung utama ekonomi Sigi
-              dengan kontribusi dominan mencapai <strong className="text-gray-800">45%</strong>{' '}
-              hingga 48% dari total PDRB.
+              <strong className="text-coffee-900">Kontribusi Dominan Sektor Pertanian:</strong>{' '}
+              Sektor Pertanian, Kehutanan, dan Perikanan merupakan tulang punggung utama ekonomi
+              Sigi dengan kontribusi dominan mencapai{' '}
+              <strong className="text-coffee-900">45%</strong> hingga 48% dari total PDRB.
             </p>
             <p>
-              <strong className="text-gray-800">Basis Komoditas Unggulan:</strong> Sigi merupakan
+              <strong className="text-coffee-900">Basis Komoditas Unggulan:</strong> Sigi merupakan
               salah satu lumbung pangan Sulawesi Tengah, dengan komoditas utama seperti padi,
               jagung, serta tanaman perkebunan seperti kakao dan kopi.
             </p>
             <p>
-              <strong className="text-gray-800">Penyerap Tenaga Kerja Terbesar:</strong> Mayoritas
+              <strong className="text-coffee-900">Penyerap Tenaga Kerja Terbesar:</strong> Mayoritas
               penduduk di 176 desa bekerja di sektor agraris, sehingga aktivitas ekonomi rumah
               tangga sangat bergantung pada hasil panen. Geografis yang mendukung: wilayah seperti
               Lembah Palolo dan Kulawi memiliki lahan subur yang mendukung produktivitas tinggi.
             </p>
           </div>
 
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-amber-600 mb-3">
+          <div className="min-w-0 border border-coffee-900/15 bg-white p-4">
+            <p className="text-[11px] font-bold text-coffee-700 uppercase tracking-[0.15em] mb-3">
               Produk Domestik Regional Bruto (ADHK)
             </p>
             <ReactECharts option={GDP_BAR_CHART_OPTION} style={{ height: 480, width: '100%' }} />

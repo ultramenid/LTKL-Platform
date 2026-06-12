@@ -1,6 +1,13 @@
 import { COLORS } from '../../config/constants.js';
 
-const COLUMN_LABELS = ['Kabupaten', 'Mill group', 'Exporter', 'Destination'];
+const COLUMN_LABELS = ['Kabupaten', 'Grup Mill', 'Eksportir', 'Tujuan'];
+
+// primary teal brand accent on deep-teal/parchment neutrals
+const ACCENT_COLOR = COLORS.PRIMARY;
+const LINK_NEUTRAL_COLOR = '#b3d4d0';
+const NODE_BORDER_COLOR = '#216a63';
+const NODE_LABEL_COLOR = '#1a4f4a';
+const GUIDE_LINE_COLOR = '#b3d4d0';
 
 function breakTextIntoLines(nodeText, maxCharsPerLine = 13) {
   const words = nodeText.split(' ');
@@ -75,8 +82,8 @@ export function SankeyChart({
             fontSize={10}
             fontWeight={700}
             fontFamily="inherit"
-            fill={COLORS.PRIMARY}
-            letterSpacing="0.08em"
+            fill={ACCENT_COLOR}
+            letterSpacing="0.18em"
             style={{ textTransform: 'uppercase' }}
           >
             {COLUMN_LABELS[columnIndex]?.toUpperCase()}
@@ -94,13 +101,13 @@ export function SankeyChart({
                     y1={lineY}
                     x2={lineEndX}
                     y2={lineY}
-                    stroke="#d1d5db"
+                    stroke={GUIDE_LINE_COLOR}
                     strokeWidth={1}
                   />
                   <path
                     d={`M${lineEndX} ${lineY - 4} L${lineEndX + 7} ${lineY} L${lineEndX} ${lineY + 4}`}
                     fill="none"
-                    stroke="#d1d5db"
+                    stroke={GUIDE_LINE_COLOR}
                     strokeWidth={1.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -120,8 +127,8 @@ export function SankeyChart({
         const isTrajectoryLink = hoveredNodeName !== null && isLinkHighlighted(link);
         const isHighlighted = isLinkHovered || isTrajectoryLink;
         const anyHoverActive = hoveredNodeName !== null || hoveredLink !== null;
-        const fillColor = isHighlighted ? COLORS.PRIMARY : '#d1d5db';
-        const fillOpacity = isHighlighted ? 0.75 : anyHoverActive ? 0.26 : 0.4;
+        const fillColor = isHighlighted ? ACCENT_COLOR : LINK_NEUTRAL_COLOR;
+        const fillOpacity = isHighlighted ? 0.72 : anyHoverActive ? 0.22 : 0.45;
         return (
           <path
             key={`link-${linkIndex}-${sourceName}-${targetName}`}
@@ -142,9 +149,9 @@ export function SankeyChart({
       {layoutNodes.map((node) => {
         const hasHover = hoveredNodeName !== null;
         const isHighlighted = isNodeHighlighted(node.id);
-        const fillColor = hasHover && isHighlighted ? COLORS.PRIMARY : '#ffffff';
-        const borderColor = hasHover && isHighlighted ? COLORS.PRIMARY : '#d1d5db';
-        const labelColor = hasHover && isHighlighted ? '#ffffff' : '#6b7280';
+        const fillColor = hasHover && isHighlighted ? ACCENT_COLOR : '#ffffff';
+        const borderColor = hasHover && isHighlighted ? ACCENT_COLOR : NODE_BORDER_COLOR;
+        const labelColor = hasHover && isHighlighted ? '#f4f9f8' : NODE_LABEL_COLOR;
         const nodeHeight = Math.max(4, node.y1 - node.y0);
         const centerX = (node.x0 + node.x1) / 2;
         const centerY = node.y0 + nodeHeight / 2;
@@ -177,7 +184,8 @@ export function SankeyChart({
               fill={fillColor}
               stroke={borderColor}
               strokeWidth={1}
-              style={{ transition: 'fill 0.2s, stroke 0.2s' }}
+              strokeOpacity={hasHover && isHighlighted ? 1 : 0.35}
+              style={{ transition: 'fill 0.2s, stroke 0.2s, stroke-opacity 0.2s' }}
             />
 
             {nodeHeight >= 8 && (

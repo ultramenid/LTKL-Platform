@@ -302,7 +302,7 @@ export function SankeySupplyChain({ kabupaten, year: yearFromProp = null }) {
   }, [hoverState.hoveredNodeName, layoutLinks]);
 
   return (
-    <div ref={containerRef} className="w-full border border-gray-200 rounded-xl">
+    <div ref={containerRef} className="w-full border border-coffee-900/15 bg-white">
       <SankeyHeader
         yearFromProp={yearFromProp}
         availableYears={availableYears}
@@ -340,9 +340,12 @@ export function SankeySupplyChain({ kabupaten, year: yearFromProp = null }) {
           onMouseLeave={() => dispatchHover({ type: 'CLEAR_HOVER' })}
         />
       </div>
-      <div className="bg-gray-50 border-t border-gray-100 px-4 py-2 rounded-b-xl">
-        <p className="text-[10px] text-gray-400 text-right">
-          Satuan: ton CPO &nbsp;·&nbsp; Tahun: {selectedYear} &nbsp;·&nbsp; Sumber: Trase.earth
+      <div className="bg-parchment-50 border-t border-coffee-900/15 px-4 py-2 flex items-center justify-between gap-4">
+        <p className="text-[9px] text-coffee-600/70 uppercase tracking-[0.18em] font-semibold">
+          Aliran CPO · {selectedYear}
+        </p>
+        <p className="text-[9px] text-coffee-600/70 uppercase tracking-[0.18em] tabular-nums">
+          Satuan ton CPO · Sumber Trase.earth
         </p>
       </div>
       <SankeyTooltip tooltip={hoverState.tooltip} />

@@ -4,6 +4,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { CalendarDays, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
+import { COLORS } from '../../config/constants.js';
 import { ProfileSection } from './ProfileSection.jsx';
 import { SectionHeader } from './SectionHeader.jsx';
 import CoverageChart from '../map/CoverageChart.jsx';
@@ -21,7 +22,6 @@ import {
 import { buildSingleFilter, buildDesaFilter } from '../../utils/filterBuilder.js';
 import {
   MAP_CONFIG,
-  COLORS,
   LAYER_TYPES,
   LAYER_IDS,
   SOURCE_IDS,
@@ -44,36 +44,36 @@ function ProfileYearSelector({ year, onYearChange }) {
         <button
           type="button"
           onClick={() => setIsExpanded(true)}
-          className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
+          className="flex items-center gap-1 bg-coffee-900/85 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2 py-1 hover:bg-coffee-900/95 transition-colors cursor-pointer"
         >
-          <CalendarDays size={12} className="text-teal-400" />
-          <span className="text-xs font-semibold text-teal-400">{year}</span>
-          <ChevronRight size={14} className="text-white" />
+          <CalendarDays size={10} className="text-primary" />
+          <span className="text-[11px] font-semibold text-primary">{year}</span>
+          <ChevronRight size={12} className="text-white/80" />
         </button>
       )}
       {isExpanded && (
-        <div className="bg-gray-900/80 backdrop-blur-md rounded-xl shadow-lg border border-white/10 px-3 py-2 flex items-start lg:items-center gap-3">
+        <div className="bg-coffee-900/85 backdrop-blur-md rounded-xl shadow-lg border border-white/10 px-2 py-1.5 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setIsExpanded(false)}
             className="shrink-0 text-right cursor-pointer hover:opacity-70 transition-opacity"
           >
             <div className="flex items-center gap-1">
-              <ChevronLeft size={12} className="text-white/50" />
-              <p className="text-[9px] text-white/50 uppercase tracking-wider font-medium leading-none">
+              <ChevronLeft size={10} className="text-white/50" />
+              <p className="text-[8px] text-white/50 uppercase tracking-wider font-medium leading-none">
                 Tahun
               </p>
             </div>
-            <p className="text-sm font-semibold text-teal-400 leading-tight mt-0.5">{year}</p>
+            <p className="text-xs font-semibold text-primary leading-tight mt-0.5">{year}</p>
           </button>
-          <div className="w-px h-5 bg-white/10 shrink-0" />
+          <div className="w-px h-4 bg-white/10 shrink-0" />
           <div className="relative">
             <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 pointer-events-none" />
-            <div className="flex flex-wrap lg:flex-nowrap items-center gap-1.5 max-w-[12rem] lg:max-w-none">
+            <div className="flex flex-wrap lg:flex-nowrap items-center gap-1 max-w-[10rem] lg:max-w-none">
               {yearList.map((yearOption) => (
                 <div key={yearOption} className="relative flex items-center justify-center">
                   {hoveredYear === yearOption && (
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-teal-500 text-white text-[9px] font-medium rounded shadow-lg whitespace-nowrap z-10">
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-1 py-0.5 bg-primary text-white text-[8px] font-medium rounded shadow-lg whitespace-nowrap z-10">
                       {yearOption}
                     </div>
                   )}
@@ -85,10 +85,10 @@ function ProfileYearSelector({ year, onYearChange }) {
                     onMouseLeave={() => setHoveredYear(null)}
                     className={`z-10 rounded-full cursor-pointer border transition-all duration-200 ${
                       yearOption === year
-                        ? 'w-2.5 h-2.5 bg-teal-400 border-teal-300 shadow-md shadow-teal-500/40 scale-110'
+                        ? 'w-2 h-2 bg-primary border-primary/70 shadow-sm shadow-primary/40 scale-110'
                         : yearOption < year
-                          ? 'w-2 h-2 bg-teal-700 border-teal-600 hover:bg-teal-500'
-                          : 'w-2 h-2 bg-white/20 border-white/10 hover:bg-white/40'
+                          ? 'w-1.5 h-1.5 bg-primary/50 border-primary/40 hover:bg-primary/80'
+                          : 'w-1.5 h-1.5 bg-white/20 border-white/10 hover:bg-white/40'
                     }`}
                   />
                 </div>
@@ -109,12 +109,12 @@ function ProfileMapBreadcrumbs({ kabupaten, kec, des, onHome, onKecClick }) {
   ].filter(Boolean);
 
   return (
-    <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-gray-900/75 backdrop-blur-md rounded-xl px-3 py-1.5 shadow-lg border border-white/10">
+    <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-coffee-900/80 backdrop-blur-md rounded-xl px-3 py-1.5 shadow-lg border border-white/10">
       <button
         type="button"
         onClick={onHome}
-        className={`cursor-pointer flex items-center justify-center w-5 h-5 rounded-md transition-colors hover:text-teal-400 ${
-          breadcrumbItems.length <= 1 ? 'text-teal-400' : 'text-white/60'
+        className={`cursor-pointer flex items-center justify-center w-5 h-5 rounded-md transition-colors hover:text-primary ${
+          breadcrumbItems.length <= 1 ? 'text-primary' : 'text-white/60'
         }`}
         title={`Kembali ke ${kabupaten}`}
       >
@@ -133,8 +133,8 @@ function ProfileMapBreadcrumbs({ kabupaten, kec, des, onHome, onKecClick }) {
               }}
               className={`text-[11px] transition-colors whitespace-nowrap ${
                 isLastItem
-                  ? 'font-semibold text-teal-400 cursor-default'
-                  : 'font-medium text-white/80 hover:text-teal-400 cursor-pointer'
+                  ? 'font-semibold text-primary cursor-default'
+                  : 'font-medium text-white/80 hover:text-primary cursor-pointer'
               }`}
             >
               {item.label}
@@ -451,20 +451,24 @@ export function MapTab({ kabupaten, initialDrillState }) {
     handleYearChange,
   } = useProfileMap({ kabupaten, initialDrillState });
 
+  const activeAreaLabel = [kabupaten, localBreadcrumbs.kec, localBreadcrumbs.des]
+    .filter(Boolean)
+    .join(' › ');
+
   return (
     <ProfileSection>
       <div>
         <SectionHeader
+          kicker="Peta Gotong Royong"
           title="Peta Tutupan Lahan (LULC)"
-          borderColor={COLORS.PRIMARY}
-          dotColor={COLORS.PRIMARY}
+          accent={COLORS.PRIMARY}
         />
-        <p className="text-xs text-gray-500 mt-2 mb-4">
+        <p className="text-xs text-coffee-600 -mt-2 mb-4 max-w-xl">
           Citra tutupan lahan berbasis Google Earth Engine (MapBiomas Indonesia Collection 4). Klik
           wilayah untuk drill-down ke kecamatan lalu desa.
         </p>
 
-        <div className="relative w-full h-[65vh] rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+        <div className="relative w-full h-[65vh] overflow-hidden border border-coffee-900/20 bg-white p-1.5">
           <div ref={mapContainerRef} className="w-full h-full" />
 
           {isMapReady && (
@@ -478,17 +482,17 @@ export function MapTab({ kabupaten, initialDrillState }) {
           )}
 
           {!isMapReady && (
-            <div className="absolute inset-0 bg-gray-100 flex flex-col items-center justify-center gap-3">
-              <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs text-gray-400 font-medium tracking-wide">
+            <div className="absolute inset-0 bg-parchment-50 flex flex-col items-center justify-center gap-3">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs text-coffee-500 font-medium tracking-wide">
                 Memuat peta {kabupaten}…
               </p>
             </div>
           )}
 
           {isLayerLoading && isMapReady && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-gray-900/80 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/10 shadow-lg pointer-events-none">
-              <div className="w-3 h-3 border border-teal-400 border-t-transparent rounded-full animate-spin" />
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-coffee-900/80 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/10 shadow-lg pointer-events-none">
+              <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
               <span className="text-xs text-white/80 font-medium">Memuat layer…</span>
             </div>
           )}
@@ -503,48 +507,40 @@ export function MapTab({ kabupaten, initialDrillState }) {
       </div>
 
       <div>
-        <SectionHeader
-          title="Statistik Cakupan Area LULC"
-          borderColor={COLORS.PRIMARY}
-          dotColor={COLORS.PRIMARY}
-        />
-        <p className="text-xs text-gray-500 mt-2 mb-4">
+        <SectionHeader title="Statistik Cakupan Area LULC" accent={COLORS.PRIMARY} />
+        <p className="text-xs text-coffee-600 -mt-2 mb-4 max-w-xl">
           Luas tutupan lahan per kabupaten untuk tahun{' '}
-          <strong className="text-gray-700">{year}</strong>. Data bersumber dari MapBiomas Indonesia
-          Collection 4 via GEE tile server.
+          <strong className="text-coffee-900">{year}</strong>. Data bersumber dari MapBiomas
+          Indonesia Collection 4 via GEE tile server.
         </p>
-        <div className="h-72 rounded-xl border border-gray-100 shadow-sm overflow-hidden bg-white">
+        <div className="h-72 border border-coffee-900/15 overflow-hidden bg-white">
           <CoverageChart />
         </div>
       </div>
 
       <div>
-        <SectionHeader
-          title="Komposisi Tutupan Lahan"
-          borderColor={COLORS.PRIMARY}
-          dotColor={COLORS.PRIMARY}
-        />
-        <p className="text-xs text-gray-500 mt-2 mb-4">
+        <SectionHeader title="Komposisi Tutupan Lahan" accent={COLORS.PRIMARY} />
+        <p className="text-xs text-coffee-600 -mt-2 mb-4 max-w-xl">
           Persentase komposisi tutupan lahan{' '}
-          <strong className="text-gray-700">{kabupaten}</strong> untuk tahun{' '}
-          <strong className="text-gray-700">{year}</strong>.
+          <strong className="text-coffee-900">{activeAreaLabel}</strong> untuk tahun{' '}
+          <strong className="text-coffee-900">{year}</strong>.
         </p>
-        <div className="h-72 rounded-xl border border-gray-100 shadow-sm overflow-hidden bg-white">
-          <StackCoverageChart kabupaten={kabupaten} />
+        <div className="h-72 border border-coffee-900/15 overflow-hidden bg-white">
+          <StackCoverageChart
+            kabupaten={kabupaten}
+            kec={localBreadcrumbs.kec}
+            des={localBreadcrumbs.des}
+          />
         </div>
       </div>
 
       <div>
-        <SectionHeader
-          title="Transisi Tutupan Lahan"
-          borderColor={COLORS.PRIMARY}
-          dotColor={COLORS.PRIMARY}
-        />
-        <p className="text-xs text-gray-500 mt-2 mb-4">
-          Perubahan tutupan lahan{' '}
-          <strong className="text-gray-700">{kabupaten}</strong> dari tahun 2013 ke 2024.
+        <SectionHeader title="Transisi Tutupan Lahan" accent={COLORS.PRIMARY} />
+        <p className="text-xs text-coffee-600 -mt-2 mb-4 max-w-xl">
+          Perubahan tutupan lahan <strong className="text-coffee-900">{activeAreaLabel}</strong>{' '}
+          dari tahun 2013 ke 2024.
         </p>
-        <div className="h-72 rounded-xl border border-gray-100 shadow-sm overflow-hidden bg-white">
+        <div className="h-72 border border-coffee-900/15 overflow-hidden bg-white">
           <SankeyTransitionChart
             kabupaten={kabupaten}
             kec={localBreadcrumbs.kec}

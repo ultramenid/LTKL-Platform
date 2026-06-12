@@ -1,71 +1,62 @@
-import { Database, Download, FileText, Map as MapIcon } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { COLORS, PROFILE_DOWNLOAD_DUMMY_FILES } from '../../config/constants.js';
 import { ProfileSection } from './ProfileSection.jsx';
 import { SectionHeader } from './SectionHeader.jsx';
 
-function getDownloadCategoryIcon(categoryName) {
-  if (categoryName === 'dataset') return <Database size={16} className="text-emerald-600" />;
-  if (categoryName === 'map') return <MapIcon size={16} className="text-cyan-600" />;
-  return <FileText size={16} className="text-amber-600" />;
-}
+const DATA_ACCENT = COLORS.PRIMARY;
 
 export function DownloadTab() {
   return (
     <ProfileSection>
-      <section className="space-y-6">
-        <SectionHeader
-          title="Unduhan Data"
-          borderColor={COLORS.PRIMARY}
-          dotColor={COLORS.PRIMARY}
-        />
+      <div>
+        <SectionHeader kicker="Katalog Data" title="Unduhan Data" accent={DATA_ACCENT} />
 
-        <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-          <p className="text-xs font-semibold text-amber-700">Mode Dummy</p>
-          <p className="mt-1 text-xs text-amber-600">
+        <div className="border border-dashed border-coffee-900/40 px-4 py-3 mb-8 max-w-xl">
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.18em]"
+            style={{ color: DATA_ACCENT }}
+          >
+            Mode Dummy
+          </p>
+          <p className="mt-1 text-xs text-coffee-600">
             Seluruh tombol unduh di tab ini masih dummy untuk kebutuhan rancangan antarmuka.
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="border-t-2 border-coffee-900/80">
           {PROFILE_DOWNLOAD_DUMMY_FILES.map((downloadFile) => (
             <article
               key={downloadFile.id}
-              className="rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm"
+              className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-x-4 gap-y-2 py-4 border-b border-coffee-900/15"
             >
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    {getDownloadCategoryIcon(downloadFile.category)}
-                    <p className="text-sm font-semibold text-gray-900">{downloadFile.title}</p>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">{downloadFile.description}</p>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-baseline gap-x-3">
+                  <p className="text-sm font-bold text-coffee-900">{downloadFile.title}</p>
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-[0.12em]"
+                    style={{ color: DATA_ACCENT }}
+                  >
+                    {downloadFile.category}
+                  </p>
                 </div>
-
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700"
-                >
-                  <Download size={14} />
-                  Unduh (Dummy)
-                </button>
+                <p className="text-xs text-coffee-600 leading-relaxed mt-1 max-w-2xl">
+                  {downloadFile.description}
+                </p>
+                <p className="text-[10px] text-coffee-600/70 uppercase tracking-[0.12em] tabular-nums mt-2">
+                  {downloadFile.size} · Pembaruan {downloadFile.updatedAt}
+                </p>
               </div>
-
-              <div className="mt-3 grid gap-2 text-[11px] text-gray-500 md:grid-cols-3">
-                <div>
-                  <span className="font-semibold text-gray-600">Tipe:</span> {downloadFile.category}
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-600">Ukuran:</span> {downloadFile.size}
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-600">Pembaruan:</span>{' '}
-                  {downloadFile.updatedAt}
-                </div>
-              </div>
+              <button
+                type="button"
+                className="self-start cursor-pointer inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-coffee-900 underline underline-offset-4 decoration-coffee-900/30 hover:decoration-coffee-900 transition-colors"
+              >
+                <Download size={11} aria-hidden="true" />
+                Unduh (Dummy)
+              </button>
             </article>
           ))}
         </div>
-      </section>
+      </div>
     </ProfileSection>
   );
 }

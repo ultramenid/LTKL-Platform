@@ -1,10 +1,24 @@
 import { COLORS } from '../../config/constants.js';
 
-export function SectionHeader({ title, borderColor = COLORS.PRIMARY, dotColor = COLORS.PRIMARY }) {
+export function SectionHeader({ title, kicker, accent, borderColor = COLORS.PRIMARY, dotColor }) {
+  const accentColor = accent ?? dotColor ?? borderColor;
   return (
-    <div className="flex items-center gap-3 pb-2 border-b-2" style={{ borderColor }}>
-      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: dotColor }} />
-      <h2 className="text-lg font-semibold text-gray-900 tracking-tight">{title}</h2>
-    </div>
+    <header className="mb-6">
+      {kicker && (
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.24em] mb-1.5"
+          style={{ color: accentColor }}
+        >
+          {kicker}
+        </p>
+      )}
+      <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-coffee-900">
+        {title}
+      </h2>
+      <div className="mt-3 flex items-center">
+        <span className="h-[3px] w-10 shrink-0" style={{ backgroundColor: accentColor }} />
+        <span className="h-px flex-1 bg-coffee-900/15" />
+      </div>
+    </header>
   );
 }

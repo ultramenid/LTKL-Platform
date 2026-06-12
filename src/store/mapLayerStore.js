@@ -10,7 +10,14 @@ const resolveKabName = (rawKab) =>
     (kabupatenRecord) => kabupatenRecord.name.toLowerCase() === String(rawKab).toLowerCase(),
   )?.name ?? rawKab;
 
-import { API_ENDPOINTS, COLORS, LAYER_IDS, SOURCE_IDS, WFS_CONFIG } from '../config/constants.js';
+import {
+  API_ENDPOINTS,
+  COLORS,
+  LAYER_IDS,
+  SOURCE_IDS,
+  TOOLTIP_STYLE,
+  WFS_CONFIG,
+} from '../config/constants.js';
 
 // Re-export for backward compatibility
 const GEOSERVER_URL = API_ENDPOINTS.GEOSERVER;
@@ -258,7 +265,11 @@ function renderAndSetupLayers(map, geoJsonData, sourceId, layerId) {
  * @returns {Function} cleanup       - Remove all event listeners and popup
  */
 function attachInteractions(map, layerId, onClickHandler) {
-  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+  const popup = new maplibregl.Popup({
+    closeButton: false,
+    closeOnClick: false,
+    className: 'ltkl-hover-popup',
+  });
   const sourceId = layerId.replace('-fill', '-src');
   let lastHoverFeatureId = null;
 
@@ -297,7 +308,22 @@ function attachInteractions(map, layerId, onClickHandler) {
       hoveredFeature.properties?.kab ??
       'Unknown';
     if (areaName && areaName !== 'Unknown') {
-      popup.setLngLat(e.lngLat).setHTML(`<strong>${areaName}</strong>`).addTo(map);
+      popup
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<div style="` +
+          `background:${TOOLTIP_STYLE.backgroundColor};` +
+          `color:${TOOLTIP_STYLE.textStyle.color};` +
+          `font-family:'Schibsted Grotesk', ui-sans-serif, sans-serif;` +
+          `font-size:13px;` +
+          `font-weight:600;` +
+          `padding:8px 12px;` +
+          `border-radius:8px;` +
+          `box-shadow:0 10px 25px -5px rgba(0,0,0,0.4);` +
+          `white-space:nowrap;` +
+          `">${areaName}</div>`,
+        )
+        .addTo(map);
     }
   };
 

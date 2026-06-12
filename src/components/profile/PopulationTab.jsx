@@ -1,5 +1,5 @@
 import ReactECharts from 'echarts-for-react';
-import { COLORS } from '../../config/constants.js';
+import { COLORS, TOOLTIP_STYLE } from '../../config/constants.js';
 import { ProfileSection } from './ProfileSection.jsx';
 import { SectionHeader } from './SectionHeader.jsx';
 
@@ -25,12 +25,13 @@ const populationBarOption = {
   grid: { top: 24, right: 12, bottom: 32, left: 12, containLabel: true },
   tooltip: {
     trigger: 'axis',
+    ...TOOLTIP_STYLE,
     formatter: (params) => {
       const year = params[0].axisValue;
       return (
         params
-          .map((p) => `${p.marker}${p.seriesName}: <b>${p.value.toLocaleString('id-ID')}</b>`)
-          .join('<br/>') + `<br/><span style="color:#9ca3af;font-size:11px">Tahun ${year}</span>`
+          .map((p) => `${p.marker}${p.seriesName}: <b style="color:#f4f9f8;">${p.value.toLocaleString('id-ID')}</b>`)
+          .join('<br/>') + `<br/><span style="color:#8aa8a4;font-size:11px">Tahun ${year}</span>`
       );
     },
   },
@@ -77,8 +78,9 @@ const householdBarOption = {
   grid: { top: 28, right: 12, bottom: 32, left: 12, containLabel: true },
   tooltip: {
     trigger: 'axis',
+    ...TOOLTIP_STYLE,
     formatter: (params) =>
-      `Tahun ${params[0].axisValue}<br/>${params[0].marker} Rumah Tangga: <b>${params[0].value.toLocaleString('id-ID')} KK</b>`,
+      `Tahun ${params[0].axisValue}<br/>${params[0].marker} <span style="color:#f4f9f8;">Rumah Tangga: <b>${params[0].value.toLocaleString('id-ID')} KK</b></span>`,
   },
   xAxis: { type: 'category', data: POPULATION_YEARS, axisLabel: { fontSize: 10 } },
   yAxis: { type: 'value', show: false },
@@ -103,8 +105,9 @@ const expenditureLineOption = {
   grid: { top: 24, right: 48, bottom: 40, left: 48, containLabel: true },
   tooltip: {
     trigger: 'axis',
+    ...TOOLTIP_STYLE,
     formatter: (params) =>
-      `Tahun ${params[0].axisValue}<br/>${params[0].marker} Pengeluaran: <b>Rp ${params[0].value.toLocaleString('id-ID')}/bulan</b>`,
+      `Tahun ${params[0].axisValue}<br/>${params[0].marker} <span style="color:#f4f9f8;">Pengeluaran: <b>Rp ${params[0].value.toLocaleString('id-ID')}/bulan</b></span>`,
   },
   xAxis: {
     type: 'category',
@@ -138,8 +141,9 @@ const expenditureLineOption2 = {
   grid: { top: 24, right: 48, bottom: 40, left: 48, containLabel: true },
   tooltip: {
     trigger: 'axis',
+    ...TOOLTIP_STYLE,
     formatter: (params) =>
-      `Tahun ${params[0].axisValue}<br/>${params[0].marker} Pengeluaran: <b>Rp ${params[0].value.toLocaleString('id-ID')}/bulan</b>`,
+      `Tahun ${params[0].axisValue}<br/>${params[0].marker} <span style="color:#f4f9f8;">Pengeluaran: <b>Rp ${params[0].value.toLocaleString('id-ID')}/bulan</b></span>`,
   },
   xAxis: {
     type: 'category',
@@ -169,83 +173,93 @@ const expenditureLineOption2 = {
   ],
 };
 
+const PRODUK_ACCENT = COLORS.PRIMARY;
+
+function ChartPanel({ title, children }) {
+  return (
+    <div className="border border-coffee-900/15 bg-white p-4">
+      <p className="text-[11px] font-bold text-coffee-700 uppercase tracking-[0.15em] mb-3">
+        {title}
+      </p>
+      {children}
+    </div>
+  );
+}
+
 export function PopulationTab() {
   return (
     <ProfileSection>
-      <SectionHeader title="Kependudukan" borderColor={COLORS.PRIMARY} dotColor={COLORS.PRIMARY} />
+      <div>
+        <SectionHeader
+          kicker="Produk Unggulan · Populasi"
+          title="Kependudukan"
+          accent={PRODUK_ACCENT}
+        />
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 items-start">
-        <div className="space-y-4 text-xs text-gray-600 leading-relaxed">
-          <p>
-            Jumlah penduduk Kabupaten Sigi mencapai{' '}
-            <strong className="text-gray-800">274.800 jiwa</strong> (2025) dengan tren pertumbuhan
-            stabil. Meski angka kemiskinan sempat fluktuatif akibat bencana 2018, saat ini
-            menunjukkan tren positif penurunan ke angka{' '}
-            <strong className="text-gray-800">10,47%</strong> (sekitar 26.030 jiwa). Pemerintah
-            fokus pada pemberdayaan sektor pertanian untuk menekan angka kemiskinan lebih lanjut.
-          </p>
-          <p>
-            Pengeluaran per rumah tangga Kabupaten Sigi mencerminkan daya beli masyarakat yang terus
-            membaik pasca-pandemi dan bencana. Pada tahun 2025, rata-rata pengeluaran per rumah
-            tangga diperkirakan mencapai{' '}
-            <strong className="text-gray-800">Rp 1.231.000 per bulan</strong>. Angka ini menunjukkan
-            peningkatan kapasitas konsumsi, meskipun mayoritas alokasi belanja masih didominasi oleh
-            kebutuhan pokok (makanan).
-          </p>
-          <p>
-            Peningkatan ini selaras dengan pertumbuhan sektor pertanian dan jasa, yang secara
-            bertahap mengangkat standar hidup masyarakat di perdesaan maupun area perkotaan.
-          </p>
-        </div>
-
-        <div className="space-y-6 min-w-0">
-          <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">
-              <span style={{ color: COLORS.PRIMARY }}>Jumlah Penduduk</span> vs{' '}
-              <span className="text-amber-500">Penduduk Miskin (Jiwa)</span>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-10 items-start">
+          <div className="space-y-4 text-xs text-coffee-700 leading-relaxed">
+            <p>
+              Jumlah penduduk Kabupaten Sigi mencapai{' '}
+              <strong className="text-coffee-900">274.800 jiwa</strong> (2025) dengan tren
+              pertumbuhan stabil. Meski angka kemiskinan sempat fluktuatif akibat bencana 2018, saat
+              ini menunjukkan tren positif penurunan ke angka{' '}
+              <strong className="text-coffee-900">10,47%</strong> (sekitar 26.030 jiwa). Pemerintah
+              fokus pada pemberdayaan sektor pertanian untuk menekan angka kemiskinan lebih lanjut.
             </p>
-            <ReactECharts option={populationBarOption} style={{ height: 240, width: '100%' }} />
+            <p>
+              Pengeluaran per rumah tangga Kabupaten Sigi mencerminkan daya beli masyarakat yang
+              terus membaik pasca-pandemi dan bencana. Pada tahun 2025, rata-rata pengeluaran per
+              rumah tangga diperkirakan mencapai{' '}
+              <strong className="text-coffee-900">Rp 1.231.000 per bulan</strong>. Angka ini
+              menunjukkan peningkatan kapasitas konsumsi, meskipun mayoritas alokasi belanja masih
+              didominasi oleh kebutuhan pokok (makanan).
+            </p>
+            <p>
+              Peningkatan ini selaras dengan pertumbuhan sektor pertanian dan jasa, yang secara
+              bertahap mengangkat standar hidup masyarakat di perdesaan maupun area perkotaan.
+            </p>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-blue-600 mb-2">
-              Pengeluaran penduduk per kapita (Rp/Bulan)
-            </p>
-            <ReactECharts option={expenditureLineOption2} style={{ height: 100, width: '100%' }} />
+
+          <div className="space-y-5 min-w-0">
+            <ChartPanel title="Jumlah Penduduk vs Penduduk Miskin (Jiwa)">
+              <ReactECharts option={populationBarOption} style={{ height: 240, width: '100%' }} />
+            </ChartPanel>
+            <ChartPanel title="Pengeluaran Penduduk per Kapita (Rp/Bulan)">
+              <ReactECharts
+                option={expenditureLineOption2}
+                style={{ height: 100, width: '100%' }}
+              />
+            </ChartPanel>
           </div>
         </div>
       </div>
+
       <div>
-        <SectionHeader title="Rumah Tangga" borderColor="#4ade80" dotColor="#4ade80" />
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 items-start mt-6">
-          <div className="space-y-4 text-xs text-gray-600 leading-relaxed">
+        <SectionHeader title="Rumah Tangga" accent={PRODUK_ACCENT} />
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-10 items-start">
+          <div className="space-y-4 text-xs text-coffee-700 leading-relaxed">
             <p>
               Jumlah rumah tangga di Kabupaten Sigi terus bertumbuh seiring meningkatnya pasangan
-              muda, dengan estimasi mencapai <strong className="text-gray-800">75.200 KK</strong>{' '}
+              muda, dengan estimasi mencapai <strong className="text-coffee-900">75.200 KK</strong>{' '}
               pada tahun 2025. Rata-rata satu keluarga terdiri dari 3 hingga 4 anggota rumah tangga.
             </p>
             <p>
               Seiring dengan pertumbuhan tersebut, pengeluaran rata-rata per rumah tangga juga
               meningkat menjadi sekitar{' '}
-              <strong className="text-gray-800">Rp 4.493.150 per bulan</strong>. Angka ini mencakup
-              total belanja seluruh anggota keluarga untuk kebutuhan pangan, pendidikan, dan biaya
-              hidup lainnya. Tren positif ini menunjukkan pergeseran daya beli masyarakat yang mulai
-              stabil dan meningkat pasca-rekonstruksi ekonomi wilayah.
+              <strong className="text-coffee-900">Rp 4.493.150 per bulan</strong>. Angka ini
+              mencakup total belanja seluruh anggota keluarga untuk kebutuhan pangan, pendidikan,
+              dan biaya hidup lainnya. Tren positif ini menunjukkan pergeseran daya beli masyarakat
+              yang mulai stabil dan meningkat pasca-rekonstruksi ekonomi wilayah.
             </p>
           </div>
 
-          <div className="space-y-6 min-w-0">
-            <div>
-              <p className="text-sm font-semibold mb-2" style={{ color: '#16a34a' }}>
-                Jumlah Rumah Tangga
-              </p>
+          <div className="space-y-5 min-w-0">
+            <ChartPanel title="Jumlah Rumah Tangga">
               <ReactECharts option={householdBarOption} style={{ height: 160, width: '100%' }} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-blue-600 mb-2">
-                Pengeluaran Rumah Tangga (Rp/Bulan)
-              </p>
+            </ChartPanel>
+            <ChartPanel title="Pengeluaran Rumah Tangga (Rp/Bulan)">
               <ReactECharts option={expenditureLineOption} style={{ height: 100, width: '100%' }} />
-            </div>
+            </ChartPanel>
           </div>
         </div>
       </div>

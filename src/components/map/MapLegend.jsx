@@ -83,18 +83,18 @@ export default function MapLegend() {
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
+          className="flex items-center gap-1 bg-coffee-900/85 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2 py-1 hover:bg-coffee-900/95 transition-colors cursor-pointer"
         >
-          <Layers size={12} className="text-teal-400" />
-          <span className="text-xs font-semibold text-white/80">Legenda</span>
+          <Layers size={10} className="text-primary" />
+          <span className="text-[11px] font-semibold text-white/80">Legenda</span>
         </button>
       )}
 
       {expanded && (
-        <div className="absolute bottom-full  left-0 bg-gray-900/85 backdrop-blur-md rounded-xl shadow-xl border border-white/10 w-52 h-[50vh] flex flex-col overflow-hidden">
+        <div className="absolute bottom-full  left-0 bg-coffee-900/85 backdrop-blur-md rounded-xl shadow-xl border border-white/10 w-52 h-[50vh] flex flex-col overflow-hidden">
           <div className="shrink-0 flex items-center justify-between px-3 pt-3 pb-2 border-b border-white/10">
             <div className="flex items-center gap-1.5">
-              <Layers size={11} className="text-teal-400" />
+              <Layers size={11} className="text-primary" />
               <p className="text-[10px] font-semibold text-white/80 uppercase tracking-wider">
                 Legenda LULC
               </p>

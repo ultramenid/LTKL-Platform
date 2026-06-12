@@ -26,7 +26,7 @@ export function RightPanel({ onToggleSidebar }) {
       <div className="h-[35%] transition-all duration-300 ease-in-out flex flex-col border-t border-stone-200/80 bg-white">
         <div className="shrink-0 flex items-center justify-between px-6 py-3 border-b border-stone-200/80">
           <div className="flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
             <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-700">
               Analitik Tutupan Lahan
             </h2>
@@ -44,7 +44,7 @@ export function RightPanel({ onToggleSidebar }) {
 
             <div className="flex-1 min-w-[320px] h-full border-r border-gray-100">
               <ErrorBoundary label="Komposisi Tutupan Lahan">
-                <StackCoverageChart />
+                <StackCoverageChart kabupaten={kab} kec={kec} des={des} />
               </ErrorBoundary>
             </div>
 

@@ -1,7 +1,10 @@
-import { BarChart3, BookOpen } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { COLORS } from '../../config/constants.js';
 import { ProfileSection } from './ProfileSection.jsx';
 import { SectionHeader } from './SectionHeader.jsx';
+import { SubSectionHeader } from './SubSectionHeader.jsx';
+
+const REPORTS_ACCENT = COLORS.PRIMARY;
 
 const LAPORAN_ITEMS = [
   {
@@ -35,7 +38,6 @@ const PUSTAKA_ITEMS = [
     id: 'strategi-pembangunan-lestari',
     title: 'Strategi Pembangunan Lestari Kabupaten 2024–2029',
     category: 'Strategi',
-    categoryColor: '#6366f1',
     description:
       'Dokumen strategis jangka menengah yang mengintegrasikan target SDGs ke dalam rencana pembangunan daerah.',
     size: '3.7 MB',
@@ -45,7 +47,6 @@ const PUSTAKA_ITEMS = [
     id: 'baseline-lulc',
     title: 'Baseline Tutupan Lahan 2020–2024',
     category: 'Data & Analisis',
-    categoryColor: '#f59e0b',
     description:
       'Analisis mendalam perubahan tutupan lahan berbasis MapBiomas dan interpretasi implikasinya terhadap program konservasi.',
     size: '8.4 MB',
@@ -55,7 +56,6 @@ const PUSTAKA_ITEMS = [
     id: 'panduan-operasional',
     title: 'Panduan Operasional Forum MSF',
     category: 'Pedoman',
-    categoryColor: '#14b8a6',
     description:
       'Dokumen acuan tata cara penyelenggaraan Forum Multi-Stakeholder, mekanisme pengambilan keputusan, dan pengelolaan sekretariat.',
     size: '2.1 MB',
@@ -65,7 +65,6 @@ const PUSTAKA_ITEMS = [
     id: 'panduan-kakao',
     title: 'Panduan Pengembangan Kakao Berkelanjutan',
     category: 'Teknis',
-    categoryColor: '#10b981',
     description:
       'Panduan teknis budi daya kakao berkelanjutan yang mengintegrasikan praktik baik dan standar sertifikasi internasional.',
     size: '1.9 MB',
@@ -73,72 +72,63 @@ const PUSTAKA_ITEMS = [
   },
 ];
 
-const ALL_ITEMS = [
-  ...LAPORAN_ITEMS.map((item) => ({
-    ...item,
-    type: 'Laporan',
-    icon: BarChart3,
-    iconColor: '#14b8a6',
-  })),
-  ...PUSTAKA_ITEMS.map((item) => ({
-    ...item,
-    type: 'Pustaka',
-    icon: BookOpen,
-    iconColor: '#6366f1',
-  })),
-];
+function CatalogRow({ item }) {
+  return (
+    <article className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-x-4 gap-y-2 py-4 border-b border-coffee-900/15">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-baseline gap-x-3">
+          <p className="text-sm font-bold text-coffee-900">{item.title}</p>
+          {item.category && (
+            <p
+              className="text-[10px] font-bold uppercase tracking-[0.12em]"
+              style={{ color: REPORTS_ACCENT }}
+            >
+              {item.category}
+            </p>
+          )}
+        </div>
+        <p className="text-xs text-coffee-600 leading-relaxed mt-1 max-w-2xl">{item.description}</p>
+        <p className="text-[10px] text-coffee-600/70 uppercase tracking-[0.12em] tabular-nums mt-2">
+          {item.size} · Pembaruan {item.updated}
+        </p>
+      </div>
+      <button
+        type="button"
+        className="self-start inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-coffee-900 underline underline-offset-4 decoration-coffee-900/30 hover:decoration-coffee-900 transition-colors cursor-pointer"
+      >
+        <Download size={11} aria-hidden="true" />
+        Unduh
+      </button>
+    </article>
+  );
+}
 
 export function ReportsTab() {
   return (
     <ProfileSection>
-      <section className="space-y-6">
-        <SectionHeader
-          title="Laporan / Pustaka"
-          borderColor={COLORS.PRIMARY}
-          dotColor={COLORS.PRIMARY}
-        />
+      <div>
+        <SectionHeader kicker="Arsip & Dokumen" title="Laporan / Pustaka" accent={REPORTS_ACCENT} />
 
-        <div className="space-y-3">
-          {ALL_ITEMS.map((item) => {
-            const IconComponent = item.icon;
-            return (
-              <article
-                key={item.id}
-                className="rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm"
-              >
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <IconComponent size={18} style={{ color: item.iconColor }} />
-                      <p className="text-sm font-semibold text-gray-900">{item.title}</p>
-                    </div>
-                    <p className="text-xs text-gray-500">{item.description}</p>
-                  </div>
+        <div className="space-y-12">
+          <section>
+            <SubSectionHeader title="Laporan Tahunan" accent={REPORTS_ACCENT} />
+            <div className="border-t-2 border-coffee-900/80">
+              {LAPORAN_ITEMS.map((item) => (
+                <CatalogRow key={item.id} item={item} />
+              ))}
+            </div>
+          </section>
 
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700"
-                  >
-                    Unduh
-                  </button>
-                </div>
-
-                <div className="mt-3 grid gap-2 text-[11px] text-gray-500 md:grid-cols-3">
-                  <div>
-                    <span className="font-semibold text-gray-600">Tipe:</span> {item.type}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-600">Ukuran:</span> {item.size}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-600">Pembaruan:</span> {item.updated}
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+          <section>
+            <SubSectionHeader title="Pustaka" accent={REPORTS_ACCENT} />
+            <div className="border-t-2 border-coffee-900/80">
+              {PUSTAKA_ITEMS.map((item) => (
+                <CatalogRow key={item.id} item={item} />
+              ))}
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
     </ProfileSection>
   );
 }

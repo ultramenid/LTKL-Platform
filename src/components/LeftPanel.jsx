@@ -11,8 +11,8 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
     return (
       <div className="w-full h-full flex flex-col bg-white border-r border-gray-100">
         <div className="shrink-0 flex flex-col items-center gap-2.5 py-4 border-b border-gray-100">
-          <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center">
-            <Layers size={16} className="text-teal-500" />
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Layers size={16} className="text-primary" />
           </div>
           <button
             type="button"
@@ -82,14 +82,14 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
             placeholder="Cari kabupaten..."
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
-            className="w-full pl-8 pr-7 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-100 transition-all text-gray-700 placeholder:text-gray-400"
+            className="w-full pl-8 pr-7 py-2 text-xs bg-parchment-50 border border-coffee-900/10 rounded-lg outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all text-coffee-900 placeholder:text-coffee-400"
             aria-label="Cari kabupaten"
           />
           {searchText && (
             <button
               type="button"
               onClick={() => setSearchText('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-coffee-400 hover:text-coffee-600 transition-colors"
               aria-label="Hapus pencarian"
             >
               <X size={12} aria-hidden="true" />
@@ -99,10 +99,10 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
       </div>
 
       <div className="shrink-0 px-5 pt-4 pb-2 flex items-center justify-between">
-        <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest">
+        <p className="text-[11px] font-bold text-coffee-600 uppercase tracking-[0.2em]">
           Kabupaten Anggota
         </p>
-        <span className="text-[10px] font-semibold text-teal-600 bg-teal-50 border border-teal-100 rounded-full px-2 py-0.5 tabular-nums">
+        <span className="text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 tabular-nums">
           {KABUPATENS.length}
         </span>
       </div>
@@ -111,8 +111,8 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
         <KabupatenCard filterText={searchText} />
       </div>
 
-      <div className="shrink-0 border-t border-gray-100 px-5 py-3">
-        <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+      <div className="shrink-0 border-t border-coffee-900/10 px-5 py-3">
+        <p className="text-[10px] text-coffee-400 text-center leading-relaxed">
           © 2026 LTKL · Auriga Nusantara
         </p>
       </div>

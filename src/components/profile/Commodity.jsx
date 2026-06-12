@@ -1,5 +1,5 @@
 import ReactECharts from 'echarts-for-react';
-import { COLORS } from '../../config/constants.js';
+import { COLORS, TOOLTIP_STYLE } from '../../config/constants.js';
 import { ProfileSection } from './ProfileSection.jsx';
 import { SectionHeader } from './SectionHeader.jsx';
 import { SubSectionHeader } from './SubSectionHeader.jsx';
@@ -66,12 +66,13 @@ const productionTrendOption = {
   grid: { top: 32, right: 16, bottom: 40, left: 12, containLabel: true },
   tooltip: {
     trigger: 'axis',
+    ...TOOLTIP_STYLE,
     formatter: (params) => {
       const year = params[0].axisValue;
       const rows = params
         .map((p) => `${p.marker} ${p.seriesName}: <b>${p.value.toLocaleString('id-ID')} ton</b>`)
         .join('<br/>');
-      return `<span style="color:#9ca3af;font-size:10px">Tahun ${year}</span><br/>${rows}`;
+      return `<span style="color:#8aa8a4;font-size:10px">Tahun ${year}</span><br/>${rows}`;
     },
   },
   legend: {
@@ -108,8 +109,9 @@ const latestProductionOption = {
   grid: { top: 8, right: 60, bottom: 8, left: 8, containLabel: true },
   tooltip: {
     trigger: 'axis',
+    ...TOOLTIP_STYLE,
     formatter: (params) =>
-      `${params[0].marker} ${params[0].name}: <b>${params[0].value.toLocaleString('id-ID')} ton</b>`,
+      `${params[0].marker} <span style="color:#f4f9f8;">${params[0].name}: <b>${params[0].value.toLocaleString('id-ID')} ton</b></span>`,
   },
   xAxis: {
     type: 'value',
@@ -146,15 +148,16 @@ const productivityOption = {
   grid: { top: 32, right: 16, bottom: 40, left: 12, containLabel: true },
   tooltip: {
     trigger: 'axis',
+    ...TOOLTIP_STYLE,
     formatter: (params) => {
       const year = params[0].axisValue;
       const prod = params.find((p) => p.seriesName === 'Produksi (ton)');
       const area = params.find((p) => p.seriesName === 'Luas Panen (ha)');
       const ratio = prod && area && area.value > 0 ? (prod.value / area.value).toFixed(2) : '-';
       return (
-        `<span style="color:#9ca3af;font-size:10px">Tahun ${year}</span><br/>` +
+        `<span style="color:#8aa8a4;font-size:10px">Tahun ${year}</span><br/>` +
         params
-          .map((p) => `${p.marker} ${p.seriesName}: <b>${p.value.toLocaleString('id-ID')}</b>`)
+          .map((p) => `${p.marker} <span style="color:#f4f9f8;">${p.seriesName}: <b>${p.value.toLocaleString('id-ID')}</b></span>`)
           .join('<br/>') +
         `<br/><span style="color:#14b8a6;font-size:10px">Produktivitas: <b>${ratio} ton/ha</b></span>`
       );
@@ -194,8 +197,9 @@ const totalProduction2025 = COMMODITY_PRODUCTION.reduce(
 const compositionDonutOption = {
   tooltip: {
     trigger: 'item',
+    ...TOOLTIP_STYLE,
     formatter: (param) =>
-      `${param.marker} ${param.name}<br/><b>${param.value.toLocaleString('id-ID')} ton</b> (${param.percent}%)`,
+      `${param.marker} <span style="color:#f4f9f8;">${param.name}<br/><b>${param.value.toLocaleString('id-ID')} ton</b></span> <span style="color:#8aa8a4;">(${param.percent}%)</span>`,
   },
   legend: {
     orient: 'vertical',
@@ -232,74 +236,90 @@ const COMMODITY_SUMMARY_STATS = [
   { label: 'Produktivitas Padi', value: '5.43', unit: 'ton/ha' },
 ];
 
+const PRODUK_ACCENT = COLORS.PRIMARY;
+
 export function CommodityTab() {
   return (
     <ProfileSection>
-      <SectionHeader title="Komoditas Pangan dan Horti" borderColor="#92400e" dotColor="#92400e" />
+      <div>
+        <SectionHeader
+          kicker="Produk Unggulan · Komoditas"
+          title="Komoditas Pangan dan Horti"
+          accent={PRODUK_ACCENT}
+        />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {COMMODITY_SUMMARY_STATS.map((stat) => (
-          <div key={stat.label} className="bg-amber-50 border border-amber-100 p-4 rounded-lg">
-            <p className="text-[9px] text-gray-500 uppercase tracking-wider">{stat.label}</p>
-            <p className="text-2xl font-semibold text-amber-700 mt-1">{stat.value}</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">{stat.unit}</p>
-          </div>
-        ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 border-y-2 border-coffee-900/80 divide-x divide-coffee-900/15">
+          {COMMODITY_SUMMARY_STATS.map((stat) => (
+            <div key={stat.label} className="px-4 py-4">
+              <p className="text-[9px] text-coffee-600 uppercase tracking-[0.15em] font-semibold">
+                {stat.label}
+              </p>
+              <p className="text-2xl font-bold text-coffee-900 tabular-nums mt-1">{stat.value}</p>
+              <p className="text-[10px] text-coffee-600 mt-0.5">{stat.unit}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div>
-        <SubSectionHeader title="Tren Produksi Komoditas (2015–2025)" dotColor="#92400e" />
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 items-start">
-          <div className="space-y-3 text-xs text-gray-600 leading-relaxed">
+        <SubSectionHeader title="Tren Produksi Komoditas (2015–2025)" accent={PRODUK_ACCENT} />
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-10 items-start">
+          <div className="space-y-3 text-xs text-coffee-700 leading-relaxed">
             <p>
               Kabupaten Sigi dikenal sebagai lumbung pangan Sulawesi Tengah dengan{' '}
-              <strong className="text-gray-800">Padi</strong> sebagai komoditas utama yang
-              menyumbang lebih dari <strong className="text-gray-800">57%</strong> total produksi
+              <strong className="text-coffee-900">Padi</strong> sebagai komoditas utama yang
+              menyumbang lebih dari <strong className="text-coffee-900">57%</strong> total produksi
               pertanian. Produksi padi terus meningkat dari 98.000 ton (2015) menuju estimasi{' '}
-              <strong className="text-gray-800">138.000 ton</strong> pada 2025.
+              <strong className="text-coffee-900">138.000 ton</strong> pada 2025.
             </p>
             <p>
-              <strong className="text-gray-800">Kakao</strong> dan{' '}
-              <strong className="text-gray-800">Jagung</strong> menjadi komoditas perkebunan
+              <strong className="text-coffee-900">Kakao</strong> dan{' '}
+              <strong className="text-coffee-900">Jagung</strong> menjadi komoditas perkebunan
               unggulan berikutnya. Produktivitas kakao meningkat signifikan pascabencana berkat
               program rehabilitasi kebun yang dijalankan pemerintah daerah bersama mitra swasta.
             </p>
             <p>
-              <strong className="text-gray-800">Kopi</strong> dan{' '}
-              <strong className="text-gray-800">Kelapa</strong> masih menjadi sumber pendapatan
+              <strong className="text-coffee-900">Kopi</strong> dan{' '}
+              <strong className="text-coffee-900">Kelapa</strong> masih menjadi sumber pendapatan
               penting bagi petani di wilayah dataran tinggi Kulawi dan Lore Utara, meski volume
               absolutnya lebih kecil.
             </p>
           </div>
 
-          <div>
-            <p className="text-xs font-semibold text-gray-600 mb-2">Produksi 2025 per Komoditas</p>
+          <div className="border border-coffee-900/15 bg-white p-4">
+            <p className="text-[11px] font-bold text-coffee-700 uppercase tracking-[0.15em] mb-3">
+              Produksi 2025 per Komoditas
+            </p>
             <ReactECharts option={latestProductionOption} style={{ height: 180, width: '100%' }} />
           </div>
         </div>
 
-        <div className="mt-6">
-          <p className="text-xs font-semibold text-gray-600 mb-2">Tren Produksi 2015–2025 (ton)</p>
+        <div className="mt-6 border border-coffee-900/15 bg-white p-4">
+          <p className="text-[11px] font-bold text-coffee-700 uppercase tracking-[0.15em] mb-3">
+            Tren Produksi 2015–2025 (ton)
+          </p>
           <ReactECharts option={productionTrendOption} style={{ height: 240, width: '100%' }} />
         </div>
       </div>
 
       <div>
-        <SubSectionHeader title="Produktivitas & Komposisi" dotColor={COLORS.PRIMARY} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          <div>
-            <p className="text-xs font-semibold text-gray-600 mb-1">
+        <SubSectionHeader title="Produktivitas & Komposisi" accent={PRODUK_ACCENT} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div className="border border-coffee-900/15 bg-white p-4">
+            <p className="text-[11px] font-bold text-coffee-700 uppercase tracking-[0.15em]">
               Produksi vs Luas Panen — <span style={{ color: COLORS.PRIMARY }}>Padi</span>
             </p>
-            <p className="text-[10px] text-gray-400 mb-2">
+            <p className="text-[10px] text-coffee-600/70 mt-1 mb-2">
               Selisih antara batang biru dan hijau menggambarkan efisiensi lahan per tahun
             </p>
             <ReactECharts option={productivityOption} style={{ height: 200, width: '100%' }} />
           </div>
 
-          <div>
-            <p className="text-xs font-semibold text-gray-600 mb-1">Komposisi Produksi 2025</p>
-            <p className="text-[10px] text-gray-400 mb-2">
+          <div className="border border-coffee-900/15 bg-white p-4">
+            <p className="text-[11px] font-bold text-coffee-700 uppercase tracking-[0.15em]">
+              Komposisi Produksi 2025
+            </p>
+            <p className="text-[10px] text-coffee-600/70 mt-1 mb-2">
               Total: {totalProduction2025.toLocaleString('id-ID')} ton dari 5 komoditas utama
             </p>
             <ReactECharts option={compositionDonutOption} style={{ height: 200, width: '100%' }} />
@@ -307,12 +327,14 @@ export function CommodityTab() {
         </div>
       </div>
 
-      <SectionHeader title="Komoditas Perkebunan" borderColor="#92400e" dotColor="#92400e" />
-      <p className=" text-xs text-gray-600 leading-relaxed">
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem, voluptatum exercitationem
-        soluta dolorem error ex doloribus id voluptate corrupti facilis molestiae enim ratione
-        aliquam labore accusamus, eveniet velit eius voluptatem!
-      </p>
+      <div>
+        <SectionHeader title="Komoditas Perkebunan" accent={PRODUK_ACCENT} />
+        <p className="text-xs text-coffee-700 leading-relaxed max-w-2xl">
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem, voluptatum exercitationem
+          soluta dolorem error ex doloribus id voluptate corrupti facilis molestiae enim ratione
+          aliquam labore accusamus, eveniet velit eius voluptatem!
+        </p>
+      </div>
     </ProfileSection>
   );
 }

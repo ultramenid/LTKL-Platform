@@ -121,15 +121,15 @@ const Map = ({ onToggleSidebar }) => {
       <div ref={mapContainer} className="h-full w-full" />
 
       {!isMapReady && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-gray-100">
-          <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-gray-400 font-medium tracking-wide">Memuat peta…</p>
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-parchment-50">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-coffee-500 font-medium tracking-wide">Memuat peta…</p>
         </div>
       )}
 
       {isLayersLoading && isMapReady && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-gray-900/80 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/10 shadow-lg pointer-events-none">
-          <div className="w-3 h-3 border border-teal-400 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-coffee-900/80 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/10 shadow-lg pointer-events-none">
+          <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-white/80 font-medium">Memuat layer…</span>
         </div>
       )}
@@ -138,7 +138,7 @@ const Map = ({ onToggleSidebar }) => {
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="absolute top-4 right-4 z-20 lg:hidden flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 z-20 lg:hidden flex items-center gap-1.5 bg-coffee-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-coffee-900/90 transition-colors cursor-pointer"
           aria-label="Buka menu"
         >
           <Menu size={14} className="text-white/80" />

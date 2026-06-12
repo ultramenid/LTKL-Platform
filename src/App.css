@@ -4,17 +4,20 @@
 @theme {
   --font-sans: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
 
+  /* Primary brand color */
+  --color-primary: #14b8a6;
+
   /* Parchment — warm off-white base */
-  --color-parchment-50: #fdfaf3;
-  --color-parchment-100: #f7f1e3;
-  --color-parchment-200: #ece2c9;
-  --color-parchment-300: #d9c9a3;
+  --color-parchment-50: #f4f9f8;
+  --color-parchment-100: #e6f3f1;
+  --color-parchment-200: #d0e7e4;
+  --color-parchment-300: #b3d4d0;
 
   /* Deep coffee — dark surfaces, footer, hero overlays */
-  --color-coffee-900: #1a1611;
-  --color-coffee-800: #28201a;
-  --color-coffee-700: #3a2f25;
-  --color-coffee-600: #4f4133;
+  --color-coffee-900: #0f2927;
+  --color-coffee-800: #143b38;
+  --color-coffee-700: #1a4f4a;
+  --color-coffee-600: #216a63;
 
   /* Per-section accents (dropdown + active tab) */
   --color-subject-berita: #c2410c; /* amber */
@@ -50,6 +53,26 @@
 .paper-grain > * {
   position: relative;
   z-index: 1;
+}
+
+/* ─── Nav dropdown reveal ─── */
+@keyframes atlas-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.atlas-drop {
+  animation: atlas-drop 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-drop {
+    animation: none;
+  }
 }
 
 /* ─── Page-level entrance choreography ─── */
@@ -187,7 +210,7 @@
 
 /* ─── Scale bar ─── */
 .maplibregl-ctrl-scale {
-  background: rgba(17, 24, 39, 0.8) !important;
+  background: rgba(15, 41, 39, 0.8) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -203,7 +226,7 @@
 
 /* ─── Attribution — base (both states) ─── */
 .maplibregl-ctrl-attrib.maplibregl-compact {
-  background: rgba(17, 24, 39, 0.8) !important;
+  background: rgba(15, 41, 39, 0.8) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -237,7 +260,7 @@
   content: 'ⓘ' !important;
   font-size: 13px;
   font-weight: 700;
-  color: #2dd4bf;
+  color: #14b8a6;
   line-height: 1;
   display: block;
 }
@@ -260,11 +283,11 @@
   -webkit-user-select: none !important;
 }
 .maplibregl-ctrl-attrib-inner a {
-  color: #2dd4bf !important;
+  color: #14b8a6 !important;
   text-decoration: none !important;
 }
 .maplibregl-ctrl-attrib-inner a:hover {
-  color: #5eead4 !important;
+  color: #2dd4bf !important;
 }
 
 /* ─── Legend panel scrollbar — tipis dan subtle ─── */
@@ -289,7 +312,7 @@
 
 /* ─── Cooperative Gestures overlay (profile map) ─── */
 .maplibregl-cooperative-gesture-screen {
-  background: rgba(17, 24, 39, 0.82) !important;
+  background: rgba(15, 41, 39, 0.82) !important;
   backdrop-filter: blur(6px) !important;
   -webkit-backdrop-filter: blur(6px) !important;
   color: rgba(255, 255, 255, 0.85) !important;
@@ -303,4 +326,18 @@
   border-radius: 10px !important;
   background: rgba(255, 255, 255, 0.06) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* ─── MapLibre hover popup — deep-teal glass to match custom map controls ─── */
+.maplibregl-popup-content {
+  background: rgba(15, 41, 39, 0.95) !important;
+  color: #f4f9f8 !important;
+  font-family: var(--font-sans) !important;
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: rgba(15, 41, 39, 0.95) !important;
 }

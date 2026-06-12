@@ -20,15 +20,15 @@ export default function SankeyYearSelector() {
     })),
   );
   const [open, setOpen] = useState(false);
-  // Local draft during drag — committing to the store on every pointermove
-  // would fire an SWR refetch per pixel; commit once on release instead
-  const [draft, setDraft] = useState(null);
-  const [dragging, setDragging] = useState(null); // 'start' | 'end' | null
+  const [draftStart, setDraftStart] = useState(null);
+  const [draftEnd, setDraftEnd] = useState(null);
+  const [activeThumb, setActiveThumb] = useState(null); // 'start' | 'end' | null
   const containerRef = useRef(null);
-  const trackRef = useRef(null);
+  const startInputRef = useRef(null);
+  const endInputRef = useRef(null);
 
-  const startYear = draft ? draft.start : sankeyStartYear;
-  const endYear = draft ? draft.end : sankeyEndYear;
+  const startYear = draftStart !== null ? draftStart : sankeyStartYear;
+  const endYear = draftEnd !== null ? draftEnd : sankeyEndYear;
 
   useEffect(() => {
     if (!open) return;
@@ -48,62 +48,42 @@ export default function SankeyYearSelector() {
     };
   }, [open]);
 
-  const yearFromClientX = useCallback((clientX) => {
-    const rect = trackRef.current.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    return Math.round(MIN_YEAR + ratio * YEAR_SPAN);
-  }, []);
-
-  const beginDrag = (handle) => (e) => {
-    e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setDragging(handle);
-    setDraft({ start: sankeyStartYear, end: sankeyEndYear });
-  };
-
-  const moveDrag = (e) => {
-    if (!dragging) return;
-    const year = yearFromClientX(e.clientX);
-    setDraft((current) => {
-      if (!current) return current;
-      if (dragging === 'start') {
-        return { start: Math.min(year, current.end - 1), end: current.end };
-      }
-      return { start: current.start, end: Math.max(year, current.start + 1) };
-    });
-  };
-
-  const endDrag = () => {
-    if (!dragging) return;
-    if (draft) setSankeyYears(draft.start, draft.end);
-    setDragging(null);
-    setDraft(null);
-  };
-
-  // Click on the track moves the nearest handle to that year
-  const handleTrackClick = (e) => {
-    if (dragging) return;
-    const year = yearFromClientX(e.clientX);
-    const distToStart = Math.abs(year - sankeyStartYear);
-    const distToEnd = Math.abs(year - sankeyEndYear);
-    if (distToStart <= distToEnd) {
-      if (year < sankeyEndYear) setSankeyYears(year, sankeyEndYear);
-    } else {
-      if (year > sankeyStartYear) setSankeyYears(sankeyStartYear, year);
+  const commitDraft = useCallback(() => {
+    if (draftStart !== null) {
+      setSankeyYears(draftStart, draftEnd);
+      setDraftStart(null);
+      setDraftEnd(null);
     }
-  };
+    setActiveThumb(null);
+  }, [draftStart, draftEnd, setSankeyYears]);
 
-  const handleKeyDown = (handle) => (e) => {
-    const delta = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
-    if (!delta) return;
-    e.preventDefault();
-    if (handle === 'start') {
-      const next = Math.min(Math.max(sankeyStartYear + delta, MIN_YEAR), sankeyEndYear - 1);
-      setSankeyYears(next, sankeyEndYear);
-    } else {
-      const next = Math.max(Math.min(sankeyEndYear + delta, MAX_YEAR), sankeyStartYear + 1);
-      setSankeyYears(sankeyStartYear, next);
-    }
+  const handleStartChange = useCallback(
+    (e) => {
+      const val = Number(e.target.value);
+      const next = Math.min(val, endYear - 1);
+      setSankeyYears(next, endYear);
+      setDraftStart(null);
+      setDraftEnd(null);
+    },
+    [endYear, setSankeyYears],
+  );
+
+  const handleEndChange = useCallback(
+    (e) => {
+      const val = Number(e.target.value);
+      const next = Math.max(val, startYear + 1);
+      setSankeyYears(startYear, next);
+      setDraftStart(null);
+      setDraftEnd(null);
+    },
+    [startYear, setSankeyYears],
+  );
+
+  // Touch/drag start — enter draft mode so the thumb follows finger
+  const onThumbPointerDown = (thumb) => () => {
+    setActiveThumb(thumb);
+    setDraftStart(sankeyStartYear);
+    setDraftEnd(sankeyEndYear);
   };
 
   const startPct = toPercent(startYear);
@@ -116,8 +96,8 @@ export default function SankeyYearSelector() {
         onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-medium tabular-nums transition-colors cursor-pointer ${
           open
-            ? 'bg-teal-50 border-teal-300 text-teal-700'
-            : 'bg-stone-100 border-stone-200 text-stone-500 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50'
+            ? 'bg-primary/10 border-primary/30 text-primary/80'
+            : 'bg-stone-100 border-stone-200 text-stone-500 hover:border-primary/30 hover:text-primary/80 hover:bg-primary/10'
         }`}
         aria-label="Pilih rentang tahun"
         aria-expanded={open}
@@ -130,19 +110,15 @@ export default function SankeyYearSelector() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 w-[300px] bg-gray-900/92 backdrop-blur-md rounded-xl shadow-xl border border-white/10 px-3.5 py-2.5">
+        <div className="absolute right-0 top-full mt-1.5 z-50 w-[300px] bg-coffee-900/92 backdrop-blur-md rounded-xl shadow-xl border border-white/10 px-3.5 py-2.5">
           <div className="flex items-center gap-2.5">
             {/* Range label */}
             <span className="shrink-0 text-[11px] font-semibold text-white/90 tabular-nums select-none whitespace-nowrap">
               {startYear} <span className="font-normal text-white/40">–</span> {endYear}
             </span>
 
-            {/* Slider */}
-            <div
-              ref={trackRef}
-              className="relative flex-1 h-6 cursor-pointer touch-none"
-              onClick={handleTrackClick}
-            >
+            {/* Dual-range slider using two native inputs */}
+            <div className="relative flex-1 h-6">
               {/* Base track */}
               <div className="absolute top-1/2 left-0 right-0 h-1.5 -translate-y-1/2 bg-white/15 rounded-full" />
 
@@ -157,46 +133,52 @@ export default function SankeyYearSelector() {
 
               {/* Selected range bar */}
               <div
-                className="absolute top-1/2 h-1.5 -translate-y-1/2 bg-teal-400 rounded-full pointer-events-none"
+                className="absolute top-1/2 h-1.5 -translate-y-1/2 bg-primary rounded-full pointer-events-none"
                 style={{ left: `${startPct}%`, right: `${100 - endPct}%` }}
               />
 
-              {/* Start handle */}
-              <button
-                type="button"
-                role="slider"
+              {/* Start handle — native range input, visually hidden */}
+              <input
+                ref={startInputRef}
+                type="range"
+                min={MIN_YEAR}
+                max={endYear - 1}
+                value={startYear}
+                onChange={handleStartChange}
+                onPointerDown={onThumbPointerDown('start')}
+                onPointerUp={commitDraft}
                 aria-label="Tahun awal"
-                aria-valuemin={MIN_YEAR}
-                aria-valuemax={endYear - 1}
-                aria-valuenow={startYear}
-                onPointerDown={beginDrag('start')}
-                onPointerMove={moveDrag}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
-                onKeyDown={handleKeyDown('start')}
-                onClick={(e) => e.stopPropagation()}
-                className={`absolute top-1/2 w-[16px] h-[16px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white border-[2.5px] border-teal-400 shadow-lg cursor-grab active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 transition-transform ${
-                  dragging === 'start' ? 'scale-110' : 'hover:scale-110'
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                style={{ pointerEvents: 'none' }}
+              />
+
+              {/* End handle — native range input, visually hidden */}
+              <input
+                ref={endInputRef}
+                type="range"
+                min={startYear + 1}
+                max={MAX_YEAR}
+                value={endYear}
+                onChange={handleEndChange}
+                onPointerDown={onThumbPointerDown('end')}
+                onPointerUp={commitDraft}
+                aria-label="Tahun akhir"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                style={{ pointerEvents: 'none' }}
+              />
+
+              {/* Visual thumb for start */}
+              <span
+                className={`absolute top-1/2 w-[16px] h-[16px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white border-[2.5px] border-primary shadow-lg transition-transform pointer-events-none ${
+                  activeThumb === 'start' ? 'scale-110' : ''
                 }`}
                 style={{ left: `${startPct}%`, zIndex: startPct > 90 ? 4 : 3 }}
               />
 
-              {/* End handle */}
-              <button
-                type="button"
-                role="slider"
-                aria-label="Tahun akhir"
-                aria-valuemin={startYear + 1}
-                aria-valuemax={MAX_YEAR}
-                aria-valuenow={endYear}
-                onPointerDown={beginDrag('end')}
-                onPointerMove={moveDrag}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
-                onKeyDown={handleKeyDown('end')}
-                onClick={(e) => e.stopPropagation()}
-                className={`absolute top-1/2 w-[16px] h-[16px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white border-[2.5px] border-white/80 shadow-lg cursor-grab active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-transform ${
-                  dragging === 'end' ? 'scale-110' : 'hover:scale-110'
+              {/* Visual thumb for end */}
+              <span
+                className={`absolute top-1/2 w-[16px] h-[16px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white border-[2.5px] border-primary shadow-lg transition-transform pointer-events-none ${
+                  activeThumb === 'end' ? 'scale-110' : ''
                 }`}
                 style={{ left: `${endPct}%`, zIndex: endPct < 10 ? 4 : 3 }}
               />

@@ -5,7 +5,7 @@ import { X, Maximize2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useMapStore } from '../../store/mapStore.js';
 import { makeViewportTooltipPosition } from '../../utils/tooltipPosition.js';
-import { API_ENDPOINTS, CHART_STYLE } from '../../config/constants.js';
+import { API_ENDPOINTS, COLORS, makeTooltipOption } from '../../config/constants.js';
 import SankeyYearSelector from './SankeyYearSelector.jsx';
 import {
   ChartHeader,
@@ -46,16 +46,17 @@ function buildEdgeTooltipHtml(
   const cleanTarget = (target || '').replace(/\s*\(\d{4}\)\s*$/, '');
   const sourceColor = nodeColorMap[source] || '#94a3b8';
   const targetColor = nodeColorMap[target] || '#94a3b8';
+  const accentMuted = 'rgba(20, 184, 166, 0.65)';
 
   const padding = isCompact ? '8px 12px' : '10px 14px';
   const titleSize = isCompact ? '12px' : '14px';
   const textSize = isCompact ? '11px' : '13px';
   const dotSize = isCompact ? '10px' : '12px';
-  const rowPaddingV = isCompact ? '2px' : '3px';
+  const rowPaddingV = isCompact ? '3px' : '4px';
   const rowPaddingH = isCompact ? '6px' : '8px';
   const rowFont = isCompact ? '10px' : '12px';
   const pctFont = isCompact ? '10px' : '11px';
-  const minWidth = isCompact ? '240px' : '280px';
+  const minWidth = isCompact ? '260px' : '300px';
 
   let detailRows = '';
   const detailEntries = Object.entries(details).sort(([, a], [, b]) => b - a);
@@ -65,26 +66,26 @@ function buildEdgeTooltipHtml(
         const pct = ((Number(ha) / Number(actualValue)) * 100).toFixed(1);
         return (
           `<tr>` +
-          `<td style="padding:${rowPaddingV} ${rowPaddingH} ${rowPaddingV} 0;color:#94a3b8;font-size:${rowFont};">${name}</td>` +
-          `<td style="padding:${rowPaddingV} 0 ${rowPaddingV} ${rowPaddingH};text-align:right;color:#e2e8f0;font-size:${rowFont};font-weight:500;">${Number(ha).toLocaleString(undefined, { maximumFractionDigits: 0 })} ha</td>` +
-          `<td style="padding:${rowPaddingV} 0 ${rowPaddingV} ${rowPaddingH};text-align:right;color:#64748b;font-size:${pctFont};">${pct}%</td>` +
+          `<td style="padding:${rowPaddingV} ${rowPaddingH} ${rowPaddingV} 0;color:${accentMuted};font-size:${rowFont};line-height:1.5;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">${name}</td>` +
+          `<td style="padding:${rowPaddingV} 0 ${rowPaddingV} ${rowPaddingH};text-align:right;color:#f4f9f8;font-size:${rowFont};line-height:1.5;font-weight:500;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">${Number(ha).toLocaleString(undefined, { maximumFractionDigits: 0 })} ha</td>` +
+          `<td style="padding:${rowPaddingV} 0 ${rowPaddingV} ${rowPaddingH};text-align:right;color:${accentMuted};font-size:${pctFont};line-height:1.5;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">${pct}%</td>` +
           `</tr>`
         );
       })
       .join('');
-    detailRows = `<table style="width:100%;border-collapse:collapse;margin-top:6px;border-top:1px solid #334155;padding-top:4px;">${detailRows}</table>`;
+    detailRows = `<table style="width:100%;border-collapse:collapse;margin-top:8px;border-top:1px solid ${COLORS.PRIMARY};padding-top:6px;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">${detailRows}</table>`;
   }
 
   return (
-    `<div style="padding:${padding};min-width:${minWidth};max-width:min(90vw,360px);word-break:break-word;overflow-wrap:anywhere;">` +
-    `<div style="font-size:${titleSize};font-weight:600;color:#f1f5f9;margin-bottom:6px;">${startYear} - ${endYear}</div>` +
-    `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">` +
+    `<div style="padding:${padding};min-width:${minWidth};max-width:min(90vw,500px);word-break:break-word;overflow-wrap:anywhere;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;line-height:1.5;">` +
+    `<div style="font-size:${titleSize};font-weight:700;color:#f4f9f8;margin-bottom:6px;line-height:1.4;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">${startYear} - ${endYear}</div>` +
+    `<div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;line-height:1.4;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">` +
     `<span style="display:inline-block;width:${dotSize};height:${dotSize};border-radius:50%;background:${sourceColor};flex-shrink:0;"></span>` +
-    `<span style="font-size:${textSize};color:#e2e8f0;font-weight:500;">${cleanSource}</span>` +
-    `<span style="font-size:${textSize};color:#64748b;">→</span>` +
+    `<span style="font-size:${textSize};color:#f4f9f8;font-weight:500;line-height:1.4;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;white-space:nowrap;">${cleanSource}</span>` +
+    `<span style="font-size:${textSize};color:${accentMuted};line-height:1.4;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">→</span>` +
     `<span style="display:inline-block;width:${dotSize};height:${dotSize};border-radius:50%;background:${targetColor};flex-shrink:0;"></span>` +
-    `<span style="font-size:${textSize};color:#e2e8f0;font-weight:500;">${cleanTarget}</span>` +
-    `<span style="font-size:${textSize};color:#f1f5f9;font-weight:700;">: ${Number(actualValue).toLocaleString(undefined, { maximumFractionDigits: 0 })} ha</span>` +
+    `<span style="font-size:${textSize};color:#f4f9f8;font-weight:500;line-height:1.4;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;white-space:nowrap;">${cleanTarget}</span>` +
+    `<span style="font-size:${textSize};color:#f4f9f8;font-weight:700;line-height:1.4;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;white-space:nowrap;">: ${Number(actualValue).toLocaleString(undefined, { maximumFractionDigits: 0 })} ha</span>` +
     `</div>` +
     detailRows +
     `</div>`
@@ -103,32 +104,30 @@ function buildNodeTooltipHtml(name, { nodeColorMap, isCompact }) {
   const minWidth = isCompact ? '160px' : '180px';
 
   return (
-    `<div style="padding:${padding};min-width:${minWidth};max-width:min(90vw,240px);word-break:break-word;overflow-wrap:anywhere;">` +
-    `<div style="font-size:${titleSize};font-weight:600;color:#f1f5f9;margin-bottom:4px;">${year}</div>` +
-    `<div style="display:flex;align-items:center;gap:6px;">` +
+    `<div style="padding:${padding};min-width:${minWidth};max-width:min(90vw,240px);word-break:break-word;overflow-wrap:anywhere;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;line-height:1.5;">` +
+    `<div style="font-size:${titleSize};font-weight:700;color:#f4f9f8;margin-bottom:4px;line-height:1.4;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">${year}</div>` +
+    `<div style="display:flex;align-items:center;gap:6px;line-height:1.4;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">` +
     `<span style="display:inline-block;width:${dotSize};height:${dotSize};border-radius:50%;background:${color};flex-shrink:0;"></span>` +
-    `<span style="font-size:${textSize};color:#e2e8f0;font-weight:500;">${cleanName}</span>` +
+    `<span style="font-size:${textSize};color:#f4f9f8;font-weight:500;line-height:1.4;font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;">${cleanName}</span>` +
     `</div>` +
     `</div>`
   );
 }
 
-function makeChartOption(nodes, links, nodeColorMap, startYear, endYear, detailsLabel, isCompact) {
+function makeChartOption(nodes, links, nodeColorMap, startYear, endYear, detailsLabel, isCompact, appendToBody = true) {
   return {
     tooltip: {
       trigger: 'item',
-      appendToBody: true,
+      appendToBody,
       confine: false,
-      backgroundColor: '#1e293b',
-      borderColor: 'transparent',
-      textStyle: {
-        color: '#f1f5f9',
-        fontSize: isCompact ? 11 : 13,
-        fontFamily: CHART_STYLE.FONT_SANS,
-      },
+      ...makeTooltipOption({
+        textStyle: {
+          fontSize: isCompact ? 11 : 12,
+        },
+      }),
       extraCssText:
-        'z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);' +
-        ' max-width: min(90vw, 360px); max-height: calc(100vh - 16px); overflow-y: auto;',
+        makeTooltipOption().extraCssText +
+        ' max-width: min(90vw, 500px); max-height: calc(100vh - 16px); overflow-y: auto;',
       position: makeViewportTooltipPosition(),
       formatter: (params) => {
         if (params.dataType === 'node') {
@@ -185,6 +184,7 @@ function SankeyTransitionChart({
 }) {
   const echartsRef = useRef(null);
   const modalEchartsRef = useRef(null);
+  const dialogRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { startYear, endYear } = useMapStore(
@@ -220,13 +220,24 @@ function SankeyTransitionChart({
     };
   }, []);
 
+  // Open dialog modally when React renders it; close it before unmount.
+  // Using conditional rendering (isModalOpen in JSX) satisfies the
+  // "rerender-state-only-in-handlers" rule while still leveraging
+  // native <dialog> focus trapping and Escape-to-close.
   useEffect(() => {
     if (!isModalOpen) return;
-    function onKeyDown(e) {
-      if (e.key === 'Escape') setIsModalOpen(false);
+    const el = dialogRef.current;
+    if (!el) return;
+    el.showModal();
+
+    const instance = modalEchartsRef.current?.getEchartsInstance?.();
+    if (instance) {
+      requestAnimationFrame(() => instance.resize());
     }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+
+    return () => {
+      el.close();
+    };
   }, [isModalOpen]);
 
   const chartData = useMemo(() => {
@@ -258,14 +269,17 @@ function SankeyTransitionChart({
       };
     });
 
-    const links = serverResponse.links
-      .filter((link) => link.value > 0)
-      .map((link) => ({
+    // Single-pass build: combine filter + map into one loop
+    const links = [];
+    for (const link of serverResponse.links) {
+      if (link.value <= 0) continue;
+      links.push({
         source: link.source,
         target: link.target,
         value: link.value,
         details: link.details || {},
-      }));
+      });
+    }
 
     return {
       nodes,
@@ -302,6 +316,7 @@ function SankeyTransitionChart({
         chartData?.endYear,
         chartData?.detailsLabel,
         false,
+        false, // keep tooltip inside the dialog container so it stays in the top layer
       ),
     [chartData],
   );
@@ -316,13 +331,7 @@ function SankeyTransitionChart({
     }
   }, [chartOption]);
 
-  useEffect(() => {
-    if (!isModalOpen) return;
-    const instance = modalEchartsRef.current?.getEchartsInstance?.();
-    if (instance) {
-      requestAnimationFrame(() => instance.resize());
-    }
-  }, [modalOption, isModalOpen]);
+
 
   if (isLoading) return <SankeyLoadingSkeleton />;
   if (error) return <ChartErrorState message={error.message} />;
@@ -341,11 +350,11 @@ function SankeyTransitionChart({
               <button
                 type="button"
                 onClick={openModal}
-                className="p-1 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+                className="p-1 rounded-md hover:bg-primary/10 transition-colors cursor-pointer"
                 title="Perbesar"
                 aria-label="Perbesar chart"
               >
-                <Maximize2 size={14} className="text-gray-400" />
+                <Maximize2 size={14} className="text-primary/80" />
               </button>
             </div>
           </ChartHeader>
@@ -366,19 +375,17 @@ function SankeyTransitionChart({
         </div>
       </div>
 
+      {/* Native <dialog> gives focus trapping, Escape-to-close, and ::backdrop for free.
+          Conditional rendering keeps isModalOpen in JSX so React Doctor's
+          rerender-state-only-in-handlers rule is satisfied. */}
       {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={closeModal}
-          role="dialog"
-          aria-modal="true"
+        <dialog
+          ref={dialogRef}
+          className="w-[92vw] h-[88vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden p-0 m-auto backdrop:bg-black/50 backdrop:backdrop-blur-sm open:animate-in open:fade-in-0 open:zoom-in-95"
+          onClose={closeModal}
           aria-label="Transisi Tutupan Lahan — Tampilan Penuh"
         >
-          <div
-            className="relative w-[92vw] h-[88vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-gray-100">
+          <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-gray-100">
               <div>
                 <p className="text-sm font-semibold text-gray-800">Transisi Tutupan Lahan</p>
                 <p className="text-xs text-gray-400 mt-0.5">
@@ -388,10 +395,10 @@ function SankeyTransitionChart({
               <button
                 type="button"
                 onClick={closeModal}
-                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer"
                 aria-label="Tutup"
               >
-                <X size={18} className="text-gray-500" />
+                <X size={18} className="text-primary/80" />
               </button>
             </div>
 
@@ -417,9 +424,8 @@ function SankeyTransitionChart({
                   : 'Hover node atau link untuk melihat detail transisi · Tekan Escape untuk menutup'}
               </p>
             </div>
-          </div>
-        </div>
-      )}
+          </dialog>
+        )}
     </>
   );
 }

@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { useMapStore } from '../../store/mapStore.js';
 import { normalizeServerResponse, transformDataForChart } from '../../utils/dataTransform.js';
 import { makeViewportTooltipPosition } from '../../utils/tooltipPosition.js';
-import { API_ENDPOINTS, YEAR_CONFIG, COLORS, CHART_STYLE } from '../../config/constants.js';
+import { API_ENDPOINTS, YEAR_CONFIG, COLORS, CHART_STYLE, TOOLTIP_STYLE } from '../../config/constants.js';
 import {
   ChartHeader,
   LoadingChartSkeleton,
@@ -91,15 +91,14 @@ function CoverageChart() {
       trigger: 'item',
       appendToBody: true,
       confine: false,
-      extraCssText: 'z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);',
-      backgroundColor: '#1e293b',
-      borderColor: 'transparent',
-      textStyle: { color: '#f1f5f9', fontSize: 11, fontFamily: CHART_STYLE.FONT_SANS },
+      ...TOOLTIP_STYLE,
       position: makeViewportTooltipPosition(),
       formatter: (param) => {
         return (
-          `<span style="font-weight:600">${param.name}</span><br/>` +
-          `<span style="color:${COLORS.FOREST}">${Number(param.value).toLocaleString()} ha</span>`
+          `<div style="font-family:'Schibsted Grotesk',ui-sans-serif,sans-serif;line-height:1.5;">` +
+          `<span style="font-weight:600;color:#f4f9f8;line-height:1.4;">${param.name}</span><br/>` +
+          `<span style="color:${COLORS.PRIMARY};line-height:1.4;">${Number(param.value).toLocaleString()} ha</span>` +
+          `</div>`
         );
       },
     },

@@ -1,36 +1,41 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { KABUPATENS } from '../data/kabupatens.js';
-import { PROFILE_HERO_IMAGE_URL, YEAR_CONFIG } from '../config/constants.js';
+import { YEAR_CONFIG } from '../config/constants.js';
 import { useMapStore } from '../store/mapStore.js';
 import { decodeAdministrasi } from '../utils/urlStateSync.js';
-import { ErrorBoundary } from './ErrorBoundary.jsx';
-
-import { NewsTab } from './profile/NewsTab.jsx';
-import { KabupatenProfileTab } from './profile/KabupatenProfileTab.jsx';
-import { MapTab } from './profile/MapTab.jsx';
-import { ProdukUnggulanTab } from './profile/ProdukUnggulanTab.jsx';
-import { ReportsTab } from './profile/ReportsTab.jsx';
-import { DownloadTab } from './profile/DownloadTab.jsx';
-import { ContactTab } from './profile/ContactTab.jsx';
+import ProfileHero from './profile/ProfileHero.jsx';
+import ProfileNavBar from './profile/ProfileNavBar.jsx';
+import ProfileContent from './profile/ProfileContent.jsx';
+import ProfileFooter from './profile/ProfileFooter.jsx';
 
 const NAV_TABS = [
-  { id: 'news', label: 'Berita & Acara' },
-  { id: 'profile', label: 'Profil' },
-  { id: 'map', label: 'Peta Gotong Royong' },
-  { id: 'products', label: 'Produk Unggulan' },
-  { id: 'reports', label: 'Laporan / Pustaka' },
-  { id: 'data', label: 'Data' },
-  { id: 'contact', label: 'Kontak' },
-];
-
-const HERO_STATS = [
-  { label: 'PENDUDUK MISKIN 2025', value: '26.030', sub: 'Jiwa' },
-  { label: 'PDRB ADHK 2025', value: 'Rp 13.500', sub: 'Miliar' },
-  { label: 'JUMLAH PENDUDUK 2025', value: '279.140', sub: 'Jiwa' },
-  { label: 'RATA-RATA PENGELUARAN 2025 (Rumah Tangga)', value: '4.5 Juta', sub: '/bulan' },
-  { label: 'SEKTOR UNGGULAN', value: 'Pertanian', sub: '45% dari total PDRB' },
+  { id: 'news', label: 'Berita & Acara', accentVar: '--color-subject-berita' },
+  {
+    id: 'profile',
+    label: 'Profil',
+    accentVar: '--color-subject-profil',
+    children: [
+      { id: 'msf', label: 'Tentang MSF' },
+      { id: 'regional', label: 'Informasi Daerah' },
+      { id: 'partners', label: 'Daftar Mitra' },
+    ],
+  },
+  { id: 'map', label: 'Peta Gotong Royong', accentVar: '--color-subject-peta' },
+  {
+    id: 'products',
+    label: 'Produk Unggulan',
+    accentVar: '--color-subject-produk',
+    children: [
+      { id: 'population', label: 'Populasi' },
+      { id: 'economy', label: 'Ekonomi' },
+      { id: 'commodity', label: 'Komoditas' },
+      { id: 'supplychain', label: 'Rantai Pasok' },
+    ],
+  },
+  { id: 'reports', label: 'Laporan / Pustaka', accentVar: '--color-subject-laporan' },
+  { id: 'data', label: 'Data', accentVar: '--color-subject-data' },
+  { id: 'contact', label: 'Kontak', accentVar: '--color-subject-kontak' },
 ];
 
 const VALID_TAB_IDS = NAV_TABS.map((tab) => tab.id);
@@ -43,35 +48,47 @@ const subscribeToYear = () => () => {};
 const getCurrentYear = () => new Date().getFullYear();
 const getServerYear = () => null;
 
+function resolveActiveSub(tab, requestedSubId) {
+  if (!tab?.children) return null;
+  const matchedChild = tab.children.find((child) => child.id === requestedSubId);
+  return (matchedChild ?? tab.children[0]).id;
+}
+
 export function ProfilePage({ kabupatenName }) {
   const [searchParams, setSearchParams] = useSearchParams(DEFAULT_SEARCH_PARAMS);
   const currentYear = useSyncExternalStore(subscribeToYear, getCurrentYear, getServerYear);
+  const initialDrillStateRef = useRef(null);
 
   const urlTab = searchParams.get('tab');
-  const activeTab = VALID_TAB_IDS.includes(urlTab) ? urlTab : 'news';
+  const activeTabId = VALID_TAB_IDS.includes(urlTab) ? urlTab : 'news';
+  const activeTab = NAV_TABS.find((tab) => tab.id === activeTabId);
+  const activeSubId = resolveActiveSub(activeTab, searchParams.get('sub'));
   const urlYear = parseInt(searchParams.get('year')) || YEAR_CONFIG.DEFAULT;
-  const urlAdministrasi = searchParams.get('administrasi') || 'all';
 
-  const initialDrillStateRef = useRef(null);
   if (initialDrillStateRef.current === null) {
-    initialDrillStateRef.current = decodeAdministrasi(urlAdministrasi);
+    initialDrillStateRef.current = decodeAdministrasi(
+      searchParams.get('administrasi') || 'all',
+    );
   }
 
   useEffect(() => {
-    const tabLabel = NAV_TABS.find((t) => t.id === activeTab)?.label || '';
+    const subLabel = activeTab?.children?.find((child) => child.id === activeSubId)?.label;
+    const tabLabel = subLabel ?? activeTab?.label ?? '';
     document.title = `${kabupatenName} · ${tabLabel} · LTKL Platform`;
-  }, [kabupatenName, activeTab]);
+  }, [kabupatenName, activeTab, activeSubId]);
 
   useEffect(() => {
     useMapStore.setState({ year: urlYear });
   }, [urlYear]);
 
   const selectTab = useCallback(
-    (tabId) => {
+    (tabId, subId = null) => {
       setSearchParams(
         (previousParams) => {
           const updatedParams = new URLSearchParams(previousParams);
           updatedParams.set('tab', tabId);
+          if (subId) updatedParams.set('sub', subId);
+          else updatedParams.delete('sub');
           if (tabId !== 'map') {
             updatedParams.delete('year');
             updatedParams.delete('administrasi');
@@ -89,196 +106,30 @@ export function ProfilePage({ kabupatenName }) {
   );
 
   return (
-    <div className="min-h-screen bg-white font-sans">
-      <div className="relative bg-gray-900 overflow-hidden">
-        <img
-          src={PROFILE_HERO_IMAGE_URL}
-          alt="Pemandangan alam pegunungan"
-          className="absolute inset-0 h-full w-full object-cover object-center opacity-25"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/70 to-black/90" />
+    <div className="min-h-screen bg-parchment-50 font-sans">
+      <ProfileHero kabupatenName={kabupatenName} districtRecord={districtRecord} />
 
-        <div className="relative z-10 px-4 md:px-8 pt-5">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm transition"
-          >
-            <ArrowLeft size={16} aria-hidden="true" />
-            Kembali ke Peta
-          </Link>
-        </div>
+      <ProfileNavBar
+        tabs={NAV_TABS}
+        activeTabId={activeTabId}
+        activeSubId={activeSubId}
+        onSelectTab={selectTab}
+      />
 
-        <div className="relative z-10 text-center py-8 md:py-10 px-4 md:px-8">
-          <p className="text-white/50 uppercase text-[10px] tracking-[0.3em] font-semibold mb-4">
-            Kabupaten · Sulawesi Tengah
-          </p>
-          <div className="flex items-center justify-center gap-5">
-            {districtRecord?.logoUrl && (
-              <img
-                src={districtRecord.logoUrl}
-                alt={`Logo ${kabupatenName}`}
-                className="w-14 h-14 md:w-20 md:h-20 object-contain drop-shadow-lg"
-              />
-            )}
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight uppercase">
-              {kabupatenName}
-            </h1>
-          </div>
-        </div>
+      <ProfileContent
+        activeTabId={activeTabId}
+        activeSubId={activeSubId}
+        kabupatenName={kabupatenName}
+        initialDrillStateRef={initialDrillStateRef}
+      />
 
-        <div className="relative z-10 border-t border-white/10">
-          <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 divide-x divide-white/10 py-5 px-4 md:px-0">
-            {HERO_STATS.map((stat) => (
-              <div key={stat.label} className="px-5 text-center">
-                <p className="text-white/60 text-[9px] uppercase tracking-wider font-medium">
-                  {stat.label}
-                </p>
-                <p className="text-white text-xl font-semibold mt-1">{stat.value}</p>
-                <p className="text-white/50 text-[10px] mt-0.5">{stat.sub}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="sticky top-0 z-30 border-t border-white/10 bg-gray-900 shadow-md">
-        <div
-          className="max-w-5xl mx-auto flex overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
-          role="tablist"
-          aria-label="Navigasi profil kabupaten"
-        >
-          {NAV_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`tabpanel-${tab.id}`}
-              id={`tab-${tab.id}`}
-              onClick={() => selectTab(tab.id)}
-              className={`cursor-pointer flex-1 min-w-max py-3 px-4 text-sm font-semibold uppercase tracking-wider transition border-b-2 text-center whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'text-white border-white'
-                  : 'text-white/40 border-transparent hover:text-white/70'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <ErrorBoundary label="Konten tab">
-        <div id={`tabpanel-${activeTab}`} role="tabpanel" aria-labelledby={`tab-${activeTab}`}>
-          {activeTab === 'news' && <NewsTab />}
-          {activeTab === 'profile' && <KabupatenProfileTab kabupaten={kabupatenName} />}
-          {activeTab === 'map' && (
-            <MapTab
-              key={kabupatenName}
-              kabupaten={kabupatenName}
-              initialDrillState={initialDrillStateRef.current}
-            />
-          )}
-          {activeTab === 'products' && <ProdukUnggulanTab kabupaten={kabupatenName} />}
-          {activeTab === 'reports' && <ReportsTab />}
-          {activeTab === 'data' && <DownloadTab />}
-          {activeTab === 'contact' && <ContactTab />}
-        </div>
-      </ErrorBoundary>
-
-      <footer className="bg-gray-950 text-white mt-16">
-        <div className="max-w-5xl mx-auto px-4 md:px-8 py-12 grid grid-cols-1 md:grid-cols-[1.8fr_1fr_1fr] gap-10">
-          <div className="space-y-5">
-            <div className="flex items-start gap-4">
-              <div className="overflow-hidden shrink-0" style={{ height: '70px' }}>
-                <img
-                  src="/logo/ltkl.png"
-                  alt="Lingkar Temu Kabupaten Lestari"
-                  className="w-auto brightness-0 invert"
-                  style={{ height: '60px' }}
-                />
-              </div>
-              <div className="w-px h-8 bg-white/20 shrink-0" />
-              <img
-                src="https://auriga.or.id/assets/logoauriga.png"
-                alt="Auriga Nusantara"
-                className="h-12 w-auto object-contain brightness-0 invert opacity-100 shrink-0"
-              />
-            </div>
-            <p className="text-sm text-white/50 leading-relaxed max-w-xs">
-              Platform data dan kolaborasi multipihak untuk mendukung pembangunan kabupaten yang
-              lestari, berkeadilan, dan berkelanjutan.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider">
-              Navigasi
-            </p>
-            <ul className="space-y-2.5">
-              {NAV_TABS.map((tab) => (
-                <li key={tab.id}>
-                  <button
-                    type="button"
-                    onClick={() => selectTab(tab.id)}
-                    className="text-sm text-white/50 hover:text-white/90 transition-colors cursor-pointer"
-                  >
-                    {tab.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="space-y-4">
-            <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider">
-              Kabupaten
-            </p>
-            <div className="flex items-center gap-3">
-              {districtRecord?.logoUrl && (
-                <img
-                  src={districtRecord.logoUrl}
-                  alt={kabupatenName}
-                  className="w-10 h-10 object-contain opacity-80"
-                />
-              )}
-              <div>
-                <p className="text-sm font-semibold text-white/80">{kabupatenName}</p>
-                <p className="text-[10px] text-white/50">Anggota LTKL</p>
-              </div>
-            </div>
-            <ul className="space-y-2.5 mt-2">
-              {[
-                { label: 'Sekretariat MSF', value: 'Sigi Biromaru' },
-                { label: 'Kontak', value: 'sekretariat.msf@sigikab.go.id' },
-              ].map((item) => (
-                <li key={item.label}>
-                  <p className="text-[10px] text-white/50 uppercase tracking-wider">
-                    {item.label}
-                  </p>
-                  <p className="text-xs text-white/55 mt-0.5 break-all">{item.value}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        <div className="border-t border-white/10">
-          <div className="max-w-5xl mx-auto px-4 md:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[11px] text-white/40">
-              © {currentYear} LTKL · Auriga Nusantara. Sumber data: BPS, Pemerintah Daerah,
-              Indonesia Open Data.
-            </p>
-            <Link
-              to="/"
-              className="flex items-center gap-1.5 text-[11px] font-medium text-white/50 hover:text-white/80 transition-colors"
-            >
-              <ArrowLeft size={12} aria-hidden="true" />
-              Kembali ke Peta
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <ProfileFooter
+        kabupatenName={kabupatenName}
+        districtRecord={districtRecord}
+        currentYear={currentYear}
+        tabs={NAV_TABS}
+        onSelectTab={selectTab}
+      />
     </div>
   );
 }

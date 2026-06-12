@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { COLORS } from '../../config/constants.js';
 
 // ─── SHARED CHART HEADER ───
 // One header for all three analytics cards so titles, subtitles, and chart
@@ -58,9 +58,8 @@ const SKELETON_BARS = [
 
 export function LoadingChartSkeleton() {
   return (
-    <div
+    <output
       className="w-full h-full flex flex-col overflow-hidden"
-      role="status"
       aria-label="Memuat data tutupan lahan"
     >
       <SkeletonChartHeader />
@@ -70,7 +69,7 @@ export function LoadingChartSkeleton() {
           <div
             key={index}
             className={`chart-bar-rise flex-1 rounded-t ${
-              bar.accent ? 'bg-teal-200/60' : 'bg-stone-200/80'
+              bar.accent ? 'bg-primary/40' : 'bg-stone-200/80'
             }`}
             style={{
               height: `${bar.heightPercent}%`,
@@ -96,7 +95,7 @@ export function LoadingChartSkeleton() {
           Memuat data tutupan lahan…
         </p>
       </div>
-    </div>
+    </output>
   );
 }
 
@@ -135,9 +134,8 @@ const SANKEY_FLOWS = [
 
 export function SankeyLoadingSkeleton() {
   return (
-    <div
+    <output
       className="w-full h-full flex flex-col overflow-hidden"
-      role="status"
       aria-label="Memuat data transisi tutupan lahan"
     >
       <SkeletonChartHeader showActionButton />
@@ -148,11 +146,11 @@ export function SankeyLoadingSkeleton() {
           <defs>
             <linearGradient id="sankey-weave-thread" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#e7e5e4" />
-              <stop offset="100%" stopColor="#d9c9a3" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#b3d4d0" stopOpacity="0.7" />
             </linearGradient>
             <linearGradient id="sankey-weave-thread-accent" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#99f6e4" />
-              <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0.6" />
+              <stop offset="0%" stopColor={COLORS.PRIMARY} stopOpacity="0.5" />
+              <stop offset="100%" stopColor={COLORS.PRIMARY} stopOpacity="0.3" />
             </linearGradient>
           </defs>
 
@@ -190,7 +188,7 @@ export function SankeyLoadingSkeleton() {
               className="sankey-weave-node"
               x="0" y={node.y} width="7" height={node.h}
               rx="1.5"
-              fill={index === 0 ? '#5eead4' : '#d6d3d1'}
+              fill={index === 0 ? COLORS.PRIMARY : '#d6d3d1'}
               style={{
                 animationDuration: `${SKELETON_CYCLE_MS}ms`,
                 animationDelay: `${index * SKELETON_STAGGER_MS}ms`,
@@ -205,7 +203,7 @@ export function SankeyLoadingSkeleton() {
               className="sankey-weave-node"
               x="193" y={node.y} width="7" height={node.h}
               rx="1.5"
-              fill={index === 0 ? '#5eead4' : '#d6d3d1'}
+              fill={index === 0 ? COLORS.PRIMARY : '#d6d3d1'}
               style={{
                 animationDuration: `${SKELETON_CYCLE_MS}ms`,
                 animationDelay: `${SKELETON_CYCLE_MS * 0.3 + index * SKELETON_STAGGER_MS}ms`,
@@ -221,7 +219,7 @@ export function SankeyLoadingSkeleton() {
           Menyusun aliran transisi…
         </p>
       </div>
-    </div>
+    </output>
   );
 }
 
@@ -245,4 +243,4 @@ export function ChartEmptyState() {
   );
 }
 
-export const MemoizedLoadingChartSkeleton = memo(LoadingChartSkeleton);
+
