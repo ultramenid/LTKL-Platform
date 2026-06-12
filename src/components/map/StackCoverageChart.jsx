@@ -1,7 +1,7 @@
-import { memo, useEffect, useMemo, useRef, useCallback } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import useSWR from 'swr';
-import { ChevronLeft, PieChart } from 'lucide-react';
+import { PieChart } from 'lucide-react';
 import { useMapStore } from '../../store/mapStore.js';
 import { API_ENDPOINTS, YEAR_CONFIG, CHART_STYLE } from '../../config/constants.js';
 import {
@@ -211,7 +211,7 @@ function CompositionPieChart({ data, year }) {
 }
 
 // ─── STACKED BAR CHART (multiple rows) ───
-function DrillStackChart({ data, year, kab, kec, onDrill }) {
+function StackBarChart({ data, year, kab, kec }) {
   const echartsRef = useRef(null);
 
   useEffect(() => {
@@ -249,27 +249,8 @@ function DrillStackChart({ data, year, kab, kec, onDrill }) {
       };
     });
 
-    return { names, totalHectaresByRow, labels, colors, series, rows };
+    return { names, totalHectaresByRow, labels, colors, series };
   }, [data]);
-
-  const isDrillable = data?.level === 'kabupaten' || data?.level === 'kecamatan';
-  const isKab = data?.level === 'kabupaten' && !kab;
-  const isKec = data?.level === 'kecamatan' || (data?.level === 'kabupaten' && kab);
-
-  const handleClick = useCallback(
-    (params) => {
-      if (!isDrillable || params?.componentType !== 'series') return;
-      const rowIndex = params.dataIndex ?? 0;
-      const row = chartData?.rows?.[rowIndex];
-      if (!row?.name) return;
-      if (isKab) {
-        onDrill?.('kecamatan', row.name);
-      } else if (isKec && !kec) {
-        onDrill?.('desa', row.name);
-      }
-    },
-    [isDrillable, isKab, isKec, kec, chartData, onDrill],
-  );
 
   if (!chartData) return <ChartEmptyState />;
 
@@ -334,19 +315,7 @@ function DrillStackChart({ data, year, kab, kec, onDrill }) {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4">
-      <ChartHeader title="Komposisi Tutupan Lahan" subtitle={subtitleParts.join(' · ')}>
-        {kab && (
-          <button
-            type="button"
-            onClick={() => onDrill?.('reset_kab', null)}
-            className="shrink-0 inline-flex items-center gap-1 text-[10px] font-medium text-teal-600 hover:text-teal-700 transition-colors cursor-pointer"
-            title="Kembali ke kabupaten"
-          >
-            <ChevronLeft size={12} />
-            Kembali
-          </button>
-        )}
-      </ChartHeader>
+      <ChartHeader title="Komposisi Tutupan Lahan" subtitle={subtitleParts.join(' · ')} />
       <div className="flex-1 min-h-0 relative overflow-hidden">
         <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
           <ReactECharts
@@ -358,18 +327,8 @@ function DrillStackChart({ data, year, kab, kec, onDrill }) {
             onChartReady={(instance) => {
               requestAnimationFrame(() => instance.resize());
             }}
-            onEvents={{
-              click: handleClick,
-            }}
           />
         </div>
-        {isDrillable && (
-          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none">
-            <span className="text-[9px] text-stone-400 bg-white/80 px-2 py-0.5 rounded-full">
-              Klik bar untuk drill-down
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -380,8 +339,6 @@ function StackCoverageChart() {
   const kab = useMapStore((state) => state.breadcrumbs.kab ?? null);
   const kec = useMapStore((state) => state.breadcrumbs.kec ?? null);
   const des = useMapStore((state) => state.breadcrumbs.des ?? null);
-  const updateBreadcrumb = useMapStore((state) => state.updateBreadcrumb);
-  const setSelectedKab = useMapStore((state) => state.setSelectedKab);
 
   const { data: rawData, error, isLoading, year } = useStackStats(kab, kec, des);
 
@@ -393,46 +350,23 @@ function StackCoverageChart() {
       return {
         ...rawData,
         level: 'kabupaten',
-        nameKey: 'kabupaten',
         rows: rawData.kabupaten.map((r) => ({ ...r, name: r.kabupaten })),
       };
     }
     return rawData;
   }, [rawData]);
 
-  const handleDrill = useCallback(
-    (level, value) => {
-      if (level === 'kecamatan') {
-        updateBreadcrumb('kecamatan', value);
-        setSelectedKab(kab);
-      } else if (level === 'desa') {
-        updateBreadcrumb('desa', value);
-      } else if (level === 'reset_kab') {
-        updateBreadcrumb('kabupaten', kab);
-        setSelectedKab(kab);
-      }
-    },
-    [updateBreadcrumb, kab, setSelectedKab],
-  );
-
   if (isLoading) return <LoadingChartSkeleton />;
   if (error) return <ChartErrorState message={error.message} />;
   if (!data || !Array.isArray(data.rows)) return <ChartEmptyState />;
 
-  // If we are at desa level (single row), render pie chart
-  if (data.level === 'desa' && data.rows.length === 1) {
+  // Single row → pie chart (desa level)
+  if (data.rows.length === 1) {
     return <CompositionPieChart data={data} year={year} />;
   }
 
-  return (
-    <DrillStackChart
-      data={data}
-      year={year}
-      kab={kab}
-      kec={kec}
-      onDrill={handleDrill}
-    />
-  );
+  // Multiple rows → stacked bar
+  return <StackBarChart data={data} year={year} kab={kab} kec={kec} />;
 }
 
 export default memo(StackCoverageChart);
