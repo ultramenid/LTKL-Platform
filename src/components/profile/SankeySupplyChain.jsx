@@ -217,6 +217,7 @@ export function SankeySupplyChain({ kabupaten, year: yearFromProp = null }) {
       'UNKNOWN COUNTRY',
       'DOMESTIC PROCESSING AND CONSUMPTION',
     ]);
+
     Object.values(nodesByLayer).forEach((nodesInLayer) => {
       nodesInLayer.sort((a, b) => {
         const aLast = NODES_SORT_LAST.has(a.name) ? 1 : 0;

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { updateUrl } from '../utils/urlStateSync.js';
-import { YEAR_CONFIG, CACHE_CONFIG } from '../config/constants.js';
+import { YEAR_CONFIG, CACHE_CONFIG, MAPBIOMAS_YEAR_RANGE } from '../config/constants.js';
 
 // Global state: breadcrumbs, year, map instance, GEE & GeoJSON cache, pending requests
 export const useMapStore = create((set, get) => ({
@@ -22,6 +22,11 @@ export const useMapStore = create((set, get) => ({
     const state = get();
     updateUrl(newYear, state.breadcrumbs, state.selectedKab);
   },
+
+  // ─── Sankey Transition Year Range ───
+  sankeyStartYear: 2013,
+  sankeyEndYear: MAPBIOMAS_YEAR_RANGE.MAX,
+  setSankeyYears: (startYear, endYear) => set({ sankeyStartYear: startYear, sankeyEndYear: endYear }),
 
   // ─── Map Instance ───
   map: null,

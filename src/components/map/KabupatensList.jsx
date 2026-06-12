@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
 import { pointOnFeature } from '@turf/turf';
 import { useShallow } from 'zustand/react/shallow';
@@ -25,7 +25,7 @@ const createHoverMarkerElement = () => {
   return markerElement;
 };
 
-export function KabupatenCard({ filterText = '' }) {
+export function KabupatenCard({ filterText = '', collapsed = false }) {
   const { map, updateBreadcrumb, selectedKab, setSelectedKab } = useMapStore(
     useShallow((state) => ({
       map: state.map,
@@ -105,15 +105,23 @@ export function KabupatenCard({ filterText = '' }) {
   };
 
   if (!isMapReady) {
+    if (collapsed) {
+      return (
+        <div className="flex flex-col items-center gap-2 px-2 pb-3 animate-pulse">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="w-10 h-10 rounded-xl bg-gray-100" />
+          ))}
+        </div>
+      );
+    }
     return (
-      <div className="px-3 py-2 space-y-2 animate-pulse">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="flex gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-            <div className="w-11 h-11 bg-gray-200 rounded-lg shrink-0" />
-            <div className="flex-1 space-y-2 pt-1">
+      <div className="px-3 py-2 space-y-1.5 animate-pulse">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50">
+            <div className="w-10 h-10 bg-gray-200 rounded-lg shrink-0" />
+            <div className="flex-1 space-y-2">
               <div className="h-3 w-2/3 bg-gray-200 rounded" />
-              <div className="h-2 w-full bg-gray-150 rounded" />
-              <div className="h-1.5 w-full bg-gray-100 rounded-full" />
+              <div className="h-2 w-1/2 bg-gray-100 rounded" />
             </div>
           </div>
         ))}
@@ -134,8 +142,47 @@ export function KabupatenCard({ filterText = '' }) {
     );
   }
 
+  // ─── COLLAPSED RAIL — logo-only buttons ───
+  if (collapsed) {
+    return (
+      <div className="flex flex-col items-center gap-1.5 px-2 pb-3">
+        {filtered.map((kabupaten) => {
+          const isSelected = selectedKab === kabupaten.name;
+
+          return (
+            <button
+              key={kabupaten.name}
+              type="button"
+              onClick={() => handleKabupatenClick(kabupaten.name)}
+              onMouseEnter={() => showHoverMarker(kabupaten.name)}
+              onMouseLeave={removeHoverMarker}
+              onFocus={() => showHoverMarker(kabupaten.name)}
+              onBlur={removeHoverMarker}
+              title={`Kab. ${kabupaten.name}`}
+              aria-label={`Kab. ${kabupaten.name}`}
+              aria-pressed={isSelected}
+              className={`w-10 h-10 shrink-0 rounded-xl border flex items-center justify-center bg-white transition-all duration-200 cursor-pointer ${
+                isSelected
+                  ? 'border-teal-300 ring-2 ring-teal-100 shadow-sm'
+                  : 'border-gray-100 hover:border-teal-200 hover:shadow-sm'
+              }`}
+            >
+              <img
+                src={kabupaten.logoUrl}
+                alt=""
+                className="w-7 h-7 object-contain"
+                aria-hidden="true"
+              />
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ─── EXPANDED LIST ───
   return (
-    <div className="px-3 pb-3 space-y-1.5">
+    <div className="px-3 pb-3 space-y-1">
       {filtered.map((kabupaten) => {
         const isSelected = selectedKab === kabupaten.name;
 
@@ -146,50 +193,61 @@ export function KabupatenCard({ filterText = '' }) {
             onMouseLeave={removeHoverMarker}
             onFocus={() => showHoverMarker(kabupaten.name)}
             onBlur={removeHoverMarker}
-            className={`rounded-xl overflow-hidden transition-all duration-200 border ${
+            className={`rounded-xl overflow-hidden border transition-all duration-200 ${
               isSelected
-                ? 'border-teal-200 shadow-sm shadow-teal-100/50'
-                : 'border-transparent hover:border-gray-100'
+                ? 'border-teal-200 bg-teal-50/50 shadow-sm shadow-teal-100/50'
+                : 'border-transparent hover:bg-gray-50'
             }`}
           >
             <button
               type="button"
               onClick={() => handleKabupatenClick(kabupaten.name)}
-              className={`flex w-full items-center gap-3 px-3 py-3.5 text-left cursor-pointer select-none transition-colors ${
-                isSelected ? 'bg-teal-50/60' : 'hover:bg-gray-50 border-b border-gray-100'
-              }`}
+              className="flex w-full items-center gap-3 px-3 py-2.5 text-left cursor-pointer select-none"
+              aria-expanded={isSelected}
             >
               <span
-                className={`w-13 h-13 shrink-0 rounded-xl border flex items-center justify-center bg-white transition-colors ${
+                className={`w-10 h-10 shrink-0 rounded-lg border flex items-center justify-center bg-white transition-colors ${
                   isSelected ? 'border-teal-200' : 'border-gray-100'
                 }`}
               >
                 <img
                   src={kabupaten.logoUrl}
                   alt={kabupaten.name}
-                  className="w-10 h-10 object-contain"
+                  className="w-7 h-7 object-contain"
                 />
               </span>
 
               <span className="flex-1 min-w-0">
                 <span
-                  className={`block text-sm font-bold truncate leading-tight ${
+                  className={`block text-[13px] font-semibold truncate leading-tight ${
                     isSelected ? 'text-teal-700' : 'text-gray-800'
                   }`}
                 >
                   Kab. {kabupaten.name}
                 </span>
-                <span className="block text-xs text-gray-400 truncate leading-tight mt-0.5">
+                <span
+                  className={`block text-[11px] truncate leading-tight mt-0.5 ${
+                    isSelected ? 'text-teal-600/70' : 'text-gray-400'
+                  }`}
+                >
                   {kabupaten.role}
                 </span>
-                <span className="block text-[11px] text-gray-500 leading-relaxed mt-1 line-clamp-2">
-                  {DEFAULT_DESCRIPTION}
-                </span>
               </span>
+
+              <ChevronDown
+                size={14}
+                className={`shrink-0 transition-transform duration-200 ${
+                  isSelected ? 'rotate-180 text-teal-500' : 'text-gray-300'
+                }`}
+                aria-hidden="true"
+              />
             </button>
 
             {isSelected && (
-              <div className="bg-teal-50/40 border-t border-teal-100/60 px-3 py-3">
+              <div className="px-3 pb-3">
+                <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-3 mb-2.5">
+                  {DEFAULT_DESCRIPTION}
+                </p>
                 <Link
                   to={`/profile/${encodeURIComponent(kabupaten.name)}`}
                   className="flex items-center justify-between w-full px-3 py-2 bg-teal-600 hover:bg-teal-500 active:bg-teal-700 text-white rounded-lg text-xs font-semibold transition-colors group"

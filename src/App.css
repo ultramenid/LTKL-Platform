@@ -1,4 +1,184 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* ─── Atelier Atlas design tokens ─── */
+@theme {
+  --font-sans: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
+
+  /* Parchment — warm off-white base */
+  --color-parchment-50: #fdfaf3;
+  --color-parchment-100: #f7f1e3;
+  --color-parchment-200: #ece2c9;
+  --color-parchment-300: #d9c9a3;
+
+  /* Deep coffee — dark surfaces, footer, hero overlays */
+  --color-coffee-900: #1a1611;
+  --color-coffee-800: #28201a;
+  --color-coffee-700: #3a2f25;
+  --color-coffee-600: #4f4133;
+
+  /* Per-section accents (dropdown + active tab) */
+  --color-subject-berita: #c2410c; /* amber */
+  --color-subject-profil: #3f3f46; /* ink */
+  --color-subject-peta: #0f766e; /* teal */
+  --color-subject-produk: #65731b; /* olive */
+  --color-subject-laporan: #4338ca; /* indigo */
+  --color-subject-data: #047857; /* emerald */
+  --color-subject-kontak: #be185d; /* rose */
+}
+
+/* ─── Base typography — Schibsted Grotesk app-wide ─── */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+}
+
+/* ─── Paper texture (parchment) — subtle grain on warm base ─── */
+.paper-grain {
+  position: relative;
+}
+.paper-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.35'/%3E%3C/svg%3E");
+}
+.paper-grain > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Page-level entrance choreography ─── */
+@keyframes atlas-page-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes atlas-page-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.atlas-page-rise {
+  animation: atlas-page-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.atlas-page-fade {
+  animation: atlas-page-fade 0.55s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-page-rise,
+  .atlas-page-fade {
+    animation: none;
+  }
+}
+
+/* ─── Sankey weave skeleton — flow ribbons draw in like threads on a loom ─── */
+@keyframes sankey-weave-draw {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  48% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  82% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+.sankey-weave-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation-name: sankey-weave-draw;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  animation-iteration-count: infinite;
+}
+@keyframes sankey-weave-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  45% {
+    opacity: 1;
+  }
+}
+.sankey-weave-node {
+  opacity: 0.35;
+  animation-name: sankey-weave-glow;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+/* ─── Bar chart skeleton — bars rise from the baseline in sequence ─── */
+@keyframes chart-bar-rise {
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  48% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  82% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
+.chart-bar-rise {
+  transform-origin: bottom;
+  transform: scaleY(0);
+  animation-name: chart-bar-rise;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  animation-iteration-count: infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sankey-weave-path {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+  .sankey-weave-node {
+    animation: none;
+    opacity: 0.7;
+  }
+  .chart-bar-rise {
+    animation: none;
+    transform: scaleY(1);
+    opacity: 0.8;
+  }
+}
+
+/* ─── MapLibre default font is Helvetica Neue — force app font ─── */
+.maplibregl-map {
+  font-family: var(--font-sans) !important;
+}
 
 /* ─── MapLibre control group spacing ─── */
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
@@ -7,12 +187,12 @@
 
 /* ─── Scale bar ─── */
 .maplibregl-ctrl-scale {
-  background: rgba(17, 24, 39, 0.80) !important;
+  background: rgba(17, 24, 39, 0.8) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 6px !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.20) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   color: rgba(255, 255, 255, 0.55) !important;
   font-size: 9px !important;
   font-weight: 700 !important;
@@ -23,12 +203,12 @@
 
 /* ─── Attribution — base (both states) ─── */
 .maplibregl-ctrl-attrib.maplibregl-compact {
-  background: rgba(17, 24, 39, 0.80) !important;
+  background: rgba(17, 24, 39, 0.8) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 8px !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.20) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* ─── Toggle button (collapsed state shows only this) ─── */
@@ -99,12 +279,12 @@
   border-radius: 99px;
 }
 .legend-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.30);
+  background: rgba(255, 255, 255, 0.3);
 }
 /* Firefox */
 .legend-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.15) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 /* ─── Cooperative Gestures overlay (profile map) ─── */

@@ -53,6 +53,22 @@ export const COLORS = {
   // Alpha variant — used for chart area-fill to avoid overpowering
   PRIMARY_ALPHA: 'rgba(20,184,166,0.15)', // Transparent teal for area fill
   HIGHLIGHT_ALPHA: 'rgba(39,203,252,0.15)', // Transparent blue for area fill
+  FOREST: '#1f8d49', // Formasi Hutan — matches stacked chart land-cover color
+  FOREST_HOVER: '#2e9a5b', // Lighter forest green for hover state
+};
+
+// Valid year range for MapBiomas Indonesia Collection 4.1
+export const MAPBIOMAS_YEAR_RANGE = {
+  MIN: 1990,
+  MAX: 2024,
+};
+
+// Shared ECharts typography & axis colors — mirrors Atelier Atlas tokens in App.css
+export const CHART_STYLE = {
+  FONT_SANS: "'Schibsted Grotesk', ui-sans-serif, sans-serif",
+  AXIS_LABEL: '#a8a29e', // stone-400 — warm neutral instead of cool slate
+  AXIS_LINE: '#e7e5e4', // stone-200
+  SPLIT_LINE: '#f5f5f4', // stone-100
 };
 
 // Cache configuration (TTL, localStorage keys)

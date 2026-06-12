@@ -27,12 +27,12 @@ const BreadcrumbsComponent = ({ onHome, handleBreadcrumbs }) => {
         const isActive = idx === breadcrumbItems.length - 1;
         return (
           <span key={item.level} className="flex items-center gap-1">
-            <ChevronRight size={10} className="text-white/25 shrink-0" />
+            <ChevronRight size={10} className="text-white/50 shrink-0" />
             <button
               type="button"
               onClick={() => handleBreadcrumbs(item.level)}
-              className={`cursor-pointer text-[11px] font-semibold transition-colors whitespace-nowrap ${
-                isActive ? 'text-teal-400' : 'text-white/80 hover:text-teal-400'
+              className={`cursor-pointer text-[11px] transition-colors whitespace-nowrap ${
+                isActive ? 'font-semibold text-teal-400' : 'font-medium text-white/80 hover:text-teal-400'
               }`}
             >
               {item.label}

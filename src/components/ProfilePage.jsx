@@ -120,7 +120,7 @@ export function ProfilePage({ kabupatenName }) {
                 className="w-14 h-14 md:w-20 md:h-20 object-contain drop-shadow-lg"
               />
             )}
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight uppercase">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight uppercase">
               {kabupatenName}
             </h1>
           </div>
@@ -130,10 +130,10 @@ export function ProfilePage({ kabupatenName }) {
           <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 divide-x divide-white/10 py-5 px-4 md:px-0">
             {HERO_STATS.map((stat) => (
               <div key={stat.label} className="px-5 text-center">
-                <p className="text-white/40 text-[9px] uppercase tracking-widest font-semibold">
+                <p className="text-white/60 text-[9px] uppercase tracking-wider font-medium">
                   {stat.label}
                 </p>
-                <p className="text-white text-xl font-bold mt-1">{stat.value}</p>
+                <p className="text-white text-xl font-semibold mt-1">{stat.value}</p>
                 <p className="text-white/50 text-[10px] mt-0.5">{stat.sub}</p>
               </div>
             ))}
@@ -212,7 +212,7 @@ export function ProfilePage({ kabupatenName }) {
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+            <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider">
               Navigasi
             </p>
             <ul className="space-y-2.5">
@@ -231,7 +231,7 @@ export function ProfilePage({ kabupatenName }) {
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+            <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider">
               Kabupaten
             </p>
             <div className="flex items-center gap-3">
@@ -243,8 +243,8 @@ export function ProfilePage({ kabupatenName }) {
                 />
               )}
               <div>
-                <p className="text-sm font-bold text-white/80">{kabupatenName}</p>
-                <p className="text-[10px] text-white/40">Anggota LTKL</p>
+                <p className="text-sm font-semibold text-white/80">{kabupatenName}</p>
+                <p className="text-[10px] text-white/50">Anggota LTKL</p>
               </div>
             </div>
             <ul className="space-y-2.5 mt-2">
@@ -253,7 +253,7 @@ export function ProfilePage({ kabupatenName }) {
                 { label: 'Kontak', value: 'sekretariat.msf@sigikab.go.id' },
               ].map((item) => (
                 <li key={item.label}>
-                  <p className="text-[10px] text-white/30 uppercase tracking-widest">
+                  <p className="text-[10px] text-white/50 uppercase tracking-wider">
                     {item.label}
                   </p>
                   <p className="text-xs text-white/55 mt-0.5 break-all">{item.value}</p>
@@ -265,13 +265,13 @@ export function ProfilePage({ kabupatenName }) {
 
         <div className="border-t border-white/10">
           <div className="max-w-5xl mx-auto px-4 md:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[11px] text-white/30">
+            <p className="text-[11px] text-white/40">
               © {currentYear} LTKL · Auriga Nusantara. Sumber data: BPS, Pemerintah Daerah,
               Indonesia Open Data.
             </p>
             <Link
               to="/"
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-white/40 hover:text-white/80 transition-colors"
+              className="flex items-center gap-1.5 text-[11px] font-medium text-white/50 hover:text-white/80 transition-colors"
             >
               <ArrowLeft size={12} aria-hidden="true" />
               Kembali ke Peta

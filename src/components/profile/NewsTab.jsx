@@ -96,12 +96,12 @@ export function NewsTab() {
             <div className="p-6 md:p-8 flex flex-col justify-between bg-white">
               <div>
                 <span
-                  className="inline-block px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest rounded-full mb-3 text-white"
+                  className="inline-block px-2.5 py-1 text-[9px] font-medium uppercase tracking-wider rounded-full mb-3 text-white"
                   style={{ backgroundColor: featuredArticle.categoryColor }}
                 >
                   {featuredArticle.category}
                 </span>
-                <h2 className="text-lg font-black text-gray-900 leading-snug mb-3 group-hover:text-teal-600 transition-colors">
+                <h2 className="text-lg font-semibold text-gray-900 leading-snug mb-3 group-hover:text-teal-600 transition-colors">
                   {featuredArticle.title}
                 </h2>
                 <p className="text-sm text-gray-500 leading-relaxed line-clamp-4">
@@ -143,12 +143,12 @@ export function NewsTab() {
             </div>
             <div className="p-4">
               <span
-                className="inline-block px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full mb-2 text-white"
+                className="inline-block px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider rounded-full mb-2 text-white"
                 style={{ backgroundColor: article.categoryColor }}
               >
                 {article.category}
               </span>
-              <h3 className="text-sm font-bold text-gray-900 leading-snug mb-2 group-hover:text-teal-600 transition-colors line-clamp-2">
+              <h3 className="text-sm font-semibold text-gray-900 leading-snug mb-2 group-hover:text-teal-600 transition-colors line-clamp-2">
                 {article.title}
               </h3>
               <p className="text-xs text-gray-500 leading-relaxed line-clamp-3 mb-3">

@@ -21,6 +21,7 @@ function MapView() {
   }, []);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
     <div className="h-screen flex relative overflow-hidden">
@@ -35,12 +36,17 @@ function MapView() {
 
       <div
         className={`
-          fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out
-          lg:relative lg:w-[22%] lg:translate-x-0 lg:z-auto
+          fixed inset-y-0 left-0 z-50 w-72 transform transition-all duration-300 ease-in-out
+          lg:relative lg:translate-x-0 lg:z-auto
+          ${isSidebarCollapsed ? 'lg:w-[68px]' : 'lg:w-[22%] lg:min-w-[280px]'}
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <LeftPanel onClose={() => setIsSidebarOpen(false)} />
+        <LeftPanel
+          onClose={() => setIsSidebarOpen(false)}
+          collapsed={isSidebarCollapsed && !isSidebarOpen}
+          onToggleCollapse={() => setIsSidebarCollapsed((previous) => !previous)}
+        />
       </div>
 
       <a

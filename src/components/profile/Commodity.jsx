@@ -240,8 +240,8 @@ export function CommodityTab() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {COMMODITY_SUMMARY_STATS.map((stat) => (
           <div key={stat.label} className="bg-amber-50 border border-amber-100 p-4 rounded-lg">
-            <p className="text-[9px] text-gray-500 uppercase tracking-widest">{stat.label}</p>
-            <p className="text-2xl font-black text-amber-700 mt-1">{stat.value}</p>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider">{stat.label}</p>
+            <p className="text-2xl font-semibold text-amber-700 mt-1">{stat.value}</p>
             <p className="text-[10px] text-gray-500 mt-0.5">{stat.unit}</p>
           </div>
         ))}

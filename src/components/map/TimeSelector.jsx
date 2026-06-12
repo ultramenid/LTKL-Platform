@@ -32,7 +32,7 @@ export default function TimeSeriesSelector({
           className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
         >
           <CalendarDays size={12} className="text-teal-400" />
-          <span className="text-xs font-black text-teal-400">{year}</span>
+          <span className="text-xs font-semibold text-teal-400">{year}</span>
           <ChevronRight size={14} className="text-white" />
         </button>
       )}
@@ -46,11 +46,11 @@ export default function TimeSeriesSelector({
           >
             <div className="flex items-center gap-1">
               <ChevronLeft size={12} className="text-white/30" />
-              <p className="text-[8px] text-white/40 uppercase tracking-widest font-semibold leading-none">
+              <p className="text-[9px] text-white/50 uppercase tracking-wider font-medium leading-none">
                 Tahun
               </p>
             </div>
-            <p className="text-sm font-black text-teal-400 leading-tight mt-0.5">{year}</p>
+            <p className="text-sm font-semibold text-teal-400 leading-tight mt-0.5">{year}</p>
           </button>
 
           <div className="w-px h-5 bg-white/10 shrink-0" />
@@ -65,7 +65,7 @@ export default function TimeSeriesSelector({
                 return (
                   <div key={yearDot} className="relative flex items-center justify-center">
                     {hovered === yearDot && (
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-teal-500 text-white text-[9px] font-bold rounded shadow-lg whitespace-nowrap z-10">
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-teal-500 text-white text-[9px] font-medium rounded shadow-lg whitespace-nowrap z-10">
                         {yearDot}
                       </div>
                     )}

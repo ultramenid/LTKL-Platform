@@ -160,7 +160,7 @@ export function ContactTab() {
 
         <div className="space-y-7">
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-3">
               Alamat Sekretariat
             </p>
             <div className="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100">
@@ -172,7 +172,7 @@ export function ContactTab() {
           </div>
 
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-3">
               Kontak Langsung
             </p>
             <div className="space-y-2">
@@ -191,7 +191,7 @@ export function ContactTab() {
                     <contact.icon size={14} style={{ color: contact.color }} />
                   </div>
                   <div>
-                    <p className="text-[9px] text-gray-400 uppercase tracking-widest">
+                    <p className="text-[9px] text-gray-400 uppercase tracking-wider">
                       {contact.label}
                     </p>
                     <p className="text-sm font-semibold text-gray-800 group-hover:text-teal-600 transition-colors">
@@ -204,7 +204,7 @@ export function ContactTab() {
           </div>
 
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-3">
               Media Sosial
             </p>
             <div className="grid grid-cols-2 gap-2">

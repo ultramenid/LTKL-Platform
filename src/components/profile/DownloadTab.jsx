@@ -36,7 +36,7 @@ export function DownloadTab() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     {getDownloadCategoryIcon(downloadFile.category)}
-                    <p className="text-sm font-bold text-gray-900">{downloadFile.title}</p>
+                    <p className="text-sm font-semibold text-gray-900">{downloadFile.title}</p>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">{downloadFile.description}</p>
                 </div>

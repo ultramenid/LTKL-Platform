@@ -86,7 +86,7 @@ export default function MapLegend() {
           className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
         >
           <Layers size={12} className="text-teal-400" />
-          <span className="text-xs font-black text-white/80">Legenda</span>
+          <span className="text-xs font-semibold text-white/80">Legenda</span>
         </button>
       )}
 
@@ -95,14 +95,14 @@ export default function MapLegend() {
           <div className="shrink-0 flex items-center justify-between px-3 pt-3 pb-2 border-b border-white/10">
             <div className="flex items-center gap-1.5">
               <Layers size={11} className="text-teal-400" />
-              <p className="text-[10px] font-black text-white/80 uppercase tracking-widest">
+              <p className="text-[10px] font-semibold text-white/80 uppercase tracking-wider">
                 Legenda LULC
               </p>
             </div>
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="text-white/30 hover:text-white/70 transition-colors cursor-pointer text-xs leading-none"
+              className="text-white/50 hover:text-white/70 transition-colors cursor-pointer text-xs leading-none"
             >
               ✕
             </button>
@@ -117,10 +117,10 @@ export default function MapLegend() {
                     style={{ backgroundColor: category.color }}
                   />
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-white/90 leading-tight">
+                    <p className="text-[10px] font-semibold text-white/95 leading-tight">
                       {category.nameId}
                     </p>
-                    <p className="text-[8px] text-white/40 leading-tight">{category.nameEn}</p>
+                    <p className="text-[8px] italic text-white/40 leading-tight mt-0.5">{category.nameEn}</p>
                   </div>
                 </div>
 
@@ -131,10 +131,10 @@ export default function MapLegend() {
                       style={{ backgroundColor: child.color }}
                     />
                     <div className="min-w-0">
-                      <p className="text-[9px] font-medium text-white/65 leading-tight">
+                      <p className="text-[9px] font-semibold text-white/90 leading-tight">
                         {child.nameId}
                       </p>
-                      <p className="text-[7.5px] text-white/30 leading-tight">{child.nameEn}</p>
+                      <p className="text-[8px] italic text-white/35 leading-tight mt-0.5">{child.nameEn}</p>
                     </div>
                   </div>
                 ))}

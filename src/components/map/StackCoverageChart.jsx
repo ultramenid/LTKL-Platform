@@ -2,8 +2,7 @@ import { memo, useEffect, useMemo, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import useSWR from 'swr';
 import { useMapStore } from '../../store/mapStore.js';
-import { normalizeServerResponse, transformDataForChart } from '../../utils/dataTransform.js';
-import { API_ENDPOINTS, YEAR_CONFIG, COLORS, CHART_STYLE } from '../../config/constants.js';
+import { API_ENDPOINTS, YEAR_CONFIG, CHART_STYLE } from '../../config/constants.js';
 import {
   ChartHeader,
   LoadingChartSkeleton,
@@ -11,7 +10,7 @@ import {
   ChartEmptyState,
 } from './chart-helpers.jsx';
 
-async function fetchCoverageStats(statsUrl) {
+async function fetchStackCoverageStats(statsUrl) {
   const response = await fetch(statsUrl);
   const responseText = await response.text();
   let parsedJson = null;
@@ -34,17 +33,18 @@ async function fetchCoverageStats(statsUrl) {
   return parsedJson;
 }
 
-function CoverageChart() {
+function StackCoverageChart({ kabupaten: kabupatenProp = null }) {
   const yearFromStore = useMapStore((state) => state.year);
   const year = Number(yearFromStore) || YEAR_CONFIG.DEFAULT;
 
   const echartsRef = useRef(null);
-  const statsUrl = `${API_ENDPOINTS.TILE_SERVER}/lulc-stats?year=${year}`;
+  const kabQuery = kabupatenProp ? `&kab=${encodeURIComponent(kabupatenProp)}` : '';
+  const statsUrl = `${API_ENDPOINTS.TILE_SERVER}/stack-chart?year=${year}${kabQuery}`;
   const {
     data: serverResponse,
     error,
     isLoading,
-  } = useSWR(statsUrl, fetchCoverageStats, {
+  } = useSWR(statsUrl, fetchStackCoverageStats, {
     shouldRetryOnError: false,
   });
 
@@ -61,69 +61,76 @@ function CoverageChart() {
     };
   }, []);
 
-  const normalizedData = useMemo(
-    () => normalizeServerResponse(serverResponse, year),
-    [serverResponse, year],
-  );
+  const chartData = useMemo(() => {
+    if (!serverResponse || !Array.isArray(serverResponse.kabupaten)) return null;
 
-  const { labels: chartLabels, values: chartValues } = useMemo(() => {
-    if (!normalizedData) return { labels: [], values: [] };
-    return transformDataForChart(normalizedData.data);
-  }, [normalizedData]);
+    const kabupatenRows = serverResponse.kabupaten;
+    const labels = Array.isArray(serverResponse.labels) ? serverResponse.labels : [];
+    const colors = Array.isArray(serverResponse.colors) ? serverResponse.colors : [];
+
+    const kabupatenNames = kabupatenRows.map((row) => row.kabupaten || '');
+    const totalHectaresByKabupaten = kabupatenRows.map((row) => Number(row.total_ha) || 0);
+
+    const series = labels.map((label, index) => {
+      const color = colors[index] || '#94a3b8';
+      return {
+        name: label,
+        type: 'bar',
+        stack: 'total',
+        barCategoryGap: '24%',
+        emphasis: { focus: 'series' },
+        itemStyle: { color },
+        data: kabupatenRows.map((row) => Number(row[label]) || 0),
+      };
+    });
+
+    return { kabupatenNames, totalHectaresByKabupaten, labels, colors, series };
+  }, [serverResponse]);
 
   if (isLoading) return <LoadingChartSkeleton />;
   if (error) return <ChartErrorState message={error.message} />;
-  if (!serverResponse || !normalizedData) {
-    return <ChartEmptyState />;
-  }
+  if (!chartData) return <ChartEmptyState />;
 
-  const totalArea = chartValues.reduce((total, areaValue) => total + areaValue, 0);
-  const totalAreaLabel =
-    totalArea >= 1_000_000
-      ? `${(totalArea / 1_000_000).toFixed(2)}M ha`
-      : totalArea >= 1_000
-        ? `${(totalArea / 1_000).toFixed(1)}K ha`
-        : `${totalArea.toLocaleString()} ha`;
+  const { kabupatenNames, totalHectaresByKabupaten, series } = chartData;
 
   const chartOption = {
     tooltip: {
       trigger: 'item',
       appendToBody: true,
-      confine: false,
       extraCssText: 'z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);',
       backgroundColor: '#1e293b',
       borderColor: 'transparent',
       textStyle: { color: '#f1f5f9', fontSize: 11, fontFamily: CHART_STYLE.FONT_SANS },
-      position: function (point, _params, _dom, _rect, size) {
-        const x = point[0];
-        const y = point[1];
-        const tw = size.contentSize[0];
-        const th = size.contentSize[1];
-        const vw = size.viewSize[0];
-        let posX = x - tw / 2;
-        let posY = y - th - 10;
-        if (posY < 0) posY = y + 10;
-        if (posX < 0) posX = 8;
-        if (posX + tw > vw) posX = vw - tw - 8;
-        return [posX, posY];
-      },
       formatter: (param) => {
+        const kabupatenIndex = param.dataIndex ?? 0;
+        const totalHectares = totalHectaresByKabupaten[kabupatenIndex] ?? 0;
+        const kabupatenName = param.name ?? '';
+        const percentValue = Number(param.value) || 0;
+        const hectares = (percentValue / 100) * totalHectares;
+        const marker = param.marker || '';
+
         return (
-          `<span style="font-weight:600">${param.name}</span><br/>` +
-          `<span style="color:${COLORS.FOREST}">${Number(param.value).toLocaleString()} ha</span>`
+          `<div style="max-width:220px">` +
+          `<div style="font-weight:700;margin-bottom:4px">${kabupatenName}</div>` +
+          `${marker} <span style="font-weight:600">${param.seriesName}</span>: ${percentValue.toFixed(1)}% (${hectares.toLocaleString(undefined, { maximumFractionDigits: 0 })} ha)<br/>` +
+          `<div style="margin-top:6px;border-top:1px solid #334155;padding-top:4px;font-size:10px;color:#94a3b8">Total: ${totalHectares.toLocaleString(undefined, { maximumFractionDigits: 0 })} ha</div>` +
+          `</div>`
         );
       },
     },
-    grid: { left: 48, right: 6, top: 8, bottom: 0, containLabel: false },
+    legend: { show: false },
+    grid: { left: 40, right: 6, top: 8, bottom: 0, containLabel: false },
     xAxis: {
       type: 'category',
-      data: chartLabels,
+      data: kabupatenNames,
       axisLine: { show: true, lineStyle: { color: '#e5e7eb' } },
       axisTick: { show: false },
       axisLabel: { show: false },
     },
     yAxis: {
       type: 'value',
+      min: 0,
+      max: 100,
       splitLine: { show: true, lineStyle: { color: '#f5f5f4', type: 'dashed' } },
       axisLine: { show: false },
       axisTick: { show: false },
@@ -132,48 +139,15 @@ function CoverageChart() {
         fontSize: 10,
         color: '#a8a29e',
         fontFamily: CHART_STYLE.FONT_SANS,
-        formatter: (value) =>
-          value >= 1_000_000
-            ? `${(value / 1_000_000).toFixed(1)}M`
-            : value >= 1_000
-              ? `${(value / 1_000).toFixed(0)}K`
-              : value,
+        formatter: '{value}%',
       },
     },
-    series: [
-      {
-        name: 'Area (ha)',
-        type: 'bar',
-        data: chartValues,
-        barMaxWidth: 36,
-        barCategoryGap: '8%',
-        itemStyle: {
-          color: COLORS.FOREST,
-        },
-        emphasis: {
-          itemStyle: {
-            color: COLORS.FOREST_HOVER,
-          },
-        },
-      },
-    ],
+    series,
   };
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4">
-      <ChartHeader title="Area per Kabupaten" subtitle={`Cakupan LULC · ${year}`}>
-        <div className="text-right shrink-0">
-          <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-stone-400">
-            Total
-          </p>
-          <p
-            className="mt-0.5 text-[15px] font-semibold leading-tight"
-            style={{ color: COLORS.FOREST }}
-          >
-            {totalAreaLabel}
-          </p>
-        </div>
-      </ChartHeader>
+      <ChartHeader title="Komposisi Tutupan Lahan" subtitle={`Per Kabupaten · ${year}`} />
       <div className="flex-1 min-h-0 relative overflow-hidden">
         <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
           <ReactECharts
@@ -192,4 +166,4 @@ function CoverageChart() {
   );
 }
 
-export default memo(CoverageChart);
+export default memo(StackCoverageChart);

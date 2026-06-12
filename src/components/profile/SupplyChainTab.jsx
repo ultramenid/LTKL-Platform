@@ -66,8 +66,8 @@ export function SupplyChainTab({ kabupaten }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {SUPPLY_CHAIN_STATS.map((stat) => (
           <div key={stat.label} className="bg-teal-50 border border-teal-100 p-4 rounded-lg">
-            <p className="text-[9px] text-gray-500 uppercase tracking-widest">{stat.label}</p>
-            <p className="text-2xl font-black text-teal-700 mt-1">{stat.value}</p>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider">{stat.label}</p>
+            <p className="text-2xl font-semibold text-teal-700 mt-1">{stat.value}</p>
             <p className="text-[10px] text-gray-500 mt-0.5">{stat.unit}</p>
           </div>
         ))}

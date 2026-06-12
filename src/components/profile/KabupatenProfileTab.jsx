@@ -240,7 +240,7 @@ export function KabupatenProfileTab({ kabupaten }) {
               </p>
             </div>
             <div className="bg-teal-50 border border-teal-100 rounded-xl p-5 space-y-3">
-              <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">
+              <p className="text-[10px] font-medium text-teal-600 uppercase tracking-wider">
                 Sekilas MSF
               </p>
               {[
@@ -251,7 +251,7 @@ export function KabupatenProfileTab({ kabupaten }) {
               ].map((item) => (
                 <div key={item.label}>
                   <p className="text-[10px] text-gray-500">{item.label}</p>
-                  <p className="text-sm font-bold text-gray-800">{item.value}</p>
+                  <p className="text-sm font-semibold text-gray-800">{item.value}</p>
                 </div>
               ))}
             </div>
@@ -274,13 +274,13 @@ export function KabupatenProfileTab({ kabupaten }) {
                       <Users size={16} style={{ color: sectorStyle.text }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-gray-800">{member.holder}</p>
+                      <p className="text-xs font-semibold text-gray-800">{member.holder}</p>
                       <p className="text-[10px] text-gray-500 truncate">{member.institution}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[10px] font-bold text-gray-700">{member.position}</p>
+                      <p className="text-[10px] font-medium text-gray-700">{member.position}</p>
                       <span
-                        className="inline-block px-2 py-0.5 text-[8px] font-bold uppercase rounded-full"
+                        className="inline-block px-2 py-0.5 text-[9px] font-medium uppercase rounded-full"
                         style={{ backgroundColor: sectorStyle.bg, color: sectorStyle.text }}
                       >
                         {sectorStyle.label}
@@ -300,7 +300,7 @@ export function KabupatenProfileTab({ kabupaten }) {
                   key={group.name}
                   className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm"
                 >
-                  <p className="text-xs font-bold text-gray-800 leading-snug mb-1">{group.name}</p>
+                  <p className="text-xs font-semibold text-gray-800 leading-snug mb-1">{group.name}</p>
                   <p className="text-[10px] text-gray-500">Lead: {group.lead}</p>
                   <p className="text-[10px] text-teal-600 mt-1 font-semibold">
                     {group.members} anggota
@@ -322,7 +322,7 @@ export function KabupatenProfileTab({ kabupaten }) {
                     <FileText size={16} className="text-amber-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-gray-800">{doc.title}</p>
+                    <p className="text-xs font-semibold text-gray-800">{doc.title}</p>
                     <p className="text-[10px] text-gray-500">
                       {doc.number} · {doc.date}
                     </p>
@@ -352,8 +352,8 @@ export function KabupatenProfileTab({ kabupaten }) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {REGIONAL_STATS.map((item) => (
               <div key={item.label} className="bg-gray-50 border border-gray-100 rounded-xl p-4">
-                <p className="text-[9px] text-gray-400 uppercase tracking-widest">{item.label}</p>
-                <p className="text-lg font-black text-gray-800 mt-1">{item.value}</p>
+                <p className="text-[9px] text-gray-400 uppercase tracking-wider">{item.label}</p>
+                <p className="text-lg font-semibold text-gray-800 mt-1">{item.value}</p>
               </div>
             ))}
           </div>
@@ -367,13 +367,13 @@ export function KabupatenProfileTab({ kabupaten }) {
                   className="flex items-center gap-4 p-5 bg-white rounded-xl border border-gray-100 shadow-sm"
                 >
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shrink-0">
-                    <span className="text-xl text-white font-black">{leader.name.charAt(0)}</span>
+                    <span className="text-xl text-white font-bold">{leader.name.charAt(0)}</span>
                   </div>
                   <div>
-                    <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">
+                    <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-0.5">
                       {leader.title}
                     </p>
-                    <p className="text-sm font-bold text-gray-800 leading-snug">{leader.name}</p>
+                    <p className="text-sm font-semibold text-gray-800 leading-snug">{leader.name}</p>
                   </div>
                 </div>
               ))}
@@ -389,13 +389,13 @@ export function KabupatenProfileTab({ kabupaten }) {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-4 py-3 font-bold text-gray-600 uppercase tracking-wider text-[10px]">
+                    <th className="text-left px-4 py-3 font-medium text-gray-600 uppercase tracking-wider text-[10px]">
                       OPD
                     </th>
-                    <th className="text-left px-4 py-3 font-bold text-gray-600 uppercase tracking-wider text-[10px]">
+                    <th className="text-left px-4 py-3 font-medium text-gray-600 uppercase tracking-wider text-[10px]">
                       Singkatan
                     </th>
-                    <th className="text-left px-4 py-3 font-bold text-gray-600 uppercase tracking-wider text-[10px]">
+                    <th className="text-left px-4 py-3 font-medium text-gray-600 uppercase tracking-wider text-[10px]">
                       Kepala
                     </th>
                   </tr>
@@ -408,7 +408,7 @@ export function KabupatenProfileTab({ kabupaten }) {
                     >
                       <td className="px-4 py-3 font-medium text-gray-800">{opd.name}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-bold rounded">
+                        <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-medium rounded">
                           {opd.abbreviation}
                         </span>
                       </td>
@@ -445,14 +445,14 @@ export function KabupatenProfileTab({ kabupaten }) {
                     <Building2 size={18} className="text-gray-400" />
                   </div>
                   <span
-                    className="mt-1 inline-block px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full text-white"
+                    className="mt-1 inline-block px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider rounded-full text-white"
                     style={{ backgroundColor: partner.typeColor }}
                   >
                     {partner.partnerType}
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-900">{partner.name}</p>
+                  <p className="text-sm font-semibold text-gray-900">{partner.name}</p>
                   <p className="text-[10px] text-teal-600 font-semibold mt-0.5">
                     {partner.focusArea}
                   </p>

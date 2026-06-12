@@ -110,7 +110,7 @@ export function ReportsTab() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <IconComponent size={18} style={{ color: item.iconColor }} />
-                      <p className="text-sm font-bold text-gray-900">{item.title}</p>
+                      <p className="text-sm font-semibold text-gray-900">{item.title}</p>
                     </div>
                     <p className="text-xs text-gray-500">{item.description}</p>
                   </div>

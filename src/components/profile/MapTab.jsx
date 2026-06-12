@@ -7,6 +7,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { ProfileSection } from './ProfileSection.jsx';
 import { SectionHeader } from './SectionHeader.jsx';
 import CoverageChart from '../map/CoverageChart.jsx';
+import StackCoverageChart from '../map/StackCoverageChart.jsx';
+import SankeyTransitionChart from '../map/SankeyTransitionChart.jsx';
 import MapLegend from '../map/MapLegend.jsx';
 import { useMapStore } from '../../store/mapStore.js';
 import {
@@ -45,7 +47,7 @@ function ProfileYearSelector({ year, onYearChange }) {
           className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
         >
           <CalendarDays size={12} className="text-teal-400" />
-          <span className="text-xs font-black text-teal-400">{year}</span>
+          <span className="text-xs font-semibold text-teal-400">{year}</span>
           <ChevronRight size={14} className="text-white" />
         </button>
       )}
@@ -57,12 +59,12 @@ function ProfileYearSelector({ year, onYearChange }) {
             className="shrink-0 text-right cursor-pointer hover:opacity-70 transition-opacity"
           >
             <div className="flex items-center gap-1">
-              <ChevronLeft size={12} className="text-white/30" />
-              <p className="text-[8px] text-white/40 uppercase tracking-widest font-semibold leading-none">
+              <ChevronLeft size={12} className="text-white/50" />
+              <p className="text-[9px] text-white/50 uppercase tracking-wider font-medium leading-none">
                 Tahun
               </p>
             </div>
-            <p className="text-sm font-black text-teal-400 leading-tight mt-0.5">{year}</p>
+            <p className="text-sm font-semibold text-teal-400 leading-tight mt-0.5">{year}</p>
           </button>
           <div className="w-px h-5 bg-white/10 shrink-0" />
           <div className="relative">
@@ -71,7 +73,7 @@ function ProfileYearSelector({ year, onYearChange }) {
               {yearList.map((yearOption) => (
                 <div key={yearOption} className="relative flex items-center justify-center">
                   {hoveredYear === yearOption && (
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-teal-500 text-white text-[9px] font-bold rounded shadow-lg whitespace-nowrap z-10">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-teal-500 text-white text-[9px] font-medium rounded shadow-lg whitespace-nowrap z-10">
                       {yearOption}
                     </div>
                   )}
@@ -122,17 +124,17 @@ function ProfileMapBreadcrumbs({ kabupaten, kec, des, onHome, onKecClick }) {
         const isLastItem = index === breadcrumbItems.length - 1;
         return (
           <span key={item.level} className="flex items-center gap-1">
-            <ChevronRight size={10} className="text-white/25 shrink-0" />
+            <ChevronRight size={10} className="text-white/50 shrink-0" />
             <button
               type="button"
               onClick={() => {
                 if (item.level === 'kab') onHome();
                 else if (item.level === 'kec') onKecClick(item.label);
               }}
-              className={`text-[11px] font-semibold transition-colors whitespace-nowrap ${
+              className={`text-[11px] transition-colors whitespace-nowrap ${
                 isLastItem
-                  ? 'text-teal-400 cursor-default'
-                  : 'text-white/80 hover:text-teal-400 cursor-pointer'
+                  ? 'font-semibold text-teal-400 cursor-default'
+                  : 'font-medium text-white/80 hover:text-teal-400 cursor-pointer'
               }`}
             >
               {item.label}
@@ -513,6 +515,41 @@ export function MapTab({ kabupaten, initialDrillState }) {
         </p>
         <div className="h-72 rounded-xl border border-gray-100 shadow-sm overflow-hidden bg-white">
           <CoverageChart />
+        </div>
+      </div>
+
+      <div>
+        <SectionHeader
+          title="Komposisi Tutupan Lahan"
+          borderColor={COLORS.PRIMARY}
+          dotColor={COLORS.PRIMARY}
+        />
+        <p className="text-xs text-gray-500 mt-2 mb-4">
+          Persentase komposisi tutupan lahan{' '}
+          <strong className="text-gray-700">{kabupaten}</strong> untuk tahun{' '}
+          <strong className="text-gray-700">{year}</strong>.
+        </p>
+        <div className="h-72 rounded-xl border border-gray-100 shadow-sm overflow-hidden bg-white">
+          <StackCoverageChart kabupaten={kabupaten} />
+        </div>
+      </div>
+
+      <div>
+        <SectionHeader
+          title="Transisi Tutupan Lahan"
+          borderColor={COLORS.PRIMARY}
+          dotColor={COLORS.PRIMARY}
+        />
+        <p className="text-xs text-gray-500 mt-2 mb-4">
+          Perubahan tutupan lahan{' '}
+          <strong className="text-gray-700">{kabupaten}</strong> dari tahun 2013 ke 2024.
+        </p>
+        <div className="h-72 rounded-xl border border-gray-100 shadow-sm overflow-hidden bg-white">
+          <SankeyTransitionChart
+            kabupaten={kabupaten}
+            kec={localBreadcrumbs.kec}
+            des={localBreadcrumbs.des}
+          />
         </div>
       </div>
     </ProfileSection>
