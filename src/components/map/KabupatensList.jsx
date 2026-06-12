@@ -122,7 +122,10 @@ export function KabupatenCard({ filterText = '', collapsed = false }) {
     return (
       <div className="px-3 py-2 space-y-1.5 animate-pulse">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-parchment-50">
+          <div
+            key={index}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-parchment-50"
+          >
             <div className="w-10 h-10 bg-parchment-300 rounded-lg shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="h-3 w-2/3 bg-parchment-300 rounded" />
@@ -230,9 +233,7 @@ export function KabupatenCard({ filterText = '', collapsed = false }) {
                 >
                   Kab. {kabupaten.name}
                 </span>
-                <span
-                  className="block text-[11px] truncate leading-tight mt-0.5 text-coffee-500"
-                >
+                <span className="block text-[11px] truncate leading-tight mt-0.5 text-gray-400">
                   {kabupaten.role}
                 </span>
               </span>

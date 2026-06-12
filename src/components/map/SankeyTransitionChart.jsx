@@ -339,7 +339,7 @@ function SankeyTransitionChart({
 
   return (
     <>
-      <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4">
+      <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4 bg-white">
         <div className="shrink-0">
           <ChartHeader
             title="Transisi Tutupan Lahan"

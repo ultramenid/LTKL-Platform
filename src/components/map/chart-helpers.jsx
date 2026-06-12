@@ -5,12 +5,12 @@ import { COLORS } from '../../config/constants.js';
 // tops stay baseline-aligned regardless of which card renders a right slot.
 export function ChartHeader({ title, subtitle, children }) {
   return (
-    <div className="shrink-0 flex items-start justify-between gap-4 px-5 pt-4 pb-2.5 min-h-[58px]">
+    <div className="shrink-0 flex items-start justify-between gap-4 px-5 pt-3.5 pb-2 min-h-[58px]">
       <div className="min-w-0">
         <h3 className="text-[14px] font-medium tracking-tight leading-snug text-coffee-900 truncate">
           {title}
         </h3>
-        <p className="mt-1 text-[10px] font-normal text-coffee-400 truncate">
+        <p className="mt-0.5 text-[10px] font-normal text-coffee-400 truncate">
           {subtitle}
         </p>
       </div>

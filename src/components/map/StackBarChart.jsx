@@ -106,7 +106,7 @@ function StackBarChart({ data, year, kab, kec }) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4">
+    <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4 bg-white">
       <ChartHeader title="Komposisi Tutupan Lahan" subtitle={subtitleParts.join(' · ')} />
       <div className="flex-1 min-h-0 relative overflow-hidden">
         <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>

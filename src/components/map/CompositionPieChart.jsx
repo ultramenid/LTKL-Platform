@@ -101,7 +101,7 @@ function CompositionPieChart({ data, year }) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4">
+    <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4 bg-white">
       <ChartHeader
         title="Komposisi Tutupan Lahan"
         subtitle={`${row?.name || '—'} · ${year}`}

@@ -148,7 +148,7 @@ function CoverageChart() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4">
+    <div className="w-full h-full flex flex-col overflow-hidden px-4 py-4 bg-white">
       <ChartHeader title="Area per Kabupaten" subtitle={`Cakupan LULC · ${year}`}>
         <div className="text-right shrink-0">
           <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-coffee-400">

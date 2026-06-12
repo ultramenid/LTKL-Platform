@@ -16,39 +16,41 @@ export function RightPanel({ onToggleSidebar }) {
   );
 
   return (
-    <div className="flex-1 h-screen flex flex-col bg-parchment-50">
+    <div className="flex-1 h-screen flex flex-col bg-parchment-50 border-coffee-900/15">
       <div className="relative h-[65%] transition-all duration-300 ease-in-out overflow-hidden">
         <ErrorBoundary label="Peta">
           <Map onToggleSidebar={onToggleSidebar} />
         </ErrorBoundary>
       </div>
 
-      <div className="h-[35%] transition-all duration-300 ease-in-out flex flex-col border-t border-coffee-900/10 bg-white">
-        <div className="shrink-0 flex items-center justify-between px-6 py-3 border-b border-coffee-900/10">
+      <div className="h-[35%] transition-all duration-300 ease-in-out flex flex-col border-t border-coffee-900/10 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+        <div className="shrink-0 flex items-center justify-between px-6 py-3 border-b border-coffee-900/10 bg-parchment-50">
           <div className="flex items-center gap-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_rgba(20,184,166,0.45)]" />
             <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-coffee-900">
               Analitik Tutupan Lahan
             </h2>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-coffee-400">Grafik</p>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-coffee-400 font-medium">
+            Grafik
+          </p>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-hidden overflow-x-auto">
           <div className="flex h-full min-w-full">
-            <div className="flex-1 min-w-[320px] h-full border-r border-coffee-900/10">
+            <div className="flex-1 min-w-[320px] h-full border-r border-coffee-900/15 bg-white overflow-hidden">
               <ErrorBoundary label="Transisi Tutupan Lahan">
                 <SankeyTransitionChart kabupaten={kab} kec={kec} des={des} />
               </ErrorBoundary>
             </div>
 
-            <div className="flex-1 min-w-[320px] h-full border-r border-coffee-900/10">
+            <div className="flex-1 min-w-[320px] h-full border-r border-coffee-900/15 bg-white overflow-hidden">
               <ErrorBoundary label="Komposisi Tutupan Lahan">
                 <StackCoverageChart kabupaten={kab} kec={kec} des={des} />
               </ErrorBoundary>
             </div>
 
-            <div className="flex-1 min-w-[320px] h-full">
+            <div className="flex-1 min-w-[320px] h-full bg-white overflow-hidden">
               <ErrorBoundary label="Grafik Tutupan Lahan">
                 <CoverageChart />
               </ErrorBoundary>
