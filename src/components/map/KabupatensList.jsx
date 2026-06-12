@@ -12,7 +12,8 @@ import { findFeatureInCollection } from '../../utils/mapUtils.js';
 
 const createHoverMarkerElement = () => {
   const markerElement = document.createElement('div');
-  markerElement.className = 'text-teal-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.65)] pointer-events-none';
+  markerElement.className =
+    'text-teal-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.65)] pointer-events-none';
   markerElement.setAttribute('aria-hidden', 'true');
   markerElement.innerHTML = `
     <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
@@ -74,7 +75,11 @@ export function KabupatenCard({ filterText = '' }) {
   const showHoverMarker = (kabupatenName) => {
     if (!map) return;
 
-    const kabupatenFeature = findFeatureInCollection(kabupatenGeoJsonRef.current, 'kab', kabupatenName);
+    const kabupatenFeature = findFeatureInCollection(
+      kabupatenGeoJsonRef.current,
+      'kab',
+      kabupatenName,
+    );
     if (!kabupatenFeature) return;
 
     const markerPoint = pointOnFeature(kabupatenFeature);
@@ -147,13 +152,14 @@ export function KabupatenCard({ filterText = '' }) {
                 : 'border-transparent hover:border-gray-100'
             }`}
           >
-            <div
+            <button
+              type="button"
               onClick={() => handleKabupatenClick(kabupaten.name)}
-              className={`flex items-center gap-3 px-3 py-3.5 cursor-pointer select-none transition-colors ${
+              className={`flex w-full items-center gap-3 px-3 py-3.5 text-left cursor-pointer select-none transition-colors ${
                 isSelected ? 'bg-teal-50/60' : 'hover:bg-gray-50 border-b border-gray-100'
               }`}
             >
-              <div
+              <span
                 className={`w-13 h-13 shrink-0 rounded-xl border flex items-center justify-center bg-white transition-colors ${
                   isSelected ? 'border-teal-200' : 'border-gray-100'
                 }`}
@@ -163,24 +169,24 @@ export function KabupatenCard({ filterText = '' }) {
                   alt={kabupaten.name}
                   className="w-10 h-10 object-contain"
                 />
-              </div>
+              </span>
 
-              <div className="flex-1 min-w-0">
-                <p
-                  className={`text-sm font-bold truncate leading-tight ${
+              <span className="flex-1 min-w-0">
+                <span
+                  className={`block text-sm font-bold truncate leading-tight ${
                     isSelected ? 'text-teal-700' : 'text-gray-800'
                   }`}
                 >
                   Kab. {kabupaten.name}
-                </p>
-                <p className="text-xs text-gray-400 truncate leading-tight mt-0.5">
+                </span>
+                <span className="block text-xs text-gray-400 truncate leading-tight mt-0.5">
                   {kabupaten.role}
-                </p>
-                <p className="text-[11px] text-gray-500 leading-relaxed mt-1 line-clamp-2">
+                </span>
+                <span className="block text-[11px] text-gray-500 leading-relaxed mt-1 line-clamp-2">
                   {DEFAULT_DESCRIPTION}
-                </p>
-              </div>
-            </div>
+                </span>
+              </span>
+            </button>
 
             {isSelected && (
               <div className="bg-teal-50/40 border-t border-teal-100/60 px-3 py-3">

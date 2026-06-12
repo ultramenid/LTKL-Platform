@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Building2, Users, FileText, Download } from 'lucide-react';
 import { COLORS } from '../../config/constants.js';
-import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
+import { ProfileSection } from './ProfileSection.jsx';
+import { SectionHeader } from './SectionHeader.jsx';
+import { SubSectionHeader } from './SubSectionHeader.jsx';
 
 const MSF_STRUCTURE = [
   {
@@ -195,6 +197,7 @@ export function KabupatenProfileTab({ kabupaten }) {
           {PROFILE_SUB_TABS.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveSubTab(tab.id)}
               className={`flex-1 min-w-max px-5 py-2.5 text-sm font-semibold transition border-b-2 whitespace-nowrap text-center cursor-pointer ${
                 activeSubTab === tab.id

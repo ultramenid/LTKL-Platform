@@ -21,6 +21,7 @@ export function ProdukUnggulanTab({ kabupaten }) {
           {PRODUCT_SUB_TABS.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveSubTab(tab.id)}
               className={`flex-1 min-w-max px-5 py-2.5 text-sm font-semibold transition border-b-2 whitespace-nowrap text-center cursor-pointer ${
                 activeSubTab === tab.id

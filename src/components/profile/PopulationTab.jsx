@@ -1,6 +1,7 @@
 import ReactECharts from 'echarts-for-react';
 import { COLORS } from '../../config/constants.js';
-import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
+import { ProfileSection } from './ProfileSection.jsx';
+import { SectionHeader } from './SectionHeader.jsx';
 
 const POPULATION_YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 

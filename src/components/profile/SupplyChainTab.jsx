@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { SankeySupplyChain } from './SankeySupplyChain.jsx';
 import { COLORS } from '../../config/constants.js';
-import { ProfileSection, SectionHeader, SubSectionHeader } from './ProfileSection.jsx';
+import { ProfileSection } from './ProfileSection.jsx';
+import { SectionHeader } from './SectionHeader.jsx';
+import { SubSectionHeader } from './SubSectionHeader.jsx';
 import SUPPLY_CHAIN_DATA from '../../data/supplychain-data.json';
 
 function getStatistics(district, year) {

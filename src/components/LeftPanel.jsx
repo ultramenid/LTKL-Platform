@@ -17,6 +17,7 @@ export function LeftPanel({ onClose }) {
             />
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="lg:hidden w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
             aria-label="Tutup sidebar"
@@ -52,6 +53,7 @@ export function LeftPanel({ onClose }) {
           />
           {searchText && (
             <button
+              type="button"
               onClick={() => setSearchText('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               aria-label="Hapus pencarian"
@@ -80,5 +82,3 @@ export function LeftPanel({ onClose }) {
     </div>
   );
 }
-
-export default LeftPanel;

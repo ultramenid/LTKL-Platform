@@ -36,7 +36,7 @@ export const decodeAdministrasi = (administrasiParam) => {
 };
 
 // Generate URL with current state
-export const generateUrl = (year = YEAR_CONFIG.DEFAULT, breadcrumbs = {}, selectedKab = null) => {
+const generateUrl = (year = YEAR_CONFIG.DEFAULT, breadcrumbs = {}, selectedKab = null) => {
   const administrasi = encodeAdministrasi(breadcrumbs);
   const params = new URLSearchParams();
 

@@ -165,6 +165,20 @@ const EXCLUDED_EXPORTER_IDS = new Set([
 ]);
 const EXCLUDED_DEST_IDS = new Set(['3:UNKNOWN COUNTRY', '3:Lainnya']);
 
+function findLargestVolumeName(volumeById) {
+  let largestId = null;
+  let largestVolume = -Infinity;
+
+  for (const [id, volume] of Object.entries(volumeById)) {
+    if (volume > largestVolume) {
+      largestId = id;
+      largestVolume = volume;
+    }
+  }
+
+  return largestId?.split(':')[1] || 'N/A';
+}
+
 function buildSummary(nodes, links) {
   // Total volume: only identified exporters
   const totalVolume = links
@@ -178,10 +192,7 @@ function buildSummary(nodes, links) {
       exporterVolumes[link.source] = (exporterVolumes[link.source] || 0) + link.value;
     }
   });
-  const largestExporter =
-    Object.entries(exporterVolumes)
-      .sort(([, a], [, b]) => b - a)[0]?.[0]
-      ?.split(':')[1] || 'N/A';
+  const largestExporter = findLargestVolumeName(exporterVolumes);
 
   // Top identified destination
   const destinationVolumes = {};
@@ -190,10 +201,7 @@ function buildSummary(nodes, links) {
       destinationVolumes[link.target] = (destinationVolumes[link.target] || 0) + link.value;
     }
   });
-  const topDestination =
-    Object.entries(destinationVolumes)
-      .sort(([, a], [, b]) => b - a)[0]?.[0]
-      ?.split(':')[1] || 'N/A';
+  const topDestination = findLargestVolumeName(destinationVolumes);
 
   // Largest identified mill group
   const millVolumes = {};
@@ -202,10 +210,7 @@ function buildSummary(nodes, links) {
       millVolumes[link.source] = (millVolumes[link.source] || 0) + link.value;
     }
   });
-  const largestMillGroup =
-    Object.entries(millVolumes)
-      .sort(([, a], [, b]) => b - a)[0]?.[0]
-      ?.split(':')[1] || 'N/A';
+  const largestMillGroup = findLargestVolumeName(millVolumes);
 
   return {
     totalVolume: parseFloat((totalVolume / 1000).toFixed(1)), // million tonnes

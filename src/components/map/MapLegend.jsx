@@ -81,6 +81,7 @@ export default function MapLegend() {
     <div className="relative z-10">
       {!expanded && (
         <button
+          type="button"
           onClick={() => setExpanded(true)}
           className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
         >
@@ -99,6 +100,7 @@ export default function MapLegend() {
               </p>
             </div>
             <button
+              type="button"
               onClick={() => setExpanded(false)}
               className="text-white/30 hover:text-white/70 transition-colors cursor-pointer text-xs leading-none"
             >

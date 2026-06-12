@@ -37,8 +37,9 @@ Public-facing website with interactive MapLibre GL maps for citizen engagement. 
 | **Geo** | Turf.js 7 (`pointOnFeature`, centroid calculations) |
 | **State** | Zustand 5 (two stores: `mapStore`, `mapLayerStore`) |
 | **Routing** | react-router-dom 7 |
+| **Data Fetching** | SWR 2 |
 | **Styling** | Tailwind CSS 4 via `@tailwindcss/vite` |
-| **Diagrams** | d3-sankey, d3-shape, d3-interpolate |
+| **Diagrams** | d3-sankey |
 | **Icons** | lucide-react |
 | **Build** | Vite 7 |
 | **Lint** | ESLint 9 + Prettier |
@@ -74,11 +75,11 @@ src/
 │   │   ├── ProdukUnggulanTab.jsx
 │   │   ├── KabupatenProfileTab.jsx
 │   │   ├── ProfileSection.jsx # Shared section wrapper
-│   │   └── TabSkeleton.jsx    # Loading placeholder
 │   └── ui/                    # Shared UI primitives
 ├── config/
 │   └── constants.js           # All constants (endpoints, colors, layer IDs, cache config)
 ├── data/
+│   ├── build-supplychain-data.mjs # Supply-chain dataset generator
 │   └── kabupatens.js          # Static kabupaten reference data
 ├── hooks/                     # Custom React hooks
 ├── lib/                       # Utility libraries

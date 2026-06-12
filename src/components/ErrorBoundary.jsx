@@ -39,6 +39,7 @@ export class ErrorBoundary extends Component {
             {this.props.label && <p className="text-xs text-gray-400 mt-0.5">{this.props.label}</p>}
           </div>
           <button
+            type="button"
             onClick={this.handleReset}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors cursor-pointer"
           >

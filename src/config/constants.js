@@ -65,13 +65,6 @@ export const CACHE_CONFIG = {
   STORAGE_KEY_GEOJSON: 'mapCache_geojson',
 };
 
-// Administrative level names
-export const ADMIN_LEVELS = {
-  KABUPATEN: 'kabupaten',
-  KECAMATAN: 'kecamatan',
-  DESA: 'desa',
-};
-
 // WFS (Web Feature Service) parameters for GeoServer
 export const WFS_CONFIG = {
   SERVICE: 'WFS',

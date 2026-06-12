@@ -27,6 +27,7 @@ export default function TimeSeriesSelector({
     <div>
       {!expanded && (
         <button
+          type="button"
           onClick={() => setExpanded(true)}
           className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
         >
@@ -39,6 +40,7 @@ export default function TimeSeriesSelector({
       {expanded && (
         <div className="bg-gray-900/80 backdrop-blur-md rounded-xl shadow-lg border border-white/10 px-3 py-2 flex items-start lg:items-center gap-3">
           <button
+            type="button"
             onClick={() => setExpanded(false)}
             className="shrink-0 text-right cursor-pointer hover:opacity-70 transition-opacity"
           >
@@ -68,6 +70,8 @@ export default function TimeSeriesSelector({
                       </div>
                     )}
                     <button
+                      type="button"
+                      aria-label={`Pilih tahun ${yearDot}`}
                       onClick={() => handleChange(yearDot)}
                       onMouseEnter={() => setHovered(yearDot)}
                       onMouseLeave={() => setHovered(null)}

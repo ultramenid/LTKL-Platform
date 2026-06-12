@@ -1,8 +1,32 @@
-import { memo, useEffect, useMemo, useState, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
+import useSWR from 'swr';
 import { useMapStore } from '../../store/mapStore.js';
 import { normalizeServerResponse, transformDataForChart } from '../../utils/dataTransform.js';
 import { API_ENDPOINTS, YEAR_CONFIG, COLORS } from '../../config/constants.js';
+
+async function fetchCoverageStats(statsUrl) {
+  const response = await fetch(statsUrl);
+  const responseText = await response.text();
+  let parsedJson = null;
+
+  try {
+    parsedJson = JSON.parse(responseText);
+  } catch {
+    if (response.ok) {
+      throw new Error(`Respons JSON dari server tidak valid. Isi respons: ${responseText}`);
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Server ${response.status}: ${response.statusText} — ${responseText}`);
+  }
+  if (!parsedJson) {
+    throw new Error(`Respons JSON dari server tidak valid. Isi respons: ${responseText}`);
+  }
+
+  return parsedJson;
+}
 
 function LoadingChartSkeleton() {
   return (
@@ -29,11 +53,15 @@ function CoverageChart() {
   const yearFromStore = useMapStore((state) => state.year);
   const year = Number(yearFromStore) || YEAR_CONFIG.DEFAULT;
 
-  const [serverResponse, setServerResponse] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
   const echartsRef = useRef(null);
-  const statsControllerRef = useRef(null);
+  const statsUrl = `${API_ENDPOINTS.TILE_SERVER}/lulc-stats?year=${year}`;
+  const {
+    data: serverResponse,
+    error,
+    isLoading,
+  } = useSWR(statsUrl, fetchCoverageStats, {
+    shouldRetryOnError: false,
+  });
 
   useEffect(() => {
     const currentEchartsRef = echartsRef.current;
@@ -48,72 +76,6 @@ function CoverageChart() {
     };
   }, []);
 
-  useEffect(() => {
-    let isComponentMounted = true;
-    setLoading(true);
-    setError(null);
-    setServerResponse(null);
-
-    // Abort previous request and create a new per-instance controller
-    statsControllerRef.current?.abort();
-    const controller = new AbortController();
-    statsControllerRef.current = controller;
-
-    const statsUrl = `${API_ENDPOINTS.TILE_SERVER}/lulc-stats?year=${year}`;
-
-    fetch(statsUrl, { signal: controller.signal })
-      .then(async (response) => {
-        const responseText = await response.text();
-        try {
-          const parsedJson = JSON.parse(responseText);
-          return {
-            ok: response.ok,
-            json: parsedJson,
-            status: response.status,
-            statusText: response.statusText,
-            text: responseText,
-          };
-        } catch {
-          return {
-            ok: response.ok,
-            json: null,
-            status: response.status,
-            statusText: response.statusText,
-            text: responseText,
-          };
-        }
-      })
-      .then((response) => {
-        if (!isComponentMounted) return;
-        if (!response.ok) {
-          setError(`Server ${response.status}: ${response.statusText} — ${response.text}`);
-          setLoading(false);
-          return;
-        }
-        if (!response.json) {
-          setError(`Respons JSON dari server tidak valid. Isi respons: ${response.text}`);
-          setLoading(false);
-          return;
-        }
-
-        setServerResponse(response.json);
-      })
-      .catch((fetchError) => {
-        if (fetchError.name === 'AbortError') return;
-        if (!isComponentMounted) return;
-        setError(String(fetchError));
-      })
-      .finally(() => {
-        if (!isComponentMounted) return;
-        setLoading(false);
-      });
-
-    return () => {
-      isComponentMounted = false;
-      controller.abort();
-    };
-  }, [year]);
-
   const normalizedData = useMemo(
     () => normalizeServerResponse(serverResponse, year),
     [serverResponse, year],
@@ -124,7 +86,7 @@ function CoverageChart() {
     return transformDataForChart(normalizedData.data);
   }, [normalizedData]);
 
-  if (loading) return <LoadingChartSkeleton />;
+  if (isLoading) return <LoadingChartSkeleton />;
   if (error)
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-center">
@@ -132,7 +94,7 @@ function CoverageChart() {
           <span className="text-red-400 text-sm font-bold">!</span>
         </div>
         <p className="text-xs font-semibold text-gray-600">Gagal memuat data</p>
-        <p className="text-[10px] text-gray-400 leading-relaxed max-w-xs">{error}</p>
+        <p className="text-[10px] text-gray-400 leading-relaxed max-w-xs">{error.message}</p>
       </div>
     );
   if (!serverResponse || !normalizedData) {

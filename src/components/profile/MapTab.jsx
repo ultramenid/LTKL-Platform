@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { CalendarDays, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
+import { ProfileSection } from './ProfileSection.jsx';
+import { SectionHeader } from './SectionHeader.jsx';
 import CoverageChart from '../map/CoverageChart.jsx';
 import MapLegend from '../map/MapLegend.jsx';
 import { useMapStore } from '../../store/mapStore.js';
@@ -24,6 +26,7 @@ import {
   YEAR_CONFIG,
 } from '../../config/constants.js';
 import { zoomToCollection } from '../../utils/mapUtils.js';
+import { encodeAdministrasi } from '../../utils/urlStateSync.js';
 
 function ProfileYearSelector({ year, onYearChange }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -37,6 +40,7 @@ function ProfileYearSelector({ year, onYearChange }) {
     <div>
       {!isExpanded && (
         <button
+          type="button"
           onClick={() => setIsExpanded(true)}
           className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
         >
@@ -48,6 +52,7 @@ function ProfileYearSelector({ year, onYearChange }) {
       {isExpanded && (
         <div className="bg-gray-900/80 backdrop-blur-md rounded-xl shadow-lg border border-white/10 px-3 py-2 flex items-start lg:items-center gap-3">
           <button
+            type="button"
             onClick={() => setIsExpanded(false)}
             className="shrink-0 text-right cursor-pointer hover:opacity-70 transition-opacity"
           >
@@ -71,6 +76,8 @@ function ProfileYearSelector({ year, onYearChange }) {
                     </div>
                   )}
                   <button
+                    type="button"
+                    aria-label={`Pilih tahun ${yearOption}`}
                     onClick={() => onYearChange(yearOption)}
                     onMouseEnter={() => setHoveredYear(yearOption)}
                     onMouseLeave={() => setHoveredYear(null)}
@@ -102,6 +109,7 @@ function ProfileMapBreadcrumbs({ kabupaten, kec, des, onHome, onKecClick }) {
   return (
     <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-gray-900/75 backdrop-blur-md rounded-xl px-3 py-1.5 shadow-lg border border-white/10">
       <button
+        type="button"
         onClick={onHome}
         className={`cursor-pointer flex items-center justify-center w-5 h-5 rounded-md transition-colors hover:text-teal-400 ${
           breadcrumbItems.length <= 1 ? 'text-teal-400' : 'text-white/60'
@@ -116,6 +124,7 @@ function ProfileMapBreadcrumbs({ kabupaten, kec, des, onHome, onKecClick }) {
           <span key={item.level} className="flex items-center gap-1">
             <ChevronRight size={10} className="text-white/25 shrink-0" />
             <button
+              type="button"
               onClick={() => {
                 if (item.level === 'kab') onHome();
                 else if (item.level === 'kec') onKecClick(item.label);
@@ -135,14 +144,44 @@ function ProfileMapBreadcrumbs({ kabupaten, kec, des, onHome, onKecClick }) {
   );
 }
 
-export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
+function createBooleanStore(initialValue) {
+  let value = initialValue;
+  const listeners = new Set();
+
+  return {
+    getSnapshot: () => value,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    set: (nextValue) => {
+      if (value === nextValue) return;
+      value = nextValue;
+      listeners.forEach((listener) => listener());
+    },
+  };
+}
+
+const getServerMapReady = () => false;
+
+function useProfileMap({ kabupaten, initialDrillState }) {
+  const [, setSearchParams] = useSearchParams();
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const mapReadyStoreRef = useRef(null);
+  if (mapReadyStoreRef.current === null) {
+    mapReadyStoreRef.current = createBooleanStore(false);
+  }
+  const mapReadyStore = mapReadyStoreRef.current;
 
   const kecLayerCleanupRef = useRef(null);
   const desLayerCleanupRef = useRef(null);
 
-  const [isMapReady, setIsMapReady] = useState(false);
+  const isMapReady = useSyncExternalStore(
+    mapReadyStore.subscribe,
+    mapReadyStore.getSnapshot,
+    getServerMapReady,
+  );
   const [isLayerLoading, setIsLayerLoading] = useState(true);
   const [localBreadcrumbs, setLocalBreadcrumbs] = useState({
     kec: initialDrillState?.kec ?? null,
@@ -154,9 +193,38 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
   );
 
   const localBreadcrumbsRef = useRef(localBreadcrumbs);
+  const syncMapUrl = useCallback(
+    (selectedYear, breadcrumbs) => {
+      setSearchParams(
+        (previousParams) => {
+          const updatedParams = new URLSearchParams(previousParams);
+          updatedParams.set('year', String(selectedYear));
+          updatedParams.set('administrasi', encodeAdministrasi({ kab: kabupaten, ...breadcrumbs }));
+          return updatedParams;
+        },
+        { replace: true },
+      );
+    },
+    [kabupaten, setSearchParams],
+  );
+
+  const commitBreadcrumbs = useCallback(
+    (nextBreadcrumbsOrUpdater) => {
+      const nextBreadcrumbs =
+        typeof nextBreadcrumbsOrUpdater === 'function'
+          ? nextBreadcrumbsOrUpdater(localBreadcrumbsRef.current)
+          : nextBreadcrumbsOrUpdater;
+      localBreadcrumbsRef.current = nextBreadcrumbs;
+      setIsLayerLoading(true);
+      setLocalBreadcrumbs(nextBreadcrumbs);
+      syncMapUrl(useMapStore.getState().year, nextBreadcrumbs);
+    },
+    [syncMapUrl],
+  );
+  const commitBreadcrumbsRef = useRef(commitBreadcrumbs);
   useEffect(() => {
-    localBreadcrumbsRef.current = localBreadcrumbs;
-  }, [localBreadcrumbs]);
+    commitBreadcrumbsRef.current = commitBreadcrumbs;
+  }, [commitBreadcrumbs]);
 
   const previousYearRef = useRef(null);
 
@@ -188,7 +256,7 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     mapRef.current = mapInstance;
 
     function onMapLoad() {
-      setIsMapReady(true);
+      mapReadyStore.set(true);
     }
 
     if (mapInstance.isStyleLoaded()) {
@@ -199,18 +267,15 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
 
     return () => {
       mapInstance.off('load', onMapLoad);
-      kecLayerCleanupRef.current?.();
-      desLayerCleanupRef.current?.();
       try {
         mapInstance.remove();
       } catch {
         void 0;
       }
       mapRef.current = null;
-      setIsMapReady(false);
-      setIsLayerLoading(false);
+      mapReadyStore.set(false);
     };
-  }, []);
+  }, [mapReadyStore]);
 
   useEffect(() => {
     if (!isMapReady || !mapRef.current) return;
@@ -218,7 +283,6 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     let isEffectActive = true;
     abortActiveRequests();
     const signal = getActiveSignal();
-    setIsLayerLoading(true);
 
     const mapInstance = mapRef.current;
     const { kec, des } = localBreadcrumbs;
@@ -233,17 +297,25 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
       removeLayerAndSource(mapInstance, LAYER_IDS.DESA_FILL);
 
       if (!kec) {
-        const { geojson: kecGeoJson, cleanup } = await loadLayerWithCallback(
+        if (!isEffectActive) return;
+        const layerResult = await loadLayerWithCallback(
           mapInstance,
           LAYER_TYPES.KECAMATAN,
           SOURCE_IDS.KECAMATAN,
           LAYER_IDS.KECAMATAN_FILL,
           buildSingleFilter('kab', kabupaten),
           (clickedFeature) =>
-            setLocalBreadcrumbs({ kec: clickedFeature.properties.kec, des: null }),
+            commitBreadcrumbsRef.current({
+              kec: clickedFeature.properties.kec,
+              des: null,
+            }),
           signal,
         );
-        if (!isEffectActive) return;
+        const { geojson: kecGeoJson, cleanup } = layerResult;
+        if (!isEffectActive) {
+          cleanup?.();
+          return;
+        }
         kecLayerCleanupRef.current = cleanup;
 
         if (kecGeoJson) zoomToCollection(mapInstance, kecGeoJson, 20);
@@ -251,20 +323,25 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
 
         await loadGEEPolygonRaster(mapInstance, { kab: kabupaten }, signal);
       } else if (!des) {
-        const { geojson: desaGeoJson, cleanup } = await loadLayerWithCallback(
+        if (!isEffectActive) return;
+        const layerResult = await loadLayerWithCallback(
           mapInstance,
           LAYER_TYPES.DESA,
           SOURCE_IDS.DESA,
           LAYER_IDS.DESA_FILL,
           buildSingleFilter('kec', kec),
           (clickedFeature) =>
-            setLocalBreadcrumbs((previous) => ({
+            commitBreadcrumbsRef.current((previous) => ({
               ...previous,
               des: clickedFeature.properties.des,
             })),
           signal,
         );
-        if (!isEffectActive) return;
+        const { geojson: desaGeoJson, cleanup } = layerResult;
+        if (!isEffectActive) {
+          cleanup?.();
+          return;
+        }
         desLayerCleanupRef.current = cleanup;
 
         if (desaGeoJson) zoomToCollection(mapInstance, desaGeoJson, 60);
@@ -272,20 +349,25 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
 
         await loadGEEPolygonRaster(mapInstance, { kec }, signal);
       } else {
-        const { geojson: selectedDesaGeoJson, cleanup } = await loadLayerWithCallback(
+        if (!isEffectActive) return;
+        const layerResult = await loadLayerWithCallback(
           mapInstance,
           LAYER_TYPES.DESA,
           SOURCE_IDS.DESA,
           LAYER_IDS.DESA_FILL,
           buildDesaFilter({ kab: kabupaten, kec, des }),
           (clickedFeature) =>
-            setLocalBreadcrumbs((previous) => ({
+            commitBreadcrumbsRef.current((previous) => ({
               ...previous,
               des: clickedFeature.properties.des,
             })),
           signal,
         );
-        if (!isEffectActive) return;
+        const { geojson: selectedDesaGeoJson, cleanup } = layerResult;
+        if (!isEffectActive) {
+          cleanup?.();
+          return;
+        }
         desLayerCleanupRef.current = cleanup;
 
         if (selectedDesaGeoJson) zoomToCollection(mapInstance, selectedDesaGeoJson, 40);
@@ -295,7 +377,8 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
       }
     };
 
-    loadLayersAndGEE()
+    Promise.resolve()
+      .then(loadLayersAndGEE)
       .catch((error) => {
         if (error.name !== 'AbortError') console.error('MapTab load error:', error);
       })
@@ -323,11 +406,11 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     const signal = getActiveSignal();
     const { kec, des } = localBreadcrumbsRef.current;
     const geeFilter = des ? { des } : kec ? { kec } : { kab: kabupaten };
-    setIsLayerLoading(true);
 
     loadGEEPolygonRaster(mapRef.current, geeFilter, signal)
       .catch((error) => {
-        if (isEffectActive && error.name !== 'AbortError') console.error('MapTab year load error:', error);
+        if (isEffectActive && error.name !== 'AbortError')
+          console.error('MapTab year load error:', error);
       })
       .finally(() => {
         if (isEffectActive) setIsLayerLoading(false);
@@ -338,9 +421,33 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
     };
   }, [year, isMapReady, kabupaten]);
 
-  useEffect(() => {
-    onStateChange?.(year, { kab: kabupaten, ...localBreadcrumbs });
-  }, [year, localBreadcrumbs, kabupaten, onStateChange]);
+  const handleYearChange = (selectedYear) => {
+    setIsLayerLoading(true);
+    setYear(selectedYear);
+    syncMapUrl(selectedYear, localBreadcrumbsRef.current);
+  };
+
+  return {
+    mapContainerRef,
+    isMapReady,
+    isLayerLoading,
+    localBreadcrumbs,
+    year,
+    commitBreadcrumbs,
+    handleYearChange,
+  };
+}
+
+export function MapTab({ kabupaten, initialDrillState }) {
+  const {
+    mapContainerRef,
+    isMapReady,
+    isLayerLoading,
+    localBreadcrumbs,
+    year,
+    commitBreadcrumbs,
+    handleYearChange,
+  } = useProfileMap({ kabupaten, initialDrillState });
 
   return (
     <ProfileSection>
@@ -363,8 +470,8 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
               kabupaten={kabupaten}
               kec={localBreadcrumbs.kec}
               des={localBreadcrumbs.des}
-              onHome={() => setLocalBreadcrumbs({ kec: null, des: null })}
-              onKecClick={(kecLabel) => setLocalBreadcrumbs({ kec: kecLabel, des: null })}
+              onHome={() => commitBreadcrumbs({ kec: null, des: null })}
+              onKecClick={(kecLabel) => commitBreadcrumbs({ kec: kecLabel, des: null })}
             />
           )}
 
@@ -387,10 +494,7 @@ export function MapTab({ kabupaten, initialDrillState, onStateChange }) {
           {isMapReady && (
             <div className="absolute bottom-8 left-3 flex flex-col gap-1 items-start select-none z-10">
               <MapLegend />
-              <ProfileYearSelector
-                year={year}
-                onYearChange={(selectedYear) => setYear(selectedYear)}
-              />
+              <ProfileYearSelector year={year} onYearChange={handleYearChange} />
             </div>
           )}
         </div>

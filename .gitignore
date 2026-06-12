@@ -28,6 +28,12 @@ dist-ssr/
 .cursor/
 .windsurf/
 .aider/
+.claude/
+.commandcode/
+.continue/
+.factory/
+.github/
+.kiro/
 *.suo
 *.ntvs*
 *.njsproj

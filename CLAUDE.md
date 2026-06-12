@@ -12,8 +12,9 @@
 - **Geo utilities**: Turf.js 7
 - **State**: Zustand 5
 - **Routing**: react-router-dom 7
+- **Data fetching**: SWR 2
 - **Icons**: lucide-react
-- **D3 modules**: d3-sankey, d3-shape, d3-interpolate
+- **D3 modules**: d3-sankey
 - **Test runner**: none (no test files in web/)
 
 ## Commands
@@ -24,6 +25,7 @@ npm run build        # vite build
 npm run lint         # eslint
 npm run format       # prettier --write
 npm run format:check # prettier --check
+npm run build:supplychain # regenerate supplychain-data.json from palmoil.csv
 ```
 
 ## Directory Structure

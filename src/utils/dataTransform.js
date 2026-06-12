@@ -45,26 +45,17 @@ export const transformDataForChart = (dataArray) => {
 
   // Parse each entry as {name, value}, filter empty, sort descending
   const processedData = dataArray
-    .map((dataEntry) => {
+    .reduce((accumulator, dataEntry) => {
       const kabupateName = String((dataEntry && dataEntry[0]) || '').trim();
+      if (!kabupateName) return accumulator; // Remove entries without name
       const areaValue = Number((dataEntry && dataEntry[1]) || 0) || 0;
-      return { kabupateName, areaValue };
-    })
-    .filter(({ kabupateName }) => kabupateName) // Remove entries without name
+      accumulator.push({ kabupateName, areaValue });
+      return accumulator;
+    }, [])
     .sort((entryA, entryB) => entryB.areaValue - entryA.areaValue); // Sort largest first
 
   return {
     labels: processedData.map((item) => item.kabupateName),
     values: processedData.map((item) => item.areaValue),
   };
-};
-
-// Check if item is valid as a data entry [name, value]
-export const isValidDataEntry = (dataItem) => {
-  return (
-    Array.isArray(dataItem) &&
-    dataItem.length >= 2 &&
-    typeof dataItem[0] === 'string' &&
-    !isNaN(Number(dataItem[1]))
-  );
 };

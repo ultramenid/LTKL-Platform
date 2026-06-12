@@ -1,6 +1,7 @@
 import { BarChart3, BookOpen } from 'lucide-react';
 import { COLORS } from '../../config/constants.js';
-import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
+import { ProfileSection } from './ProfileSection.jsx';
+import { SectionHeader } from './SectionHeader.jsx';
 
 const LAPORAN_ITEMS = [
   {

@@ -10,23 +10,11 @@ const resolveKabName = (rawKab) =>
     (kabupatenRecord) => kabupatenRecord.name.toLowerCase() === String(rawKab).toLowerCase(),
   )?.name ?? rawKab;
 
-import {
-  API_ENDPOINTS,
-  COLORS,
-  LAYER_IDS,
-  LAYER_TYPES,
-  SOURCE_IDS,
-  WFS_CONFIG,
-} from '../config/constants.js';
-import {
-  buildSingleFilter,
-  buildKecamatanFilter,
-  buildDesaFilter,
-} from '../utils/filterBuilder.js';
+import { API_ENDPOINTS, COLORS, LAYER_IDS, SOURCE_IDS, WFS_CONFIG } from '../config/constants.js';
 
 // Re-export for backward compatibility
-export const GEOSERVER_URL = API_ENDPOINTS.GEOSERVER;
-export const TILE_SERVER_URL = API_ENDPOINTS.TILE_SERVER;
+const GEOSERVER_URL = API_ENDPOINTS.GEOSERVER;
+const TILE_SERVER_URL = API_ENDPOINTS.TILE_SERVER;
 
 const LAYERS = {
   HOVER_SUFFIX: '-hover-line',
@@ -73,7 +61,12 @@ let activeController = new AbortController();
  * Returns validated GeoJSON object or null on abort/error.
  * Uses activeController signal so abortActiveRequests() can cancel in-flight fetches (Rule A).
  */
-export async function fetchGeoJSONFromWFS(layerName, sourceId, cqlFilter, signal = activeController.signal) {
+export async function fetchGeoJSONFromWFS(
+  layerName,
+  sourceId,
+  cqlFilter,
+  signal = activeController.signal,
+) {
   throwIfAborted(signal);
 
   const store = useMapStore.getState();
@@ -562,15 +555,14 @@ export function removeLayerAndSource(map, layerId) {
   }
 
   // Remove ALL layers using this source (fill + hover-line + other layers)
-  allLayers
-    .filter((layerItem) => layerItem.source === sourceId)
-    .forEach((layerItem) => {
-      try {
-        if (map.getLayer(layerItem.id)) map.removeLayer(layerItem.id);
-      } catch {
-        /* skip */
-      }
-    });
+  for (const layerItem of allLayers) {
+    if (layerItem.source !== sourceId) continue;
+    try {
+      if (map.getLayer(layerItem.id)) map.removeLayer(layerItem.id);
+    } catch {
+      /* skip */
+    }
+  }
 
   // After all layers removed, remove the source
   try {
@@ -583,18 +575,16 @@ export function removeLayerAndSource(map, layerId) {
 // Move all hover line layers to top so they render above admin boundaries
 function bringHoverLayersToTop(map) {
   const allLayers = map.getStyle()?.layers ?? [];
-  const hoverLineIds = allLayers
-    .map((layer) => layer.id)
-    .filter((id) => id.includes(LAYERS.HOVER_SUFFIX));
 
   // Move each hover line to top (rendering order: undefined = top)
-  hoverLineIds.forEach((layerItemId) => {
+  for (const layer of allLayers) {
+    if (!layer.id.includes(LAYERS.HOVER_SUFFIX)) continue;
     try {
-      map.moveLayer(layerItemId, undefined);
+      map.moveLayer(layer.id, undefined);
     } catch {
       // Layer may have been removed already, skip
     }
-  });
+  }
 }
 
 // Load GeoJSON layer from GeoServer (cache-first, dedup pending requests).

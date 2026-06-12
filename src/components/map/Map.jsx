@@ -136,6 +136,7 @@ const Map = ({ onToggleSidebar }) => {
 
       {isMapReady && (
         <button
+          type="button"
           onClick={onToggleSidebar}
           className="absolute top-4 right-4 z-20 lg:hidden flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-md rounded-lg shadow-lg border border-white/10 px-2.5 py-1.5 hover:bg-gray-900/90 transition-colors cursor-pointer"
           aria-label="Buka menu"

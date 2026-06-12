@@ -13,7 +13,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { COLORS, MAP_CONFIG } from '../../config/constants.js';
-import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
+import { ProfileSection } from './ProfileSection.jsx';
+import { SectionHeader } from './SectionHeader.jsx';
 
 const CONTACT_DETAILS = {
   address: 'Jl. Dewi Sartika No. 47, Sigi Biromaru, Kabupaten Sigi, Sulawesi Tengah 94364',

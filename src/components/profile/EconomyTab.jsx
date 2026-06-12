@@ -1,5 +1,6 @@
 import ReactECharts from 'echarts-for-react';
-import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
+import { ProfileSection } from './ProfileSection.jsx';
+import { SectionHeader } from './SectionHeader.jsx';
 const GDP_YEAR_COLORS = [
   '#fde8c8',
   '#fcd9a8',

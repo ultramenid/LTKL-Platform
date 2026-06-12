@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { KABUPATENS } from '../data/kabupatens.js';
 import { PROFILE_HERO_IMAGE_URL, YEAR_CONFIG } from '../config/constants.js';
 import { useMapStore } from '../store/mapStore.js';
-import { encodeAdministrasi, decodeAdministrasi } from '../utils/urlStateSync.js';
+import { decodeAdministrasi } from '../utils/urlStateSync.js';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
 
 import { NewsTab } from './profile/NewsTab.jsx';
@@ -34,16 +34,28 @@ const HERO_STATS = [
 ];
 
 const VALID_TAB_IDS = NAV_TABS.map((tab) => tab.id);
+const DEFAULT_SEARCH_PARAMS = {
+  tab: 'news',
+  year: String(YEAR_CONFIG.DEFAULT),
+  administrasi: 'all',
+};
+const subscribeToYear = () => () => {};
+const getCurrentYear = () => new Date().getFullYear();
+const getServerYear = () => null;
 
 export function ProfilePage({ kabupatenName }) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams(DEFAULT_SEARCH_PARAMS);
+  const currentYear = useSyncExternalStore(subscribeToYear, getCurrentYear, getServerYear);
 
   const urlTab = searchParams.get('tab');
   const activeTab = VALID_TAB_IDS.includes(urlTab) ? urlTab : 'news';
   const urlYear = parseInt(searchParams.get('year')) || YEAR_CONFIG.DEFAULT;
   const urlAdministrasi = searchParams.get('administrasi') || 'all';
 
-  const initialDrillStateRef = useRef(decodeAdministrasi(urlAdministrasi));
+  const initialDrillStateRef = useRef(null);
+  if (initialDrillStateRef.current === null) {
+    initialDrillStateRef.current = decodeAdministrasi(urlAdministrasi);
+  }
 
   useEffect(() => {
     const tabLabel = NAV_TABS.find((t) => t.id === activeTab)?.label || '';
@@ -51,21 +63,8 @@ export function ProfilePage({ kabupatenName }) {
   }, [kabupatenName, activeTab]);
 
   useEffect(() => {
-    useMapStore.getState().setYear(urlYear);
-    setSearchParams(
-      (previousParams) => {
-        const updatedParams = new URLSearchParams(previousParams);
-        if (!updatedParams.has('tab')) updatedParams.set('tab', activeTab);
-        if (activeTab === 'map') {
-          if (!updatedParams.has('year')) updatedParams.set('year', String(urlYear));
-          if (!updatedParams.has('administrasi'))
-            updatedParams.set('administrasi', urlAdministrasi);
-        }
-        return updatedParams;
-      },
-      { replace: true },
-    );
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    useMapStore.setState({ year: urlYear });
+  }, [urlYear]);
 
   const selectTab = useCallback(
     (tabId) => {
@@ -85,22 +84,6 @@ export function ProfilePage({ kabupatenName }) {
     [setSearchParams],
   );
 
-  const handleMapStateChange = useCallback(
-    (selectedYear, drillBreadcrumbs) => {
-      initialDrillStateRef.current = drillBreadcrumbs;
-      setSearchParams(
-        (previousParams) => {
-          const updatedParams = new URLSearchParams(previousParams);
-          updatedParams.set('year', String(selectedYear));
-          updatedParams.set('administrasi', encodeAdministrasi(drillBreadcrumbs));
-          return updatedParams;
-        },
-        { replace: true },
-      );
-    },
-    [setSearchParams],
-  );
-
   const districtRecord = KABUPATENS.find(
     (district) => district.name.toLowerCase() === kabupatenName.toLowerCase(),
   );
@@ -108,15 +91,10 @@ export function ProfilePage({ kabupatenName }) {
   return (
     <div className="min-h-screen bg-white font-sans">
       <div className="relative bg-gray-900 overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-25"
-          style={{
-            backgroundImage: `url("${PROFILE_HERO_IMAGE_URL}")`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-          role="img"
-          aria-label="Pemandangan alam pegunungan"
+        <img
+          src={PROFILE_HERO_IMAGE_URL}
+          alt="Pemandangan alam pegunungan"
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-25"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/70 to-black/90" />
 
@@ -172,6 +150,7 @@ export function ProfilePage({ kabupatenName }) {
           {NAV_TABS.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               role="tab"
               aria-selected={activeTab === tab.id}
               aria-controls={`tabpanel-${tab.id}`}
@@ -195,9 +174,9 @@ export function ProfilePage({ kabupatenName }) {
           {activeTab === 'profile' && <KabupatenProfileTab kabupaten={kabupatenName} />}
           {activeTab === 'map' && (
             <MapTab
+              key={kabupatenName}
               kabupaten={kabupatenName}
               initialDrillState={initialDrillStateRef.current}
-              onStateChange={handleMapStateChange}
             />
           )}
           {activeTab === 'products' && <ProdukUnggulanTab kabupaten={kabupatenName} />}
@@ -240,6 +219,7 @@ export function ProfilePage({ kabupatenName }) {
               {NAV_TABS.map((tab) => (
                 <li key={tab.id}>
                   <button
+                    type="button"
                     onClick={() => selectTab(tab.id)}
                     className="text-sm text-white/50 hover:text-white/90 transition-colors cursor-pointer"
                   >
@@ -286,8 +266,8 @@ export function ProfilePage({ kabupatenName }) {
         <div className="border-t border-white/10">
           <div className="max-w-5xl mx-auto px-4 md:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-[11px] text-white/30">
-              © {new Date().getFullYear()} LTKL · Auriga Nusantara. Sumber data: BPS, Pemerintah
-              Daerah, Indonesia Open Data.
+              © {currentYear} LTKL · Auriga Nusantara. Sumber data: BPS, Pemerintah Daerah,
+              Indonesia Open Data.
             </p>
             <Link
               to="/"

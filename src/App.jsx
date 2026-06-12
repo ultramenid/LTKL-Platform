@@ -25,7 +25,9 @@ function MapView() {
   return (
     <div className="h-screen flex relative overflow-hidden">
       {isSidebarOpen && (
-        <div
+        <button
+          type="button"
+          aria-label="Tutup menu samping"
           className="fixed inset-0 bg-black/40 z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />

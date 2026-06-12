@@ -1,6 +1,7 @@
 import { Calendar, User, ChevronRight, BookOpen } from 'lucide-react';
 import { COLORS } from '../../config/constants.js';
-import { ProfileSection, SectionHeader } from './ProfileSection.jsx';
+import { ProfileSection } from './ProfileSection.jsx';
+import { SectionHeader } from './SectionHeader.jsx';
 
 const NEWS_ITEMS = [
   {
@@ -167,7 +168,10 @@ export function NewsTab() {
       </div>
 
       <div className="flex justify-center pt-2">
-        <button className="flex items-center gap-2 px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:border-teal-300 hover:text-teal-600 transition-colors cursor-pointer">
+        <button
+          type="button"
+          className="flex items-center gap-2 px-6 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:border-teal-300 hover:text-teal-600 transition-colors cursor-pointer"
+        >
           <BookOpen size={14} />
           Lihat Semua Berita & Acara
         </button>
