@@ -121,6 +121,7 @@ function CompositionPieChart({ data, year }) {
       orient: 'vertical',
       right: 6,
       top: 'middle',
+      tooltip: { show: false },
       textStyle: { fontSize: 10, color: '#78716c', fontFamily: CHART_STYLE.FONT_SANS },
       itemWidth: 10,
       itemHeight: 10,
