@@ -383,7 +383,22 @@ function StackCoverageChart() {
   const updateBreadcrumb = useMapStore((state) => state.updateBreadcrumb);
   const setSelectedKab = useMapStore((state) => state.setSelectedKab);
 
-  const { data, error, isLoading, year } = useStackStats(kab, kec, des);
+  const { data: rawData, error, isLoading, year } = useStackStats(kab, kec, des);
+
+  // Normalize old backend response (kabupaten array) → new format (rows array)
+  const data = useMemo(() => {
+    if (!rawData) return null;
+    if (Array.isArray(rawData.rows)) return rawData;
+    if (Array.isArray(rawData.kabupaten)) {
+      return {
+        ...rawData,
+        level: 'kabupaten',
+        nameKey: 'kabupaten',
+        rows: rawData.kabupaten.map((r) => ({ ...r, name: r.kabupaten })),
+      };
+    }
+    return rawData;
+  }, [rawData]);
 
   const handleDrill = useCallback(
     (level, value) => {
