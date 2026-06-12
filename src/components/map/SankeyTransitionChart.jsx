@@ -385,10 +385,10 @@ function SankeyTransitionChart({
           onClose={closeModal}
           aria-label="Transisi Tutupan Lahan — Tampilan Penuh"
         >
-          <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-gray-100">
+          <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-coffee-900/10">
               <div>
-                <p className="text-sm font-semibold text-gray-800">Transisi Tutupan Lahan</p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-sm font-bold text-coffee-900">Transisi Tutupan Lahan</p>
+                <p className="text-xs text-coffee-400 mt-0.5">
                   {startYear} → {endYear}
                 </p>
               </div>
@@ -417,8 +417,8 @@ function SankeyTransitionChart({
               </div>
             </div>
 
-            <div className="shrink-0 px-5 py-2 border-t border-gray-100 bg-gray-50">
-              <p className="text-[10px] text-gray-400">
+            <div className="shrink-0 px-5 py-2 border-t border-coffee-900/10 bg-parchment-50">
+              <p className="text-[10px] text-coffee-400">
                 {chartData?.detailsLabel
                   ? `Hover node atau link untuk melihat detail transisi per ${chartData.detailsLabel.toLowerCase()} · Tekan Escape untuk menutup`
                   : 'Hover node atau link untuk melihat detail transisi · Tekan Escape untuk menutup'}

@@ -97,7 +97,7 @@ export default function SankeyYearSelector() {
         className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-medium tabular-nums transition-colors cursor-pointer ${
           open
             ? 'bg-primary/10 border-primary/30 text-primary/80'
-            : 'bg-stone-100 border-stone-200 text-stone-500 hover:border-primary/30 hover:text-primary/80 hover:bg-primary/10'
+            : 'bg-parchment-100 border-coffee-900/15 text-coffee-500 hover:border-primary/30 hover:text-primary/80 hover:bg-primary/10'
         }`}
         aria-label="Pilih rentang tahun"
         aria-expanded={open}

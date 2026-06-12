@@ -9,15 +9,15 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
   // ─── COLLAPSED RAIL (desktop only) ───
   if (collapsed) {
     return (
-      <div className="w-full h-full flex flex-col bg-white border-r border-gray-100">
-        <div className="shrink-0 flex flex-col items-center gap-2.5 py-4 border-b border-gray-100">
+      <div className="w-full h-full flex flex-col bg-parchment-50 border-r border-coffee-900/10">
+        <div className="shrink-0 flex flex-col items-center gap-2.5 py-4 border-b border-coffee-900/10">
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
             <Layers size={16} className="text-primary" />
           </div>
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-lg hover:bg-parchment-200 flex items-center justify-center text-coffee-400 hover:text-coffee-600 transition-colors cursor-pointer"
             aria-label="Buka sidebar"
             title="Buka sidebar"
           >
@@ -34,8 +34,8 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
 
   // ─── EXPANDED PANEL ───
   return (
-    <div className="w-full h-full flex flex-col bg-white border-r border-gray-100">
-      <div className="shrink-0 px-5 py-4 border-b border-gray-100 bg-white">
+    <div className="w-full h-full flex flex-col bg-parchment-50 border-r border-coffee-900/10">
+      <div className="shrink-0 px-5 py-4 border-b border-coffee-900/10 bg-parchment-50">
         <div className="flex items-center gap-3">
           <div className="overflow-hidden shrink-0" style={{ height: '36px' }}>
             <img
@@ -45,17 +45,17 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
             />
           </div>
           <div className="hidden lg:block flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-gray-800 leading-tight tracking-tight">
+            <p className="text-[11px] font-semibold text-coffee-900 leading-tight tracking-tight">
               Lingkar Temu
             </p>
-            <p className="text-[11px] font-semibold text-gray-800 leading-tight tracking-tight">
+            <p className="text-[11px] font-semibold text-coffee-900 leading-tight tracking-tight">
               Kabupaten Lestari
             </p>
           </div>
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="hidden lg:flex w-7 h-7 rounded-lg hover:bg-gray-100 items-center justify-center shrink-0 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            className="hidden lg:flex w-7 h-7 rounded-lg hover:bg-parchment-200 items-center justify-center shrink-0 text-coffee-400 hover:text-coffee-600 transition-colors cursor-pointer"
             aria-label="Tutup sidebar"
             title="Tutup sidebar"
           >
@@ -64,17 +64,17 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
           <button
             type="button"
             onClick={onClose}
-            className="lg:hidden w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center shrink-0 transition-colors cursor-pointer ml-auto"
+            className="lg:hidden w-7 h-7 rounded-lg bg-parchment-200 hover:bg-parchment-300 flex items-center justify-center shrink-0 transition-colors cursor-pointer ml-auto"
             aria-label="Tutup sidebar"
           >
-            <X size={14} className="text-gray-500" />
+            <X size={14} className="text-coffee-500" />
           </button>
         </div>
 
         <div className="mt-4 relative">
           <Search
             size={12}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-coffee-400"
             aria-hidden="true"
           />
           <input

@@ -7,10 +7,10 @@ export function ChartHeader({ title, subtitle, children }) {
   return (
     <div className="shrink-0 flex items-start justify-between gap-4 px-5 pt-4 pb-2.5 min-h-[58px]">
       <div className="min-w-0">
-        <h3 className="text-[14px] font-medium tracking-tight leading-snug text-stone-800 truncate">
+        <h3 className="text-[14px] font-medium tracking-tight leading-snug text-coffee-900 truncate">
           {title}
         </h3>
-        <p className="mt-1 text-[10px] font-normal text-stone-400 truncate">
+        <p className="mt-1 text-[10px] font-normal text-coffee-400 truncate">
           {subtitle}
         </p>
       </div>
@@ -28,13 +28,13 @@ function SkeletonChartHeader({ showActionButton = false }) {
   return (
     <div className="shrink-0 flex items-start justify-between gap-4 px-5 pt-4 pb-2.5 min-h-[58px]">
       <div className="space-y-1.5">
-        <div className="h-3.5 w-40 bg-stone-200 rounded animate-pulse" />
-        <div className="h-2.5 w-52 bg-stone-100 rounded animate-pulse" />
+        <div className="h-3.5 w-40 bg-parchment-300 rounded animate-pulse" />
+        <div className="h-2.5 w-52 bg-parchment-200 rounded animate-pulse" />
       </div>
       <div className="flex items-center gap-1.5 pt-0.5">
-        <div className="h-[18px] w-[72px] bg-stone-100 rounded-full animate-pulse" />
+        <div className="h-[18px] w-[72px] bg-parchment-200 rounded-full animate-pulse" />
         {showActionButton && (
-          <div className="h-[18px] w-[18px] bg-stone-100 rounded-md animate-pulse" />
+          <div className="h-[18px] w-[18px] bg-parchment-200 rounded-md animate-pulse" />
         )}
       </div>
     </div>
@@ -69,7 +69,7 @@ export function LoadingChartSkeleton() {
           <div
             key={index}
             className={`chart-bar-rise flex-1 rounded-t ${
-              bar.accent ? 'bg-primary/40' : 'bg-stone-200/80'
+              bar.accent ? 'bg-primary/40' : 'bg-parchment-300/80'
             }`}
             style={{
               height: `${bar.heightPercent}%`,
@@ -82,16 +82,16 @@ export function LoadingChartSkeleton() {
 
       {/* Baseline + axis label placeholders */}
       <div className="shrink-0 px-7">
-        <div className="h-px w-full bg-stone-200" />
+        <div className="h-px w-full bg-parchment-300" />
         <div className="flex justify-between py-1.5">
           {SKELETON_BARS.map((_, index) => (
-            <div key={index} className="h-1.5 w-5 bg-stone-100 rounded animate-pulse" />
+            <div key={index} className="h-1.5 w-5 bg-parchment-200 rounded animate-pulse" />
           ))}
         </div>
       </div>
 
       <div className="shrink-0 pb-2.5 text-center">
-        <p className="text-[10px] text-stone-400 tracking-wide animate-pulse">
+        <p className="text-[10px] text-coffee-400 tracking-wide animate-pulse">
           Memuat data tutupan lahan…
         </p>
       </div>
@@ -145,7 +145,7 @@ export function SankeyLoadingSkeleton() {
         <svg width="100%" height="100%" viewBox="0 0 200 100" preserveAspectRatio="none">
           <defs>
             <linearGradient id="sankey-weave-thread" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#e7e5e4" />
+              <stop offset="0%" stopColor="#d0e7e4" />
               <stop offset="100%" stopColor="#b3d4d0" stopOpacity="0.7" />
             </linearGradient>
             <linearGradient id="sankey-weave-thread-accent" x1="0" y1="0" x2="1" y2="0">
@@ -188,7 +188,7 @@ export function SankeyLoadingSkeleton() {
               className="sankey-weave-node"
               x="0" y={node.y} width="7" height={node.h}
               rx="1.5"
-              fill={index === 0 ? COLORS.PRIMARY : '#d6d3d1'}
+              fill={index === 0 ? COLORS.PRIMARY : '#d0e7e4'}
               style={{
                 animationDuration: `${SKELETON_CYCLE_MS}ms`,
                 animationDelay: `${index * SKELETON_STAGGER_MS}ms`,
@@ -203,7 +203,7 @@ export function SankeyLoadingSkeleton() {
               className="sankey-weave-node"
               x="193" y={node.y} width="7" height={node.h}
               rx="1.5"
-              fill={index === 0 ? COLORS.PRIMARY : '#d6d3d1'}
+              fill={index === 0 ? COLORS.PRIMARY : '#d0e7e4'}
               style={{
                 animationDuration: `${SKELETON_CYCLE_MS}ms`,
                 animationDelay: `${SKELETON_CYCLE_MS * 0.3 + index * SKELETON_STAGGER_MS}ms`,
@@ -215,7 +215,7 @@ export function SankeyLoadingSkeleton() {
 
       {/* Microcopy — quiet caption, fades with the weave rhythm */}
       <div className="shrink-0 pb-2.5 text-center">
-        <p className="text-[10px] text-stone-400 tracking-wide animate-pulse">
+        <p className="text-[10px] text-coffee-400 tracking-wide animate-pulse">
           Menyusun aliran transisi…
         </p>
       </div>
@@ -229,8 +229,8 @@ export function ChartErrorState({ message }) {
       <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center">
         <span className="text-red-400 text-sm font-bold">!</span>
       </div>
-      <p className="text-[13px] font-medium text-stone-600">Gagal memuat data</p>
-      <p className="text-[11px] text-stone-400 leading-relaxed max-w-xs">{message}</p>
+      <p className="text-[13px] font-medium text-coffee-600">Gagal memuat data</p>
+      <p className="text-[11px] text-coffee-400 leading-relaxed max-w-xs">{message}</p>
     </div>
   );
 }
@@ -238,7 +238,7 @@ export function ChartErrorState({ message }) {
 export function ChartEmptyState() {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-center">
-      <p className="text-[12px] text-stone-400">Tidak ada data tersedia</p>
+      <p className="text-[12px] text-coffee-400">Tidak ada data tersedia</p>
     </div>
   );
 }

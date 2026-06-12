@@ -122,10 +122,10 @@ function CompositionPieChart({ data, year }) {
             className="absolute pointer-events-none text-center"
             style={{ left: '35%', top: '50%', transform: 'translate(-50%, -50%)' }}
           >
-            <div className="text-[13px] font-bold leading-tight text-stone-900">
+            <div className="text-[13px] font-bold leading-tight text-coffee-900">
               {totalLabel}
             </div>
-            <div className="text-[9px] text-stone-400 mt-0.5">Total</div>
+            <div className="text-[9px] text-coffee-400 mt-0.5">Total</div>
           </div>
         </div>
       </div>
