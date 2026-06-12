@@ -116,7 +116,11 @@ function makeChartOption(nodes, links, nodeColorMap, startYear, endYear, details
   return {
     tooltip: {
       trigger: 'item',
-      appendToBody: true,
+      // Keep the tooltip inside the chart's DOM in both modes so it can never
+      // overlap neighboring cards (compact) or escape the modal (popup).
+      // `confine` then clamps it to the chart's drawing area.
+      appendToBody: false,
+      confine: true,
       backgroundColor: '#1e293b',
       borderColor: 'transparent',
       textStyle: {
@@ -124,7 +128,27 @@ function makeChartOption(nodes, links, nodeColorMap, startYear, endYear, details
         fontSize: isCompact ? 11 : 13,
         fontFamily: CHART_STYLE.FONT_SANS,
       },
-      extraCssText: 'z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);',
+      extraCssText: isCompact
+        ? 'z-index: 5; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); max-height: 100%; overflow-y: auto;'
+        : 'z-index: 5; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); max-height: 100%; overflow-y: auto;',
+      position: (point, params, dom, rect, size) => {
+        // Flip horizontally if the tooltip would overflow the chart's right edge.
+        // Vertical: ECharts' `confine: true` already keeps it inside, but
+        // anchor it to the cursor on the y-axis for predictability.
+        const viewWidth = size.viewSize[0];
+        const tooltipWidth = size.contentSize[0];
+        const tooltipHeight = size.contentSize[1];
+        const margin = isCompact ? 6 : 12;
+
+        let x = point[0] + 16;
+        if (x + tooltipWidth + margin > viewWidth) {
+          x = Math.max(margin, point[0] - tooltipWidth - 16);
+        }
+        if (x < margin) x = margin;
+
+        let y = point[1] - tooltipHeight / 2;
+        return [x, y];
+      },
       formatter: (params) => {
         if (params.dataType === 'node') {
           return buildNodeTooltip(params.name, { nodeColorMap, isCompact });
