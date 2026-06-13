@@ -103,6 +103,7 @@ const MAX_SAVE_ATTEMPTS = 20;
 
 function saveCacheToStorage(swrCacheMap) {
   let entriesToStore;
+  let hasPersistable = false;
   try {
     // Read existing storage first so already-stored entries keep their
     // original expiresAt; rewriting them would reset every entry's TTL to now
@@ -111,11 +112,17 @@ function saveCacheToStorage(swrCacheMap) {
 
     for (const [cacheKey, cacheState] of swrCacheMap.entries()) {
       if (!isPersistableEntry(cacheKey, cacheState)) continue;
+      hasPersistable = true;
       entriesToStore[cacheKey] = {
         data: cacheState.data,
         expiresAt: entriesToStore[cacheKey]?.expiresAt ?? expirationTime,
       };
     }
+
+    // If localStorage was externally cleared (e.g. a false-positive hard-reload
+    // detection) and we have nothing new to persist, don't write an empty
+    // object back — that would cement the loss of previously cached data.
+    if (!hasPersistable && Object.keys(entriesToStore).length === 0) return;
   } catch {
     return;
   }

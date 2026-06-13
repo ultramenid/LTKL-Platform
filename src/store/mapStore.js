@@ -193,11 +193,15 @@ export const useMapStore = create((set, get) => ({
     return cachedGeoJson;
   },
 
-  // Clear all cache (memory + localStorage)
+  // Clear all cache (memory + localStorage). Removes every mapCache_* key,
+  // including chart stats. Note: the stats cache also lives in SWR's in-memory
+  // provider map for the current session — only a page reload flushes that, so
+  // the dev cache-clear control reloads after calling this.
   clearCache: () => {
     try {
       localStorage.removeItem(CACHE_CONFIG.STORAGE_KEY_GEE);
       localStorage.removeItem(CACHE_CONFIG.STORAGE_KEY_GEOJSON);
+      localStorage.removeItem(CACHE_CONFIG.STORAGE_KEY_STATS);
     } catch {
       // Silently ignore localStorage errors
     }

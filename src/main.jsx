@@ -1,3 +1,6 @@
+// Must run before App/store imports: clears persisted caches on a hard reload
+// while localStorage is still untouched (mapStore hydrates at module-eval time).
+import './lib/cacheReset.js';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
