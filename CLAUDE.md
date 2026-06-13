@@ -131,6 +131,19 @@ Year change → setYear() → updateUrl() → loadGEEPolygonRaster() with new fi
 In-memory (Zustand) → localStorage → Pending request dedup → Fetch from API
 ```
 
+Applies to map layers (GEE tile URLs, GeoJSON boundaries) via `store/mapStore.js`.
+
+### Chart Stats Cache (SWR)
+
+Chart components (`CoverageChart`, `StackCoverageChart`, `SankeyTransitionChart`) fetch
+tile-server stats via SWR. A global `<SWRConfig>` in `App.jsx` uses the persistent
+provider in `lib/swrPersistentCache.js`: tile-server stats responses are written
+through to localStorage (`mapCache_stats`, TTL `CACHE_CONFIG.STATS_TTL_MS`) as soon
+as they settle in the cache — not on unload events, which fire too unreliably — and
+restored on startup, so chart data survives manual page refresh. Stats are
+immutable per region/year, so `revalidateIfStale` and `revalidateOnFocus` are off —
+a cached entry is never refetched until its TTL expires at hydration time.
+
 ## External Services
 
 - **GeoServer WFS**: `https://aws.simontini.id/geoserver/ows` — admin boundary GeoJSON
@@ -208,7 +221,7 @@ async function waitForSourceData(map, sourceId, signal) {
 }
 ```
 
-Applies to: `utils/mapUtils.js` `waitForSourceData`. Also applies to `map.on('load', ...)` in `components/map/KabupatensList.jsx`.
+Applies to: `utils/mapUtils.js` `waitForSourceData`.
 
 ### Rule 3: Effects with async map operations that can overlap must check isEffectActive before every await
 
@@ -283,25 +296,23 @@ Applies to: `store/mapLayerStore.js` (`statsController`), `components/map/Covera
 
 Applies to: `utils/mapUtils.js` `waitForSourceData`.
 
-### Rule 6: Map event listeners must be removed in cleanup
+### Rule 6: Map event listeners must be removed in cleanup — and never re-derive readiness of the global map
 
 ```jsx
-// ❌ Wrong — listener leaks on re-render/unmount
+// ❌ Wrong — 'load' fires ONCE per map. A component that mounts after the map
+// loaded waits forever (isStyleLoaded() can transiently return false on a
+// loaded map, e.g. right after a resize)
 useEffect(() => {
-  map?.on('load', () => setIsMapReady(true));
+  if (map.isStyleLoaded()) setIsMapReady(true);
+  else map.on('load', () => setIsMapReady(true));
 }, [map]);
 
-// ✅ Correct
-useEffect(() => {
-  if (!map) return;
-  function onLoad() { setIsMapReady(true); }
-  if (map.isStyleLoaded()) onLoad();
-  else map.on('load', onLoad);
-  return () => map.off('load', onLoad);
-}, [map]);
+// ✅ Correct — Map.jsx owns the map, attaches 'load' before it can fire, and
+// publishes readiness once; consumers read the store flag
+const isMapReady = useMapStore((state) => state.isMapLoaded);
 ```
 
-Applies to: `components/map/KabupatensList.jsx`.
+Components owning their own local map (e.g. `components/profile/MapTab.jsx`) may still listen to `load`, but must attach the listener at map creation and clean it up in the effect return.
 
 ### Rule 7: GEE layer mutations on shared source/layer ids must be serialized
 

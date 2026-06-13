@@ -26,11 +26,18 @@ export const useMapStore = create((set, get) => ({
   // ─── Sankey Transition Year Range ───
   sankeyStartYear: 2013,
   sankeyEndYear: MAPBIOMAS_YEAR_RANGE.MAX,
-  setSankeyYears: (startYear, endYear) => set({ sankeyStartYear: startYear, sankeyEndYear: endYear }),
+  setSankeyYears: (startYear, endYear) =>
+    set({ sankeyStartYear: startYear, sankeyEndYear: endYear }),
 
   // ─── Map Instance ───
   map: null,
   setMap: (mapInstance) => set({ map: mapInstance }),
+
+  // Set once by Map.jsx when the map's 'load' event fires. Consumers must read
+  // this instead of map.isStyleLoaded() — that can transiently return false on
+  // a loaded map, and a late map.on('load') listener never fires again
+  isMapLoaded: false,
+  setMapLoaded: (loaded) => set({ isMapLoaded: loaded }),
 
   // ─── Breadcrumb Management ───
   // Replace entire breadcrumbs object (typically used from URL sync)

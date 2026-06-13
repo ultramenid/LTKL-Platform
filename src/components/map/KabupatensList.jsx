@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
@@ -26,15 +26,15 @@ const createHoverMarkerElement = () => {
 };
 
 export function KabupatenCard({ filterText = '', collapsed = false }) {
-  const { map, updateBreadcrumb, selectedKab, setSelectedKab } = useMapStore(
+  const { map, isMapReady, updateBreadcrumb, selectedKab, setSelectedKab } = useMapStore(
     useShallow((state) => ({
       map: state.map,
+      isMapReady: state.isMapLoaded,
       updateBreadcrumb: state.updateBreadcrumb,
       selectedKab: state.selectedKab,
       setSelectedKab: state.setSelectedKab,
     })),
   );
-  const [isMapReady, setIsMapReady] = useState(false);
   const kabupatenGeoJsonRef = useRef(null);
   const hoverMarkerRef = useRef(null);
 
@@ -47,27 +47,17 @@ export function KabupatenCard({ filterText = '', collapsed = false }) {
     if (!map) return;
     let cancelled = false;
 
-    function onLoad() {
-      setIsMapReady(true);
-    }
-
     async function loadKabupatenGeoJson() {
       const geoJsonData = await fetchGeoJSONFromWFS(LAYER_TYPES.KABUPATEN);
       if (!cancelled) kabupatenGeoJsonRef.current = geoJsonData;
     }
 
-    if (map.isStyleLoaded()) {
-      setIsMapReady(true);
-    } else {
-      map.on('load', onLoad);
-    }
     loadKabupatenGeoJson().catch((error) => {
       if (!cancelled && error?.name !== 'AbortError') console.error(error);
     });
 
     return () => {
       cancelled = true;
-      map.off('load', onLoad);
       removeHoverMarker();
     };
   }, [map]);

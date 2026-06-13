@@ -7,6 +7,9 @@ export const MAP_CONFIG = {
   DEFAULT_ZOOM: 4,
   MIN_ZOOM: 4,
   STYLE_URL: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  // Debounce for container-driven map.resize(); per-frame resizing during the
+  // 300ms sidebar width animation flickers the GL canvas and raster layers
+  RESIZE_DEBOUNCE_MS: 150,
 };
 
 // External server URLs (GeoServer for WFS, GEE tile server)
@@ -107,8 +110,12 @@ export const CACHE_CONFIG = {
   GEE_TTL_MS: 1.5 * 60 * 60 * 1000,
   // GeoJSON boundaries rarely change, 2-day cache is efficient enough
   GEOJSON_TTL_MS: 2 * 24 * 60 * 60 * 1000,
+  // Chart stats are historical LULC data (immutable per region/year),
+  // but cap at 2 days in case the GEE assets are reprocessed
+  STATS_TTL_MS: 2 * 24 * 60 * 60 * 1000,
   STORAGE_KEY_GEE: 'mapCache_gee',
   STORAGE_KEY_GEOJSON: 'mapCache_geojson',
+  STORAGE_KEY_STATS: 'mapCache_stats',
 };
 
 // WFS (Web Feature Service) parameters for GeoServer

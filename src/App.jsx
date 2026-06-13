@@ -1,7 +1,9 @@
 import './App.css';
 import { useEffect, useState, useRef } from 'react';
 import { Routes, Route, useParams } from 'react-router-dom';
+import { SWRConfig } from 'swr';
 import { useMapStore } from './store/mapStore';
+import { statsCacheProvider } from './lib/swrPersistentCache';
 import { parseUrlState } from './utils/urlStateSync';
 import { LeftPanel } from './components/LeftPanel';
 import { RightPanel } from './components/RightPanel';
@@ -37,8 +39,8 @@ function MapView() {
       <div
         className={`
           fixed inset-y-0 left-0 z-50 w-72 transform transition-all duration-300 ease-in-out
-          lg:relative lg:translate-x-0 lg:z-auto
-          ${isSidebarCollapsed ? 'lg:w-[68px]' : 'lg:w-[22%] lg:min-w-[280px]'}
+          lg:relative lg:translate-x-0 lg:z-auto overflow-hidden
+          ${isSidebarCollapsed ? 'lg:w-[68px]' : 'lg:w-[max(22%,280px)]'}
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
@@ -73,11 +75,21 @@ function ProfilePageWrapper() {
 function App() {
   return (
     <ErrorBoundary label="Aplikasi">
-      <Routes>
-        <Route path="/" element={<MapView />} />
+      {/* Persisted stats are immutable per region/year — skip refetch while
+          a cached (non-expired) entry exists, and don't refetch on tab focus */}
+      <SWRConfig
+        value={{
+          provider: statsCacheProvider,
+          revalidateIfStale: false,
+          revalidateOnFocus: false,
+        }}
+      >
+        <Routes>
+          <Route path="/" element={<MapView />} />
 
-        <Route path="/profile/:kabupatenName" element={<ProfilePageWrapper />} />
-      </Routes>
+          <Route path="/profile/:kabupatenName" element={<ProfilePageWrapper />} />
+        </Routes>
+      </SWRConfig>
     </ErrorBoundary>
   );
 }

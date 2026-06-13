@@ -7,9 +7,14 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
   const [searchText, setSearchText] = useState('');
 
   // ─── COLLAPSED RAIL (desktop only) ───
+  // key forces a remount on mode switch so sidebar-content-in replays;
+  // without it React reuses the root div and the fade never triggers
   if (collapsed) {
     return (
-      <div className="w-full h-full flex flex-col bg-parchment-50 border-r border-coffee-900/10">
+      <div
+        key="collapsed-rail"
+        className="w-full h-full flex flex-col bg-parchment-50 border-r border-coffee-900/10 sidebar-content-in"
+      >
         <div className="shrink-0 flex flex-col items-center gap-2.5 py-4 border-b border-coffee-900/10">
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
             <Layers size={16} className="text-primary" />
@@ -33,8 +38,13 @@ export function LeftPanel({ onClose, collapsed = false, onToggleCollapse }) {
   }
 
   // ─── EXPANDED PANEL ───
+  // min-w keeps the content at its final width while the wrapper's width
+  // animates (wrapper has overflow-hidden), so text reveals instead of squishing
   return (
-    <div className="w-full h-full flex flex-col bg-parchment-50 border-r border-coffee-900/10">
+    <div
+      key="expanded-panel"
+      className="w-full min-w-[280px] h-full flex flex-col bg-parchment-50 border-r border-coffee-900/10 sidebar-content-in"
+    >
       <div className="shrink-0 px-5 py-4 border-b border-coffee-900/10 bg-parchment-50">
         <div className="flex items-center gap-3">
           <div className="overflow-hidden shrink-0" style={{ height: '36px' }}>

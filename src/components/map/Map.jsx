@@ -29,6 +29,7 @@ const Map = ({ onToggleSidebar }) => {
   );
   const [isMapReady, setIsMapReady] = useState(false);
   const [isLayersLoading, setIsLayersLoading] = useState(false);
+  const [isRelayouting, setIsRelayouting] = useState(false);
   const transitionIdRef = useRef(0);
 
   const handleHome = () =>
@@ -49,7 +50,25 @@ const Map = ({ onToggleSidebar }) => {
       zoom: DEFAULT_ZOOM,
       minZoom: MAP_CONFIG.MIN_ZOOM,
       attributionControl: false,
+      // Built-in trackResize resizes the canvas on every animation frame while
+      // the sidebar width transitions, flickering the map — debounced observer below
+      trackResize: false,
     });
+
+    // Veil the map while its container animates, then resize once when the
+    // layout settles — per-frame resizing flickers, and a stale canvas size
+    // would otherwise show a background gap where the map grew
+    let resizeTimeoutId = null;
+    const resizeObserver = new ResizeObserver(() => {
+      setIsRelayouting(true);
+      if (resizeTimeoutId) clearTimeout(resizeTimeoutId);
+      resizeTimeoutId = setTimeout(() => {
+        resizeTimeoutId = null;
+        mapInstance.resize();
+        setIsRelayouting(false);
+      }, MAP_CONFIG.RESIZE_DEBOUNCE_MS);
+    });
+    resizeObserver.observe(mapContainer.current);
 
     mapInstance.addControl(
       new maplibregl.AttributionControl({
@@ -64,6 +83,7 @@ const Map = ({ onToggleSidebar }) => {
 
     function onMapLoad() {
       setIsMapReady(true);
+      useMapStore.getState().setMapLoaded(true);
     }
 
     if (mapInstance.isStyleLoaded()) {
@@ -76,6 +96,8 @@ const Map = ({ onToggleSidebar }) => {
     mapInstance.addControl(scaleControl, 'bottom-right');
 
     return () => {
+      if (resizeTimeoutId) clearTimeout(resizeTimeoutId);
+      resizeObserver.disconnect();
       mapInstance.off('load', onMapLoad);
       try {
         mapInstance.remove();
@@ -84,6 +106,7 @@ const Map = ({ onToggleSidebar }) => {
       }
       mapRef.current = null;
       setIsMapReady(false);
+      useMapStore.getState().setMapLoaded(false);
       setMap(null);
     };
   }, [setMap]);
@@ -119,6 +142,15 @@ const Map = ({ onToggleSidebar }) => {
   return (
     <>
       <div ref={mapContainer} className="h-full w-full" />
+
+      {/* Soft cover while the container is mid-resize; fades out after the
+          single debounced map.resize() re-renders at the settled size */}
+      <div
+        aria-hidden="true"
+        className={`absolute inset-0 z-10 bg-parchment-50 pointer-events-none transition-opacity ${
+          isRelayouting ? 'opacity-100 duration-0' : 'opacity-0 duration-300'
+        }`}
+      />
 
       {!isMapReady && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-parchment-50">
