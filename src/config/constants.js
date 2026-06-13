@@ -64,6 +64,8 @@ export const COLORS = {
 export const MAPBIOMAS_YEAR_RANGE = {
   MIN: 1990,
   MAX: 2024,
+  // Default start year for the shared analytics year-range slider (end = MAX).
+  CHART_DEFAULT_START: 2013,
 };
 
 // Shared ECharts typography & axis colors — mirrors Atelier Atlas tokens in App.css
@@ -115,7 +117,9 @@ export const CACHE_CONFIG = {
   STATS_TTL_MS: 2 * 24 * 60 * 60 * 1000,
   STORAGE_KEY_GEE: 'mapCache_gee',
   STORAGE_KEY_GEOJSON: 'mapCache_geojson',
-  STORAGE_KEY_STATS: 'mapCache_stats',
+  // v2: stack-chart switched from per-region single-year rows to a per-year
+  // series — bump the key so pre-migration cached responses are discarded.
+  STORAGE_KEY_STATS: 'mapCache_stats_v2',
 };
 
 // WFS (Web Feature Service) parameters for GeoServer

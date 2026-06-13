@@ -6,7 +6,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { useMapStore } from '../../store/mapStore.js';
 import { makeViewportTooltipPosition } from '../../utils/tooltipPosition.js';
 import { API_ENDPOINTS, COLORS, makeTooltipOption } from '../../config/constants.js';
-import SankeyYearSelector from './SankeyYearSelector.jsx';
 import {
   ChartHeader,
   SankeyLoadingSkeleton,
@@ -114,7 +113,16 @@ function buildNodeTooltipHtml(name, { nodeColorMap, isCompact }) {
   );
 }
 
-function makeChartOption(nodes, links, nodeColorMap, startYear, endYear, detailsLabel, isCompact, appendToBody = true) {
+function makeChartOption(
+  nodes,
+  links,
+  nodeColorMap,
+  startYear,
+  endYear,
+  detailsLabel,
+  isCompact,
+  appendToBody = true,
+) {
   return {
     tooltip: {
       trigger: 'item',
@@ -189,8 +197,8 @@ function SankeyTransitionChart({
 
   const { startYear, endYear } = useMapStore(
     useShallow((state) => ({
-      startYear: state.sankeyStartYear,
-      endYear: state.sankeyEndYear,
+      startYear: state.chartStartYear,
+      endYear: state.chartEndYear,
     })),
   );
 
@@ -331,8 +339,6 @@ function SankeyTransitionChart({
     }
   }, [chartOption]);
 
-
-
   if (isLoading) return <SankeyLoadingSkeleton />;
   if (error) return <ChartErrorState message={error.message} />;
   if (!chartData) return <ChartEmptyState />;
@@ -343,10 +349,9 @@ function SankeyTransitionChart({
         <div className="shrink-0">
           <ChartHeader
             title="Transisi Tutupan Lahan"
-            subtitle="Perubahan tutupan lahan antar tahun"
+            subtitle={`Perubahan tutupan lahan · ${startYear} - ${endYear}`}
           >
             <div className="flex items-center gap-1.5 shrink-0">
-              <SankeyYearSelector />
               <button
                 type="button"
                 onClick={openModal}
@@ -386,46 +391,46 @@ function SankeyTransitionChart({
           aria-label="Transisi Tutupan Lahan — Tampilan Penuh"
         >
           <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-coffee-900/10">
-              <div>
-                <p className="text-sm font-bold text-coffee-900">Transisi Tutupan Lahan</p>
-                <p className="text-xs text-coffee-400 mt-0.5">
-                  {startYear} → {endYear}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeModal}
-                className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer"
-                aria-label="Tutup"
-              >
-                <X size={18} className="text-primary/80" />
-              </button>
-            </div>
-
-            <div className="flex-1 relative overflow-hidden p-2">
-              <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
-                <ReactECharts
-                  ref={modalEchartsRef}
-                  option={modalOption}
-                  notMerge={true}
-                  lazyUpdate={true}
-                  style={{ height: '100%', width: '100%' }}
-                  onChartReady={(instance) => {
-                    requestAnimationFrame(() => instance.resize());
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="shrink-0 px-5 py-2 border-t border-coffee-900/10 bg-parchment-50">
-              <p className="text-[10px] text-coffee-400">
-                {chartData?.detailsLabel
-                  ? `Hover node atau link untuk melihat detail transisi per ${chartData.detailsLabel.toLowerCase()} · Tekan Escape untuk menutup`
-                  : 'Hover node atau link untuk melihat detail transisi · Tekan Escape untuk menutup'}
+            <div>
+              <p className="text-sm font-bold text-coffee-900">Transisi Tutupan Lahan</p>
+              <p className="text-xs text-coffee-400 mt-0.5">
+                {startYear} → {endYear}
               </p>
             </div>
-          </dialog>
-        )}
+            <button
+              type="button"
+              onClick={closeModal}
+              className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer"
+              aria-label="Tutup"
+            >
+              <X size={18} className="text-primary/80" />
+            </button>
+          </div>
+
+          <div className="flex-1 relative overflow-hidden p-2">
+            <div className="absolute inset-0" style={{ height: '100%', width: '100%' }}>
+              <ReactECharts
+                ref={modalEchartsRef}
+                option={modalOption}
+                notMerge={true}
+                lazyUpdate={true}
+                style={{ height: '100%', width: '100%' }}
+                onChartReady={(instance) => {
+                  requestAnimationFrame(() => instance.resize());
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="shrink-0 px-5 py-2 border-t border-coffee-900/10 bg-parchment-50">
+            <p className="text-[10px] text-coffee-400">
+              {chartData?.detailsLabel
+                ? `Hover node atau link untuk melihat detail transisi per ${chartData.detailsLabel.toLowerCase()} · Tekan Escape untuk menutup`
+                : 'Hover node atau link untuk melihat detail transisi · Tekan Escape untuk menutup'}
+            </p>
+          </div>
+        </dialog>
+      )}
     </>
   );
 }

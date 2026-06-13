@@ -14,8 +14,8 @@ function MapView() {
   const mainRef = useRef(null);
 
   useEffect(() => {
-    const { year, breadcrumbs, selectedKab } = parseUrlState();
-    useMapStore.setState({ year, breadcrumbs, selectedKab });
+    const { year, breadcrumbs, selectedKab, chartStartYear, chartEndYear } = parseUrlState();
+    useMapStore.setState({ year, breadcrumbs, selectedKab, chartStartYear, chartEndYear });
   }, []);
 
   useEffect(() => {

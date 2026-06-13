@@ -12,7 +12,7 @@ export const useMapStore = create((set, get) => ({
   setSelectedKab: (kabupatenName) => {
     set({ selectedKab: kabupatenName });
     const state = get();
-    updateUrl(state.year, state.breadcrumbs, kabupatenName);
+    updateUrl(state.year, state.breadcrumbs, kabupatenName, state.chartStartYear, state.chartEndYear);
   },
 
   // ─── Year State ───
@@ -20,14 +20,20 @@ export const useMapStore = create((set, get) => ({
   setYear: (newYear) => {
     set({ year: newYear });
     const state = get();
-    updateUrl(newYear, state.breadcrumbs, state.selectedKab);
+    updateUrl(newYear, state.breadcrumbs, state.selectedKab, state.chartStartYear, state.chartEndYear);
   },
 
-  // ─── Sankey Transition Year Range ───
-  sankeyStartYear: 2013,
-  sankeyEndYear: MAPBIOMAS_YEAR_RANGE.MAX,
-  setSankeyYears: (startYear, endYear) =>
-    set({ sankeyStartYear: startYear, sankeyEndYear: endYear }),
+  // ─── Shared Chart Year Range ───
+  // Drives every analytics chart that consumes a year range (Sankey transition
+  // endpoints + the composition year-series). Lifted to a panel-level control
+  // and persisted to the URL so shared links restore the same range.
+  chartStartYear: MAPBIOMAS_YEAR_RANGE.CHART_DEFAULT_START,
+  chartEndYear: MAPBIOMAS_YEAR_RANGE.MAX,
+  setChartYears: (startYear, endYear) => {
+    set({ chartStartYear: startYear, chartEndYear: endYear });
+    const state = get();
+    updateUrl(state.year, state.breadcrumbs, state.selectedKab, startYear, endYear);
+  },
 
   // ─── Map Instance ───
   map: null,
@@ -62,7 +68,7 @@ export const useMapStore = create((set, get) => ({
                 : state.breadcrumbs;
 
       // Sync new state to URL query params
-      updateUrl(state.year, newBreadcrumbs, state.selectedKab);
+      updateUrl(state.year, newBreadcrumbs, state.selectedKab, state.chartStartYear, state.chartEndYear);
 
       return { breadcrumbs: newBreadcrumbs };
     }),
@@ -70,7 +76,7 @@ export const useMapStore = create((set, get) => ({
   // Reset all breadcrumbs to initial state
   resetBreadcrumbs: () =>
     set((state) => {
-      updateUrl(state.year, {}, null);
+      updateUrl(state.year, {}, null, state.chartStartYear, state.chartEndYear);
       return { breadcrumbs: {}, selectedKab: null };
     }),
 

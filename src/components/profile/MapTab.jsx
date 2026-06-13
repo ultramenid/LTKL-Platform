@@ -10,6 +10,7 @@ import { SectionHeader } from './SectionHeader.jsx';
 import CoverageChart from '../map/CoverageChart.jsx';
 import StackCoverageChart from '../map/StackCoverageChart.jsx';
 import SankeyTransitionChart from '../map/SankeyTransitionChart.jsx';
+import ChartYearRangeSelector from '../map/ChartYearRangeSelector.jsx';
 import MapLegend from '../map/MapLegend.jsx';
 import { useMapStore } from '../../store/mapStore.js';
 import {
@@ -28,7 +29,7 @@ import {
   YEAR_CONFIG,
 } from '../../config/constants.js';
 import { zoomToCollection } from '../../utils/mapUtils.js';
-import { encodeAdministrasi } from '../../utils/urlStateSync.js';
+import { encodeAdministrasi, parseUrlState } from '../../utils/urlStateSync.js';
 
 function ProfileYearSelector({ year, onYearChange }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -193,6 +194,44 @@ function useProfileMap({ kabupaten, initialDrillState }) {
   const { year, setYear } = useMapStore(
     useShallow((state) => ({ year: state.year, setYear: state.setYear })),
   );
+
+  const { chartStartYear, chartEndYear } = useMapStore(
+    useShallow((state) => ({
+      chartStartYear: state.chartStartYear,
+      chartEndYear: state.chartEndYear,
+    })),
+  );
+
+  // Restore the shared analytics range from the URL on mount so refresh and
+  // shared links reopen the same chart scope. The store writer (updateUrl) is
+  // map-route only, so the profile tab seeds + persists the range itself.
+  useEffect(() => {
+    const restored = parseUrlState();
+    useMapStore.setState({
+      chartStartYear: restored.chartStartYear,
+      chartEndYear: restored.chartEndYear,
+    });
+    // Mount-only: seed once from the initial URL.
+  }, []);
+
+  // Persist range changes into the profile URL via React Router. Skip the first
+  // run so we don't write default params before the user touches the slider.
+  const didPersistRangeRef = useRef(false);
+  useEffect(() => {
+    if (!didPersistRangeRef.current) {
+      didPersistRangeRef.current = true;
+      return;
+    }
+    setSearchParams(
+      (previousParams) => {
+        const updatedParams = new URLSearchParams(previousParams);
+        updatedParams.set('chartStart', String(chartStartYear));
+        updatedParams.set('chartEnd', String(chartEndYear));
+        return updatedParams;
+      },
+      { replace: true },
+    );
+  }, [chartStartYear, chartEndYear, setSearchParams]);
 
   const localBreadcrumbsRef = useRef(localBreadcrumbs);
   const syncMapUrl = useCallback(
@@ -435,6 +474,8 @@ function useProfileMap({ kabupaten, initialDrillState }) {
     isLayerLoading,
     localBreadcrumbs,
     year,
+    chartStartYear,
+    chartEndYear,
     commitBreadcrumbs,
     handleYearChange,
   };
@@ -447,6 +488,8 @@ export function MapTab({ kabupaten, initialDrillState }) {
     isLayerLoading,
     localBreadcrumbs,
     year,
+    chartStartYear,
+    chartEndYear,
     commitBreadcrumbs,
     handleYearChange,
   } = useProfileMap({ kabupaten, initialDrillState });
@@ -519,11 +562,18 @@ export function MapTab({ kabupaten, initialDrillState }) {
       </div>
 
       <div>
-        <SectionHeader title="Komposisi Tutupan Lahan" accent={COLORS.PRIMARY} />
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <SectionHeader title="Komposisi Tutupan Lahan" accent={COLORS.PRIMARY} />
+          <div className="shrink-0 pt-1">
+            <ChartYearRangeSelector />
+          </div>
+        </div>
         <p className="text-xs text-coffee-600 -mt-2 mb-4 max-w-xl">
-          Persentase komposisi tutupan lahan{' '}
-          <strong className="text-coffee-900">{activeAreaLabel}</strong> untuk tahun{' '}
-          <strong className="text-coffee-900">{year}</strong>.
+          Komposisi tutupan lahan{' '}
+          <strong className="text-coffee-900">{activeAreaLabel}</strong> dari tahun{' '}
+          <strong className="text-coffee-900">{chartStartYear}</strong> hingga{' '}
+          <strong className="text-coffee-900">{chartEndYear}</strong>. Rentang tahun ini juga
+          mengatur grafik transisi di bawah.
         </p>
         <div className="h-72 border border-coffee-900/15 overflow-hidden bg-white">
           <StackCoverageChart
@@ -538,7 +588,8 @@ export function MapTab({ kabupaten, initialDrillState }) {
         <SectionHeader title="Transisi Tutupan Lahan" accent={COLORS.PRIMARY} />
         <p className="text-xs text-coffee-600 -mt-2 mb-4 max-w-xl">
           Perubahan tutupan lahan <strong className="text-coffee-900">{activeAreaLabel}</strong>{' '}
-          dari tahun 2013 ke 2024.
+          dari tahun <strong className="text-coffee-900">{chartStartYear}</strong> ke{' '}
+          <strong className="text-coffee-900">{chartEndYear}</strong>.
         </p>
         <div className="h-72 border border-coffee-900/15 overflow-hidden bg-white">
           <SankeyTransitionChart

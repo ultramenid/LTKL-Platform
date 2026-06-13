@@ -55,6 +55,43 @@
   z-index: 1;
 }
 
+/* ─── Dual-range year slider ─── */
+/* Two native range inputs overlap. The track is click-through (pointer-events:
+   none) so the inputs don't block each other; only the thumb pseudo-element
+   captures pointer events, keeping both thumbs independently draggable. */
+.year-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+.year-range-slider:focus {
+  outline: none;
+}
+.year-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.year-range-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.year-range-slider::-moz-range-track {
+  background: transparent;
+}
+
 /* ─── Nav dropdown reveal ─── */
 @keyframes atlas-drop {
   from {

@@ -11,12 +11,12 @@ const YEARS = Array.from({ length: YEAR_SPAN + 1 }, (_, i) => MIN_YEAR + i);
 
 const toPercent = (year) => ((year - MIN_YEAR) / YEAR_SPAN) * 100;
 
-export default function SankeyYearSelector() {
-  const { sankeyStartYear, sankeyEndYear, setSankeyYears } = useMapStore(
+export default function ChartYearRangeSelector() {
+  const { chartStartYear, chartEndYear, setChartYears } = useMapStore(
     useShallow((state) => ({
-      sankeyStartYear: state.sankeyStartYear,
-      sankeyEndYear: state.sankeyEndYear,
-      setSankeyYears: state.setSankeyYears,
+      chartStartYear: state.chartStartYear,
+      chartEndYear: state.chartEndYear,
+      setChartYears: state.setChartYears,
     })),
   );
   const [open, setOpen] = useState(false);
@@ -27,8 +27,8 @@ export default function SankeyYearSelector() {
   const startInputRef = useRef(null);
   const endInputRef = useRef(null);
 
-  const startYear = draftStart !== null ? draftStart : sankeyStartYear;
-  const endYear = draftEnd !== null ? draftEnd : sankeyEndYear;
+  const startYear = draftStart !== null ? draftStart : chartStartYear;
+  const endYear = draftEnd !== null ? draftEnd : chartEndYear;
 
   useEffect(() => {
     if (!open) return;
@@ -50,40 +50,46 @@ export default function SankeyYearSelector() {
 
   const commitDraft = useCallback(() => {
     if (draftStart !== null) {
-      setSankeyYears(draftStart, draftEnd);
+      setChartYears(draftStart, draftEnd);
       setDraftStart(null);
       setDraftEnd(null);
     }
     setActiveThumb(null);
-  }, [draftStart, draftEnd, setSankeyYears]);
+  }, [draftStart, draftEnd, setChartYears]);
 
+  // While dragging, only move the draft thumb — the store (and chart) update
+  // once on release via commitDraft. Keyboard changes commit immediately.
   const handleStartChange = useCallback(
     (e) => {
       const val = Number(e.target.value);
       const next = Math.min(val, endYear - 1);
-      setSankeyYears(next, endYear);
-      setDraftStart(null);
-      setDraftEnd(null);
+      if (activeThumb) {
+        setDraftStart(next);
+      } else {
+        setChartYears(next, endYear);
+      }
     },
-    [endYear, setSankeyYears],
+    [endYear, activeThumb, setChartYears],
   );
 
   const handleEndChange = useCallback(
     (e) => {
       const val = Number(e.target.value);
       const next = Math.max(val, startYear + 1);
-      setSankeyYears(startYear, next);
-      setDraftStart(null);
-      setDraftEnd(null);
+      if (activeThumb) {
+        setDraftEnd(next);
+      } else {
+        setChartYears(startYear, next);
+      }
     },
-    [startYear, setSankeyYears],
+    [startYear, activeThumb, setChartYears],
   );
 
   // Touch/drag start — enter draft mode so the thumb follows finger
   const onThumbPointerDown = (thumb) => () => {
     setActiveThumb(thumb);
-    setDraftStart(sankeyStartYear);
-    setDraftEnd(sankeyEndYear);
+    setDraftStart(chartStartYear);
+    setDraftEnd(chartEndYear);
   };
 
   const startPct = toPercent(startYear);
@@ -102,7 +108,7 @@ export default function SankeyYearSelector() {
         aria-label="Pilih rentang tahun"
         aria-expanded={open}
       >
-        {sankeyStartYear} → {sankeyEndYear}
+        {chartStartYear} → {chartEndYear}
         <ChevronDown
           size={11}
           className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
@@ -110,7 +116,7 @@ export default function SankeyYearSelector() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 w-[300px] bg-coffee-900/92 backdrop-blur-md rounded-xl shadow-xl border border-white/10 px-3.5 py-2.5">
+        <div className="absolute left-0 top-full mt-1.5 z-50 w-[300px] bg-coffee-900/92 backdrop-blur-md rounded-xl shadow-xl border border-white/10 px-3.5 py-2.5">
           <div className="flex items-center gap-2.5">
             {/* Range label */}
             <span className="shrink-0 text-[11px] font-semibold text-white/90 tabular-nums select-none whitespace-nowrap">
@@ -147,9 +153,9 @@ export default function SankeyYearSelector() {
                 onChange={handleStartChange}
                 onPointerDown={onThumbPointerDown('start')}
                 onPointerUp={commitDraft}
+                onPointerCancel={commitDraft}
                 aria-label="Tahun awal"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                style={{ pointerEvents: 'none' }}
+                className="year-range-slider absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
 
               {/* End handle — native range input, visually hidden */}
@@ -162,9 +168,9 @@ export default function SankeyYearSelector() {
                 onChange={handleEndChange}
                 onPointerDown={onThumbPointerDown('end')}
                 onPointerUp={commitDraft}
+                onPointerCancel={commitDraft}
                 aria-label="Tahun akhir"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                style={{ pointerEvents: 'none' }}
+                className="year-range-slider absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
 
               {/* Visual thumb for start */}
